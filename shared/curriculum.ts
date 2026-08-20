@@ -3,6 +3,8 @@ import { Domain, type Grade, type Semester, bandOf } from './domain.js';
 export interface StandardInfo {
   grade: Grade;
   semester: Semester;
+  grades: readonly Grade[];
+  semesters: Readonly<Partial<Record<Grade, Semester>>>;
   domain: Domain;
   unit: string;
   fitness: '◎' | '○' | '△' | '✕';
@@ -19,7 +21,18 @@ function info(
   unit: string,
   fitness: StandardInfo['fitness'],
 ): StandardInfo {
-  return { grade, semester, domain, unit, fitness };
+  return { grade, semester, grades: [grade], semesters: { [grade]: semester }, domain, unit, fitness };
+}
+
+function multiGrade(
+  base: StandardInfo,
+  semesters: Readonly<Partial<Record<Grade, Semester>>>,
+): StandardInfo {
+  return {
+    ...base,
+    grades: Object.keys(semesters).map((grade) => Number(grade) as Grade),
+    semesters,
+  };
 }
 
 export const CURRICULUM: Record<string, StandardInfo> = {
@@ -44,8 +57,8 @@ export const CURRICULUM: Record<string, StandardInfo> = {
 
   '4수02-01': info(4, 1, Domain.Relation, '규칙 찾기', '◎'),
   '4수02-02': info(4, 1, Domain.Relation, '규칙 찾기', '◎'),
-  // 표에는 학기가 비어 있지만 4학년 내내 써야 하는 기초 관계 개념이라 1학기로 둔다.
-  '4수02-03': info(4, 1, Domain.Relation, '등호와 동치 관계', '◎'),
+  // 등호의 동치 관계는 두 자리 수 범위에서 다루므로 3학년 덧셈·뺄셈 이후에도 출제 가능하다.
+  '4수02-03': multiGrade(info(3, 1, Domain.Relation, '등호와 동치 관계', '◎'), { 3: 1, 4: 1 }),
 
   '4수03-01': info(3, 1, Domain.Geometry, '평면도형 (선분·직선·반직선, 각, 직각)', '○'),
   '4수03-02': info(3, 1, Domain.Geometry, '평면도형 (선분·직선·반직선, 각, 직각)', '○'),
@@ -74,7 +87,7 @@ export const CURRICULUM: Record<string, StandardInfo> = {
   '4수03-25': info(4, 1, Domain.Geometry, '각도', '○'),
 
   // 3학년 표와 4학년 표에 모두 보이지만, 실제 학년은 기획서의 첫 명시인 3학년 2학기로 둔다.
-  '4수04-01': info(3, 2, Domain.Data, '그림그래프', '○'),
+  '4수04-01': multiGrade(info(3, 2, Domain.Data, '그림그래프', '○'), { 3: 2, 4: 1 }),
   '4수04-02': info(4, 2, Domain.Data, '꺾은선그래프', '○'),
   '4수04-03': info(4, 2, Domain.Data, '꺾은선그래프', '✕'), // §13.5에만 따로 나온 제외 코드라서 같은 자료 단원 흐름에 묶어 보수적으로 배정했다.
 
@@ -140,7 +153,11 @@ export function lookupStandard(code: string): StandardInfo | undefined {
 
 export function standardsFor(grade: Grade, semester?: Semester): string[] {
   return Object.entries(CURRICULUM)
-    .filter(([, info]) => info.grade === grade && (semester === undefined || info.semester <= semester))
+    .filter(
+      ([, info]) =>
+        info.grades.includes(grade) &&
+        (semester === undefined || (info.semesters[grade] !== undefined && info.semesters[grade] <= semester)),
+    )
     .map(([code]) => code);
 }
 
@@ -150,4 +167,13 @@ export function isExcluded(code: string): boolean {
 
 export function assertCurriculumBand(code: string, grade: Grade): boolean {
   return code.startsWith(`${bandOf(grade)}수`);
+}
+
+export function isStandardForGrade(info: StandardInfo, grade: Grade): boolean {
+  return info.grades.includes(grade);
+}
+
+export function isStandardForSemester(info: StandardInfo, grade: Grade, semester: Semester): boolean {
+  const firstSemester = info.semesters[grade];
+  return firstSemester !== undefined && semester >= firstSemester;
 }

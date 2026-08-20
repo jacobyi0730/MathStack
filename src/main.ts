@@ -6,7 +6,9 @@ import { createRenderer, type RenderScene } from './engine/renderer.js';
 import { createDebugOverlay } from './ui/debug-overlay.js';
 import { createInputController } from './engine/input.js';
 import { createPlayer, syncPlayerIntent } from './entities/player.js';
+import { updateEnemies } from './systems/enemy-ai.js';
 import { movePlayer } from './systems/movement.js';
+import { updateSpawns } from './systems/spawn.js';
 import { DEFAULT_CHARACTER_ID, getCharacterArchetype, type CharacterId } from './data/characters.js';
 
 type RuntimeState = GameState & RenderScene;
@@ -42,7 +44,9 @@ function createRuntimeState(): RuntimeState {
 function updateRuntimeState(state: RuntimeState, dt: number): void {
   syncPlayerIntent(state.player, state.input);
   movePlayer(state.player, dt, state.world);
-  state.entityCount = state.entities.length;
+  updateSpawns(state, dt);
+  updateEnemies(state, dt);
+  state.entityCount = state.enemies.activeCount + 1;
 }
 
 function bootstrap(): void {
@@ -58,9 +62,13 @@ function bootstrap(): void {
   const input = createInputController(canvas, state.input);
 
   let size = resize(canvas);
+  state.viewport.width = size.w;
+  state.viewport.height = size.h;
   const renderer = createRenderer(ctx, { width: size.w, height: size.h, dpr: Math.min(window.devicePixelRatio, 2) });
   window.addEventListener('resize', () => {
     size = resize(canvas);
+    state.viewport.width = size.w;
+    state.viewport.height = size.h;
     renderer.resize({ width: size.w, height: size.h, dpr: Math.min(window.devicePixelRatio, 2) });
   });
 
@@ -78,7 +86,8 @@ function bootstrap(): void {
     },
 
     onFrame(steps) {
-      timer.endFrame(steps, state.entityCount, 0);
+      timer.endFrame(steps, state.entityCount, state.enemies.recycles);
+      state.enemies.resetFrameStats();
       overlay.update(timer);
       timer.beginFrame();
     },

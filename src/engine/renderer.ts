@@ -258,6 +258,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
       for (let i = 0; i < total; i += 1) {
         const entity = scene.entities[i];
         if (!entity) continue;
+        if (entity.radius <= 0) continue;
 
         const world = interpolatePosition(entity.prevX, entity.prevY, entity.x, entity.y, alpha);
         if (!isCircleVisible(camera, world.x, world.y, entity.radius + SPRITE_SPEC.outlineWidthPx)) {

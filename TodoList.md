@@ -32,8 +32,8 @@
 ## Phase 1 — 게임 코어
 
 - [x] **T-006** 플레이어 이동 & 입력 — `game-engine-dev` ✅ 2026-08-20 ⚠ 캐릭터 선택은 `?character=` 임시 노출
-- [ ] **T-007** 적 스폰 & 추격 AI — `game-engine-dev` · 선행 T-005 ✅, T-006 ✅
-- [-] **T-008** 충돌 판정 & 데미지 — `game-engine-dev` · 선행 T-005 ✅, T-007
+- [x] **T-007** 적 스폰 & 추격 AI — `game-engine-dev` ✅ 2026-08-20 ⚠ 렌더+투사체 포함 실측은 T-028
+- [ ] **T-008** 충돌 판정 & 데미지 — `game-engine-dev` · 선행 T-005 ✅, T-007 ✅
 - [-] **T-009** 경험치 & 레벨업 — `game-engine-dev` · 선행 T-008
 - [-] **T-010** 무기 시스템 기반 + 1종 — `game-engine-dev` · 선행 T-008
 
@@ -42,15 +42,15 @@
 - [-] **T-011** 무기 8종 — `game-engine-dev` · 선행 T-010
 - [-] **T-012** 패시브 8종 — `game-engine-dev` · 선행 T-010
 - [-] **T-013** 각성 시스템 — `game-engine-dev` · 선행 T-011, T-012
-- [-] **T-014** 적 에이전트 7종 — `game-engine-dev` · 선행 T-007
+- [ ] **T-014** 적 에이전트 7종 — `game-engine-dev` · 선행 T-007 ✅
 - [-] **T-015** 보스 3종 & 웨이브 타임라인 — `game-engine-dev` · 선행 T-014
 
 ## Phase 3 — 수학 시스템
 
 - [x] **T-016** 공유 스키마 & 커리큘럼 테이블 — `pipeline-engineer` ✅ 2026-08-20 (codex) ⚠ 1:1 배치 결함 → T-018 전 수정 필요
 - [x] **T-017** 템플릿 엔진 & `build:bank` — `pipeline-engineer` ✅ 2026-08-20
-- [ ] **T-018** 뱅크 검증기 `validate:bank` — `pipeline-engineer` · 선행 T-016 ✅ ⚠ 착수 전 커리큘럼 1:1 배치 결함 수정
-- [-] **T-019** 학년별 문항 저작 — `quiz-author` · 선행 T-017, T-018
+- [x] **T-018** 뱅크 검증기 `validate:bank` — `pipeline-engineer` ✅ 2026-08-20
+- [x] **T-019** 학년별 문항 저작 — `quiz-author` ✅ 2026-08-20 ⚠ 표본 품질 검수·시각 문항 polish 후속
 - [-] **T-020** 클라이언트 출제기 — `game-engine-dev` · 선행 T-009, T-019
 - [-] **T-021** 퀴즈 모달 UI — `ui-builder` · 선행 T-020
 - [-] **T-022** 오답 큐 & 오개념 복습 — `game-engine-dev` · 선행 T-020, T-021
@@ -68,7 +68,7 @@
 
 ## 현황
 
-**8 / 28 완료** · 진행 중 0 · 착수 가능 2 (T-007, T-018)
+**11 / 28 완료** · 진행 중 0 · 착수 가능 2 (T-008, T-014)
 
 ## 병렬 배정 이력
 
@@ -78,6 +78,9 @@
 | 08-20 17:39 | **T-004** 렌더러·캐릭터 | **codex** | `src/engine`, `src/entities`, `src/data`, `src/main`, `tests/src/` | ✅ 게이트 통과 (test 59→66). 경계 준수 |
 | 08-20 18:03 | **T-006** 플레이어 이동·입력 | **game-engine-dev 서브에이전트** | `src/engine`, `src/entities`, `src/systems`, `src/data`, `src/main`, `tests/src/` | ✅ 게이트 통과 (test 66→80). 경계 준수 |
 | 08-20 18:03 | **T-017** 템플릿 엔진·뱅크 빌드 | **pipeline-engineer 서브에이전트** | `tools/`, `content/`, `tests/tools/` | ✅ 게이트 통과 (`build:bank`, `validate:bank`, `build`). 결정성 확인 |
+| 08-20 18:27 | **T-007** 적 스폰·추격 AI | **game-engine-dev 서브에이전트** | `src/entities`, `src/systems`, `src/data`, `src/engine`, `src/main`, `tests/src/`, `docs/30-기술/34-성능예산.md` | ✅ 게이트 통과 (test 80→104). 헤드리스 300체 p99 0.0105ms |
+| 08-20 18:27 | **T-018** 뱅크 검증기 | **pipeline-engineer 서브에이전트** | `tools/`, `shared/`, `tests/tools/` | ✅ 12개 검사 구현. 콘텐츠 보강 후 `validate:bank` 통과 |
+| 08-20 18:27 | **T-019** 학년별 문항 저작 | **quiz-author 서브에이전트 + 오케스트레이터 보정** | `content/`, `docs/MathStack기획서.md`, `shared/curriculum.ts` | ✅ 4개 학년 각 721문항. 영역·난이도 검증 통과 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 
