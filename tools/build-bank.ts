@@ -1,7 +1,9 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { GRADES, type Grade } from '../shared/domain.js';
 import { BANK_VERSION, BankSchema, type Bank, type Question } from '../shared/schema.js';
+import { loadFixedQuestions } from './fixed.js';
 import { DATA_DIR, bankPath } from './paths.js';
+import { expandTemplate, loadTemplates } from './template.js';
 
 /**
  * 문항 뱅크를 굽는다. content/ → public/data/bank-gN.json
@@ -14,16 +16,23 @@ import { DATA_DIR, bankPath } from './paths.js';
  * 넣지 않는다 — 같은 입력이 같은 해시를 내야 회귀 테스트가 성립한다.
  */
 
-function collectQuestions(_grade: Grade): Question[] {
-  // TODO(T-017): 템플릿 전개 + 고정 문항 병합
-  return [];
+async function collectQuestions(grade: Grade): Promise<Question[]> {
+  const [templates, fixedQuestions] = await Promise.all([loadTemplates(), loadFixedQuestions()]);
+
+  const expanded = templates
+    .filter((template) => template.grade === grade)
+    .flatMap((template) => expandTemplate(template));
+
+  return [...expanded, ...fixedQuestions.filter((question) => question.grade === grade)].sort((left, right) =>
+    left.id.localeCompare(right.id),
+  );
 }
 
-function buildBank(grade: Grade): Bank {
+async function buildBank(grade: Grade): Promise<Bank> {
   const bank: Bank = {
     version: BANK_VERSION,
     grade,
-    questions: collectQuestions(grade),
+    questions: await collectQuestions(grade),
   };
   // 굽는 쪽에서도 한 번 통과시킨다. 스키마를 어긴 산출물은 나가지 않는다.
   return BankSchema.parse(bank);
@@ -34,7 +43,7 @@ async function main(): Promise<void> {
 
   let total = 0;
   for (const grade of GRADES) {
-    const bank = buildBank(grade);
+    const bank = await buildBank(grade);
     // 키 순서를 스키마 순서로 고정 + 개행 종료 → 해시가 안정적이다
     await writeFile(bankPath(grade), `${JSON.stringify(bank, null, 2)}\n`, 'utf8');
     total += bank.questions.length;

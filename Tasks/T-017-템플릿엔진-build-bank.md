@@ -2,7 +2,7 @@
 id: T-017
 title: 템플릿 엔진 & build:bank
 phase: 3
-status: blocked
+status: done
 agent: pipeline-engineer
 skills: [build-bank]
 depends: [T-016]
@@ -82,3 +82,9 @@ float로 계산하면 오답이 오개념이 아니라 **IEEE 754 때문에** �
 ## 주의
 
 파라미터 생성기에 제약을 안 걸면 이상한 문항이 나온다 — 분모 1인 분수, 0을 더하는 문제, 결과가 학년 범위를 벗어나는 값. **전개 후 변형 5개를 눈으로 읽는다.**
+
+## 결과
+
+- 구현: `tools/template.ts`, `tools/build-bank.ts`, `tools/rng.ts`, `tools/math.ts`, `tools/fixed.ts`, `tests/tools/template.test.ts`, `content/templates/*`, `content/fixed/fixed-questions.yaml`
+- 검증: `npm run build:bank`, `npm run validate:bank`, `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build` 통과
+- 메모: 현재 `content/fixed` 파서는 이번 라운드에 필요한 단순 YAML만 지원한다. 실제 문항 저작량 확대 시 포맷 확장 여부를 T-019에서 다시 판단

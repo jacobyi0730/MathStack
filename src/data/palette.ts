@@ -1,3 +1,5 @@
+import { CHARACTER_ARCHETYPES } from './characters.js';
+
 /**
  * 렌더 수치와 팔레트 정본.
  *
@@ -38,12 +40,11 @@ export interface CharacterPalette {
   readonly accessory: string;
 }
 
-export const PLAYER_PALETTES = [
-  { body: '#4CAF50', symbol: 'H', accessory: '#B8F08A' },
-  { body: '#2196F3', symbol: 'Ne', accessory: '#8ED5FF' },
-  { body: '#FF9800', symbol: 'C', accessory: '#FFD08A' },
-  { body: '#9C27B0', symbol: 'O', accessory: '#E4A5FF' },
-] as const satisfies readonly CharacterPalette[];
+export const PLAYER_PALETTES = CHARACTER_ARCHETYPES.map((archetype) => ({
+  body: archetype.bodyColor,
+  symbol: archetype.element,
+  accessory: archetype.accessoryColor,
+})) satisfies readonly CharacterPalette[];
 
 export const ENEMY_PALETTES = [
   { body: '#E8574A', symbol: 'Rn', accessory: '#FFD700' },

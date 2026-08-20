@@ -31,8 +31,8 @@
 
 ## Phase 1 — 게임 코어
 
-- [ ] **T-006** 플레이어 이동 & 입력 — `game-engine-dev` · 선행 T-004 ✅
-- [-] **T-007** 적 스폰 & 추격 AI — `game-engine-dev` · 선행 T-005 ✅, T-006
+- [x] **T-006** 플레이어 이동 & 입력 — `game-engine-dev` ✅ 2026-08-20 ⚠ 캐릭터 선택은 `?character=` 임시 노출
+- [ ] **T-007** 적 스폰 & 추격 AI — `game-engine-dev` · 선행 T-005 ✅, T-006 ✅
 - [-] **T-008** 충돌 판정 & 데미지 — `game-engine-dev` · 선행 T-005 ✅, T-007
 - [-] **T-009** 경험치 & 레벨업 — `game-engine-dev` · 선행 T-008
 - [-] **T-010** 무기 시스템 기반 + 1종 — `game-engine-dev` · 선행 T-008
@@ -48,7 +48,7 @@
 ## Phase 3 — 수학 시스템
 
 - [x] **T-016** 공유 스키마 & 커리큘럼 테이블 — `pipeline-engineer` ✅ 2026-08-20 (codex) ⚠ 1:1 배치 결함 → T-018 전 수정 필요
-- [ ] **T-017** 템플릿 엔진 & `build:bank` — `pipeline-engineer` · 선행 T-016 ✅
+- [x] **T-017** 템플릿 엔진 & `build:bank` — `pipeline-engineer` ✅ 2026-08-20
 - [ ] **T-018** 뱅크 검증기 `validate:bank` — `pipeline-engineer` · 선행 T-016 ✅ ⚠ 착수 전 커리큘럼 1:1 배치 결함 수정
 - [-] **T-019** 학년별 문항 저작 — `quiz-author` · 선행 T-017, T-018
 - [-] **T-020** 클라이언트 출제기 — `game-engine-dev` · 선행 T-009, T-019
@@ -68,7 +68,7 @@
 
 ## 현황
 
-**6 / 28 완료** · 진행 중 0 · 착수 가능 3 (T-006, T-017, T-018)
+**8 / 28 완료** · 진행 중 0 · 착수 가능 2 (T-007, T-018)
 
 ## 병렬 배정 이력
 
@@ -76,6 +76,8 @@
 | --- | --- | --- | --- | --- |
 | 08-20 17:34 | **T-016** 스키마·커리큘럼 | **codex** | `shared/`, `tests/tools/` | ✅ 게이트 통과 (test 48→59). 경계 준수 |
 | 08-20 17:39 | **T-004** 렌더러·캐릭터 | **codex** | `src/engine`, `src/entities`, `src/data`, `src/main`, `tests/src/` | ✅ 게이트 통과 (test 59→66). 경계 준수 |
+| 08-20 18:03 | **T-006** 플레이어 이동·입력 | **game-engine-dev 서브에이전트** | `src/engine`, `src/entities`, `src/systems`, `src/data`, `src/main`, `tests/src/` | ✅ 게이트 통과 (test 66→80). 경계 준수 |
+| 08-20 18:03 | **T-017** 템플릿 엔진·뱅크 빌드 | **pipeline-engineer 서브에이전트** | `tools/`, `content/`, `tests/tools/` | ✅ 게이트 통과 (`build:bank`, `validate:bank`, `build`). 결정성 확인 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 
