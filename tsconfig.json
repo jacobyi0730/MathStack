@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["vite/client", "node"],
+
+    /* 31-아키텍처 §2 — strict 는 협상 대상이 아니다 */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+
+    /* shared/ 를 양쪽에서 같은 이름으로 부르기 위한 별칭.
+       TS 6 부터 baseUrl 은 폐기 — paths 는 이 파일 위치 기준으로 해석된다. */
+    "paths": {
+      "@shared/*": ["./shared/*"],
+      "@tools/*": ["./tools/*"],
+      "@src/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "shared", "tools", "content", "tests", "vite.config.ts"]
+}

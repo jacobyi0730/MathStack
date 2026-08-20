@@ -1,0 +1,41 @@
+# MathStack 배포 정본 (기획서 §15.4, 31-아키텍처 §6)
+#
+# 순수 정적 배포다. 서버리스 함수를 쓰지 않는다.
+# Netlify 는 package-lock.json 을 보고 의존성을 **자동으로 설치**하므로
+# 빌드 명령에는 우리 단계만 넣는다.
+
+[build]
+  command = "npm run build:bank && npm run validate:bank && npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Vite 8 은 ^20.19 || >=22.12, Vitest 4 는 ^20 || ^22 || >=24 를 요구한다.
+  # 로컬 개발 환경과 맞춰 24 로 고정한다.
+  NODE_VERSION = "24"
+  NPM_FLAGS = "--no-audit --no-fund"
+
+# 문항 뱅크·밸런스 — 파일명에 해시가 없으므로 배포마다 갱신되어야 한다.
+# Netlify 는 배포 시 ETag 로 재검증하므로 immutable 을 쓰되,
+# 내용이 바뀌면 새 배포가 새 파일을 준다.
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Vite 가 해시를 붙여 내보내는 번들
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# 진입 문서는 항상 최신을 받아야 한다
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
