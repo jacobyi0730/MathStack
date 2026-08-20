@@ -5,6 +5,7 @@ import {
   type DirectionLike,
 } from '../entities/sprite.js';
 import { createCameraState, interpolatePosition, isCircleVisible, worldToScreen, type CameraTarget } from './camera.js';
+import { shortestDeltaX, shortestDeltaY, type WorldBounds } from './world.js';
 
 export interface RenderableEntity extends CameraTarget, DirectionLike {
   radius: number;
@@ -17,6 +18,7 @@ export interface RenderableEntity extends CameraTarget, DirectionLike {
 export interface RenderScene {
   player: RenderableEntity;
   entities: readonly RenderableEntity[];
+  world: WorldBounds;
 }
 
 export interface RendererViewport {
@@ -261,11 +263,13 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
         if (entity.radius <= 0) continue;
 
         const world = interpolatePosition(entity.prevX, entity.prevY, entity.x, entity.y, alpha);
-        if (!isCircleVisible(camera, world.x, world.y, entity.radius + SPRITE_SPEC.outlineWidthPx)) {
+        const renderX = camera.centerX + shortestDeltaX(camera.centerX, world.x, scene.world);
+        const renderY = camera.centerY + shortestDeltaY(camera.centerY, world.y, scene.world);
+        if (!isCircleVisible(camera, renderX, renderY, entity.radius + SPRITE_SPEC.outlineWidthPx)) {
           continue;
         }
 
-        const screen = worldToScreen(camera, world.x, world.y);
+        const screen = worldToScreen(camera, renderX, renderY);
         writeSpriteFrame(sprite, entity.radius, entity.radius > 0 ? entity : emptyDirection);
 
         centersX[visibleCount] = screen.x;

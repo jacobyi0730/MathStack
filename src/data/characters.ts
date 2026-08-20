@@ -29,10 +29,10 @@ export const PLAYER_BASE_PROJECTILE_COUNT = 1;
 export const PLAYER_RADIUS = 24;
 
 export const FIELD_BOUNDS: MovementBounds = Object.freeze({
-  minX: -960,
-  maxX: 960,
-  minY: -540,
-  maxY: 540,
+  minX: -4096,
+  maxX: 4096,
+  minY: -4096,
+  maxY: 4096,
 });
 
 export const CHARACTER_ARCHETYPES = [

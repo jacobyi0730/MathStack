@@ -63,12 +63,13 @@
 - [x] **T-026** 결과 화면 & localStorage — `ui-builder` ✅ 2026-08-20
 - [x] **T-027** 접근성 옵션 — `ui-builder` ✅ 2026-08-20
 - [x] **T-028** 성능 튜닝 & 스트레스 모드 — `game-engine-dev` ✅ 2026-08-20
+- [x] **T-029** 월드 래핑 & 스킬 선택 버그 수정 — `game-engine-dev` ✅ 2026-08-20
 
 ---
 
 ## 현황
 
-**28 / 28 완료** · 진행 중 0 · 착수 가능 0
+**29 / 29 완료** · 진행 중 0 · 착수 가능 0
 
 ## 병렬 배정 이력
 
@@ -98,6 +99,7 @@
 | 08-20 20:57 | **T-025** 초월 수련 | **game-engine-dev 오케스트레이터 구현** | `src/systems/trial.ts`, `src/engine/state.ts`, `src/main.ts`, `tests/src/trial.test.ts` | ✅ 게이트 통과 (test 209→217). 8~9분 전투 중단·3문항·보상 판정 구현 |
 | 08-20 20:59 | **T-027** 접근성 옵션 | **ui-builder 실행자 + 오케스트레이터 마감** | `src/ui/settings.ts`, `src/ui/quiz-modal.ts`, `tests/src/` | ✅ 게이트 통과. 타이머 숨김·효과 0%·큰 글자·키보드 조작·저장 구현 |
 | 08-20 21:04 | **T-026** 결과 화면·localStorage | **오케스트레이터 구현** | `src/quiz/stats.ts`, `src/storage.ts`, `src/ui/result.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과 (test 217→222). 결과 화면·저장 스키마·오개념 한국어 표시 구현 |
+| 08-20 21:19 | **T-029** 월드 래핑·스킬 선택 버그 수정 | **오케스트레이터 구현** | `src/engine/world.ts`, `src/systems/`, `src/entities/projectile.ts`, `src/ui/skill-choice.ts`, `src/main.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 토러스 월드·투사체 사거리·레벨업 퀴즈→스킬 선택 흐름 구현 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

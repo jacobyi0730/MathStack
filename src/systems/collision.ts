@@ -1,6 +1,7 @@
 import { MAX_ACTIVE_ENEMIES } from '../data/enemies.js';
 import { createSpatialHash, type SpatialHash } from '../engine/spatial-hash.js';
 import type { GameState } from '../engine/state.js';
+import { shortestDeltaX, shortestDeltaY, wrappedDistanceSq } from '../engine/world.js';
 import type { EnemyEntity } from '../entities/enemy.js';
 import { applyContactDamage } from './damage.js';
 
@@ -33,7 +34,12 @@ export function rebuildEnemyHash(state: GameState): void {
   collision.enemyHash.clear(state.player.x, state.player.y);
 
   for (let i = 0; i < pool.activeCount; i += 1) {
-    collision.enemyHash.insert(pool.items[i] as EnemyEntity);
+    const enemy = pool.items[i] as EnemyEntity;
+    collision.enemyHash.insertAt(
+      enemy,
+      state.player.x + shortestDeltaX(state.player.x, enemy.x, state.world),
+      state.player.y + shortestDeltaY(state.player.y, enemy.y, state.world),
+    );
   }
 
   collision.enemyHashOutside = collision.enemyHash.outsideCount;
@@ -43,17 +49,15 @@ export function rebuildEnemyHash(state: GameState): void {
 export function damagePlayerEnemyContacts(state: GameState, dt: number): number {
   const player = state.player;
   const candidates = state.collision.enemyCandidates;
-  const count = state.collision.enemyHash.queryNearby(player.x, player.y, player.radius, candidates);
+  const count = queryNearbyEnemies(state, player.x, player.y, player.radius, candidates);
 
   let contacts = 0;
   let strongestDamagePerSec = 0;
   for (let i = 0; i < count; i += 1) {
     const enemy = candidates[i] as EnemyEntity;
     const radius = player.radius + enemy.radius;
-    const dx = enemy.x - player.x;
-    const dy = enemy.y - player.y;
 
-    if (dx * dx + dy * dy > radius * radius) continue;
+    if (wrappedDistanceSq(player.x, player.y, enemy.x, enemy.y, state.world) > radius * radius) continue;
 
     contacts += 1;
     if (enemy.contactDamage > strongestDamagePerSec) {
@@ -68,16 +72,29 @@ export function damagePlayerEnemyContacts(state: GameState, dt: number): number 
 
 export function findEnemyHit(state: GameState, x: number, y: number, radius: number): EnemyEntity | undefined {
   const candidates = state.collision.enemyCandidates;
-  const count = state.collision.enemyHash.queryNearby(x, y, radius, candidates);
+  const count = queryNearbyEnemies(state, x, y, radius, candidates);
 
   for (let i = 0; i < count; i += 1) {
     const enemy = candidates[i] as EnemyEntity;
     const hitRadius = radius + enemy.radius;
-    const dx = enemy.x - x;
-    const dy = enemy.y - y;
 
-    if (dx * dx + dy * dy <= hitRadius * hitRadius) return enemy;
+    if (wrappedDistanceSq(x, y, enemy.x, enemy.y, state.world) <= hitRadius * hitRadius) return enemy;
   }
 
   return undefined;
+}
+
+export function queryNearbyEnemies(
+  state: GameState,
+  x: number,
+  y: number,
+  radius: number,
+  out: EnemyEntity[],
+): number {
+  return state.collision.enemyHash.queryNearby(
+    state.player.x + shortestDeltaX(state.player.x, x, state.world),
+    state.player.y + shortestDeltaY(state.player.y, y, state.world),
+    radius,
+    out,
+  );
 }

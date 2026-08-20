@@ -22,19 +22,20 @@ describe('projectile', () => {
     expect(reused.poolIndex).toBe(199);
   });
 
-  it('projectile_motion_releases_expired_and_out_of_bounds_projectiles', () => {
+  it('projectile_motion_releases_expired_and_wraps_at_world_edges', () => {
     const pool = createProjectilePool(4);
     const expired = pool.acquire();
     spawnProjectile(expired, 'hydrogen_arrow', 0, 0, 1, 0, 10, 1);
     expired.lifeSec = 0.01;
 
-    const outside = pool.acquire();
-    spawnProjectile(outside, 'hydrogen_arrow', 99, 0, 1, 0, 10, 1);
+    const wrapped = pool.acquire();
+    spawnProjectile(wrapped, 'hydrogen_arrow', 99, 0, 1, 0, 10, 1);
 
     updateProjectileMotion(pool, 0.1, { minX: -100, maxX: 100, minY: -100, maxY: 100 });
 
     expect(expired.active).toBe(false);
-    expect(outside.active).toBe(false);
-    expect(pool.activeCount).toBe(0);
+    expect(wrapped.active).toBe(true);
+    expect(wrapped.x).toBeLessThan(50);
+    expect(pool.activeCount).toBe(1);
   });
 });

@@ -6,7 +6,9 @@ import { createTimer } from './engine/timing.js';
 import { createRenderer, type RenderScene } from './engine/renderer.js';
 import { createDebugOverlay } from './ui/debug-overlay.js';
 import { createHud, type Hud, type HudSlotState, type HudState } from './ui/hud.js';
+import { createQuizModal, type QuizModal, type QuizModalState } from './ui/quiz-modal.js';
 import { createResultScreen, type ResultScreenSummary } from './ui/result.js';
+import { createSkillChoiceView } from './ui/skill-choice.js';
 import { createInputController } from './engine/input.js';
 import { createPlayer, syncPlayerIntent } from './entities/player.js';
 import { BOSSES } from './data/bosses.js';
@@ -19,6 +21,12 @@ import { updateSpawns } from './systems/spawn.js';
 import { updateCollisions } from './systems/collision.js';
 import { applyEnemyDamage, updatePlayerInvulnerability } from './systems/damage.js';
 import { consumeCombatRewardsAsPickups, updatePickups } from './systems/pickup.js';
+import { shiftLevelEvent } from './systems/level.js';
+import {
+  applyLevelReward,
+  createLevelRewardChoices,
+  type LevelRewardChoice,
+} from './systems/level-reward.js';
 import { updateBossTimeline } from './systems/timeline.js';
 import { claimTrialReward, updateTrialState } from './systems/trial.js';
 import type { TimelineResultKind } from './systems/timeline.js';
@@ -26,10 +34,21 @@ import { equipWeapon, updateWeapons } from './systems/weapons.js';
 import { recalcStats } from './systems/stats.js';
 import { getReadyEvolutionForBaseWeapon, isEvolutionWeaponId } from './systems/evolution.js';
 import { DEFAULT_CHARACTER_ID, getCharacterArchetype, type CharacterId } from './data/characters.js';
+import { loadQuestionBank } from './quiz/loader.js';
+import { gradeAnswer, type QuizGradeResult } from './quiz/grader.js';
+import { selectQuestion, type SelectedQuestion } from './quiz/selector.js';
 import { summarizeQuizStats } from './quiz/stats.js';
 import { recordSessionResult } from './storage.js';
+import type { Grade } from '../shared/domain.js';
+import type { Bank, Question } from '../shared/schema.js';
 
 type RuntimeState = GameState & RenderScene;
+
+interface ActiveQuiz {
+  selection: SelectedQuestion;
+  phase: QuizModalState['phase'];
+  firstAttemptFailed: boolean;
+}
 
 function resize(canvas: HTMLCanvasElement): { w: number; h: number } {
   const dpr = Math.min(window.devicePixelRatio, 2);
@@ -54,9 +73,15 @@ function readCharacterFromUrl(): CharacterId {
   }
 }
 
-function createRuntimeState(): RuntimeState {
+function readGradeFromUrl(): Grade {
+  const selected = Number(new URLSearchParams(window.location.search).get('grade'));
+  return selected === 4 || selected === 5 || selected === 6 ? selected : 3;
+}
+
+function createRuntimeState(bank: Bank): RuntimeState {
   const player = createPlayer(readCharacterFromUrl());
   const state = createGameState({ player });
+  state.quizSession.grade = bank.grade;
   equipWeapon(state.weapons, 'hydrogen_arrow');
   applyResolvedStats(state);
   if (stressModeEnabled(window.location.search)) setupStressMode(state);
@@ -215,17 +240,46 @@ function emptyHudSlot(): HudSlotState {
   };
 }
 
-function bootstrap(): void {
+async function bootstrap(): Promise<void> {
   const canvas = document.querySelector<HTMLCanvasElement>('#game');
   if (!canvas) throw new Error('#game 캔버스를 찾을 수 없습니다.');
 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2D 컨텍스트를 만들 수 없습니다.');
 
-  const state = createRuntimeState();
+  const bank = await loadQuestionBank(readGradeFromUrl());
+  const state = createRuntimeState(bank);
   const timer = createTimer();
   const overlay = createDebugOverlay();
   const hud: Hud = createHud();
+  let activeQuiz: ActiveQuiz | undefined;
+  let pendingRewardChoices: LevelRewardChoice[] = [];
+  const quizModal: QuizModal = createQuizModal(document.body, {
+    onSubmit(submission) {
+      if (activeQuiz === undefined) return;
+      const result = gradeAnswer(state.quizSession, {
+        question: activeQuiz.selection.question,
+        selectedAnswer: submission.answer,
+        phase: activeQuiz.phase,
+      });
+      handleQuizResult(result);
+    },
+  });
+  const skillChoice = createSkillChoiceView(document.body, {
+    onChoose(choice) {
+      applyLevelReward(state.weapons, state.passives, choice);
+      applyResolvedStats(state);
+      pendingRewardChoices = [];
+      skillChoice.hide();
+      activeQuiz = undefined;
+      quizModal.hide();
+      if (state.level.queuedCount > 0) {
+        openNextQuiz();
+      } else if (!state.timeline.resultFired) {
+        loop.resume();
+      }
+    },
+  });
   const resultScreen = createResultScreen(document.body, {
     onRetry() {
       window.location.reload();
@@ -236,6 +290,46 @@ function bootstrap(): void {
   });
   const input = createInputController(canvas, state.input);
   let resultShown = false;
+
+  function openNextQuiz(): boolean {
+    const event = shiftLevelEvent(state.level);
+    if (event === undefined) return false;
+
+    const selection = selectQuestion(bank, 2, event.level, state.quizSession);
+    activeQuiz = {
+      selection,
+      phase: 'first',
+      firstAttemptFailed: false,
+    };
+    quizModal.show(createQuizState(selection.question, activeQuiz.phase, selection.retry));
+    return true;
+  }
+
+  function handleQuizResult(result: QuizGradeResult): void {
+    if (activeQuiz === undefined) return;
+
+    quizModal.showResult(result, activeQuiz.selection.question.explanation);
+    if (result.kind === 'try_again') {
+      activeQuiz.firstAttemptFailed = true;
+      activeQuiz.phase = 'retry';
+      window.setTimeout(() => {
+        if (activeQuiz === undefined) return;
+        quizModal.show(createQuizState(activeQuiz.selection.question, 'retry', true));
+      }, 700);
+      return;
+    }
+
+    pendingRewardChoices = createLevelRewardChoices(
+      state.weapons,
+      state.passives,
+      result.choicesOffered,
+      state.quizSession.seed + state.level.level,
+    );
+    window.setTimeout(() => {
+      quizModal.hide();
+      skillChoice.show(pendingRewardChoices);
+    }, 700);
+  }
 
   let size = resize(canvas);
   state.viewport.width = size.w;
@@ -262,7 +356,10 @@ function bootstrap(): void {
       updateCollisions(baseState as RuntimeState, dt);
       updateAfterCollisions(baseState as RuntimeState, dt);
       timer.end('collide');
-      if (state.level.queuedCount > 0) loop.pause();
+      if (state.level.queuedCount > 0 && activeQuiz === undefined) {
+        loop.pause();
+        openNextQuiz();
+      }
     },
 
     render(baseState, alpha) {
@@ -296,6 +393,8 @@ function bootstrap(): void {
   window.addEventListener('beforeunload', () => {
     input.destroy();
     hud.destroy();
+    quizModal.destroy();
+    skillChoice.destroy();
     resultScreen.destroy();
   });
 
@@ -340,4 +439,18 @@ function isEvolutionHudSlot(slot: HudSlotState): boolean {
   return slot.id !== null && isEvolutionWeaponId(slot.id as WeaponId);
 }
 
-bootstrap();
+function createQuizState(
+  question: Question,
+  phase: QuizModalState['phase'],
+  retry: boolean,
+): QuizModalState {
+  return {
+    question,
+    phase,
+    retry,
+    remainingSec: question.timeLimitSec,
+    totalSec: question.timeLimitSec,
+  };
+}
+
+void bootstrap();

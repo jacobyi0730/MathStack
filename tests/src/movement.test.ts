@@ -16,26 +16,26 @@ describe('플레이어 이동', () => {
     expect(player.dy).toBe(0);
   });
 
-  it('맵 경계 밖으로 나가지 않는다', () => {
+  it('맵 경계에 닿으면 반대쪽으로 이어진다', () => {
     const player = createPlayer('hydrogen');
-    player.x = 930;
-    player.prevX = 930;
+    player.x = 940;
+    player.prevX = 940;
     player.movementIntent.x = 1;
 
     movePlayer(player, 1, { minX: -960, maxX: 960, minY: -540, maxY: 540 });
 
-    expect(player.x).toBe(936);
+    expect(player.x).toBeCloseTo(-720);
   });
 
-  it('경계에 막혀도 동공용 방향 값은 유지한다', () => {
+  it('경계를 넘어도 동공용 방향 값은 유지한다', () => {
     const player = createPlayer('hydrogen');
-    player.x = 936;
-    player.prevX = 936;
+    player.x = 958;
+    player.prevX = 958;
     player.movementIntent.x = 1;
 
     movePlayer(player, 1 / 60, { minX: -960, maxX: 960, minY: -540, maxY: 540 });
 
-    expect(player.x).toBe(936);
+    expect(player.x).toBeLessThan(-950);
     expect(player.dx).toBeGreaterThan(0);
   });
 });

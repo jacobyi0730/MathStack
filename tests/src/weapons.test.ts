@@ -155,7 +155,7 @@ describe('weapons', () => {
     rebuildEnemyHash(state);
 
     const candidates = new Array<typeof near>(300);
-    const closest = findClosestEnemy(0, 0, 200, state.collision.enemyHash, candidates);
+    const closest = findClosestEnemy(0, 0, 200, state.collision.enemyHash, candidates, state.world);
 
     expect(closest).toBe(near);
   });
@@ -178,6 +178,24 @@ describe('weapons', () => {
     const projectile = runtime.projectiles.items[0];
     expect(projectile.dx).toBeGreaterThan(0);
     expect(projectile.dy).toBe(0);
+  });
+
+  it('update_weapons_targets_enemy_across_wrapped_world_edge', () => {
+    const state = createGameState();
+    state.world = { minX: -100, maxX: 100, minY: -100, maxY: 100 };
+    state.player.x = 95;
+    state.player.y = 0;
+    const enemy = state.enemies.acquire();
+    spawnEnemy(enemy, ENEMIES.radon, -95, 0, 20);
+    rebuildEnemyHash(state);
+
+    const runtime = createWeaponRuntime();
+    equipWeapon(runtime, 'hydrogen_arrow');
+
+    updateWeapons(state, runtime, 1 / 60);
+
+    expect(runtime.projectiles.activeCount).toBe(1);
+    expect(runtime.projectiles.items[0].dx).toBeGreaterThan(0);
   });
 
   it('update_weapons_keeps_attack_ready_when_no_enemy_is_available', () => {
@@ -208,6 +226,27 @@ describe('weapons', () => {
     expect(runtime.projectiles.activeCount).toBe(0);
     expect(enemy.active).toBe(false);
     expect(state.combat.defeatedEnemies).toBe(1);
+  });
+
+  it('projectile_hits_enemy_across_wrapped_world_edge', () => {
+    const state = createGameState();
+    state.world = { minX: -100, maxX: 100, minY: -100, maxY: 100 };
+    state.player.x = 95;
+    state.player.y = 0;
+    const enemy = state.enemies.acquire();
+    spawnEnemy(enemy, ENEMIES.radon, -95, 0, 10);
+    rebuildEnemyHash(state);
+
+    const runtime = createWeaponRuntime();
+    const projectile = runtime.projectiles.acquire();
+    spawnProjectile(projectile, 'hydrogen_arrow', 95, 0, 1, 0, 10, 1);
+    projectile.x = -97;
+    projectile.y = 0;
+
+    updateWeaponProjectiles(state, runtime, 0);
+
+    expect(runtime.projectiles.activeCount).toBe(0);
+    expect(enemy.active).toBe(false);
   });
 
   it('update_weapons_targets_and_damages_bosses_when_they_are_closest', () => {

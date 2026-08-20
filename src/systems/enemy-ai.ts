@@ -1,5 +1,6 @@
 import type { EnemyEntity } from '../entities/enemy.js';
 import type { GameState } from '../engine/state.js';
+import { shortestDeltaX, shortestDeltaY, wrapX, wrapY } from '../engine/world.js';
 
 type EnemyAiHandler = (enemy: EnemyEntity, state: GameState, dt: number) => void;
 
@@ -29,15 +30,15 @@ export function updateEnemies(state: GameState, dt: number): void {
 }
 
 function chase(enemy: EnemyEntity, state: GameState, dt: number): void {
-  moveToward(enemy, state.player.x, state.player.y, enemy.speed, dt);
+  moveToward(enemy, state.player.x, state.player.y, enemy.speed, dt, state);
 }
 
 function charge(enemy: EnemyEntity, state: GameState, dt: number): void {
   enemy.prevX = enemy.x;
   enemy.prevY = enemy.y;
 
-  const toPlayerX = state.player.x - enemy.x;
-  const toPlayerY = state.player.y - enemy.y;
+  const toPlayerX = shortestDeltaX(enemy.x, state.player.x, state.world);
+  const toPlayerY = shortestDeltaY(enemy.y, state.player.y, state.world);
   const distanceSq = toPlayerX * toPlayerX + toPlayerY * toPlayerY;
 
   if (distanceSq <= 0.0001) {
@@ -66,24 +67,24 @@ function charge(enemy: EnemyEntity, state: GameState, dt: number): void {
     const chargeSpeed = enemy.speed * CHARGE_SPEED_MULTIPLIER;
     enemy.dx = enemy.chargeDirX * chargeSpeed;
     enemy.dy = enemy.chargeDirY * chargeSpeed;
-    enemy.x += enemy.dx * dt;
-    enemy.y += enemy.dy * dt;
+    enemy.x = wrapX(enemy.x + enemy.dx * dt, state.world);
+    enemy.y = wrapY(enemy.y + enemy.dy * dt, state.world);
     if (enemy.aiTimerSec >= CHARGE_PREPARE_SEC * 2) enemy.aiPhase = 0;
     return;
   }
 
   enemy.dx = toPlayerX * invDistance * enemy.speed;
   enemy.dy = toPlayerY * invDistance * enemy.speed;
-  enemy.x += enemy.dx * dt;
-  enemy.y += enemy.dy * dt;
+  enemy.x = wrapX(enemy.x + enemy.dx * dt, state.world);
+  enemy.y = wrapY(enemy.y + enemy.dy * dt, state.world);
 }
 
 function ranged(enemy: EnemyEntity, state: GameState, dt: number): void {
   enemy.prevX = enemy.x;
   enemy.prevY = enemy.y;
 
-  const toPlayerX = state.player.x - enemy.x;
-  const toPlayerY = state.player.y - enemy.y;
+  const toPlayerX = shortestDeltaX(enemy.x, state.player.x, state.world);
+  const toPlayerY = shortestDeltaY(enemy.y, state.player.y, state.world);
   const distanceSq = toPlayerX * toPlayerX + toPlayerY * toPlayerY;
   if (distanceSq <= 0.0001) {
     enemy.dx = 0;
@@ -111,12 +112,12 @@ function ranged(enemy: EnemyEntity, state: GameState, dt: number): void {
     enemy.dx = 0;
     enemy.dy = 0;
   }
-  enemy.x += enemy.dx * dt;
-  enemy.y += enemy.dy * dt;
+  enemy.x = wrapX(enemy.x + enemy.dx * dt, state.world);
+  enemy.y = wrapY(enemy.y + enemy.dy * dt, state.world);
 }
 
 function flee(enemy: EnemyEntity, state: GameState, dt: number): void {
-  moveToward(enemy, state.player.x, state.player.y, -enemy.speed, dt);
+  moveToward(enemy, state.player.x, state.player.y, -enemy.speed, dt, state);
 }
 
 function moveToward(
@@ -125,12 +126,13 @@ function moveToward(
   targetY: number,
   speed: number,
   dt: number,
+  state: GameState,
 ): void {
   enemy.prevX = enemy.x;
   enemy.prevY = enemy.y;
 
-  const toTargetX = targetX - enemy.x;
-  const toTargetY = targetY - enemy.y;
+  const toTargetX = shortestDeltaX(enemy.x, targetX, state.world);
+  const toTargetY = shortestDeltaY(enemy.y, targetY, state.world);
   const distanceSq = toTargetX * toTargetX + toTargetY * toTargetY;
 
   if (distanceSq <= 0.0001) {
@@ -142,6 +144,6 @@ function moveToward(
   const invDistance = 1 / Math.sqrt(distanceSq);
   enemy.dx = toTargetX * invDistance * speed;
   enemy.dy = toTargetY * invDistance * speed;
-  enemy.x += enemy.dx * dt;
-  enemy.y += enemy.dy * dt;
+  enemy.x = wrapX(enemy.x + enemy.dx * dt, state.world);
+  enemy.y = wrapY(enemy.y + enemy.dy * dt, state.world);
 }

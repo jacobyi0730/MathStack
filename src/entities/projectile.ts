@@ -1,6 +1,7 @@
 import { WEAPONS, type WeaponId } from '../data/weapons.js';
 import { createPool, type Pool, type Poolable } from '../engine/pool.js';
 import type { RenderableEntity } from '../engine/renderer.js';
+import { wrapX, wrapY } from '../engine/world.js';
 
 export const MAX_ACTIVE_PROJECTILES = 200;
 export type ProjectileHitMode = 'single' | 'pierce' | 'area' | 'tick' | 'bomb' | 'boomerang';
@@ -140,6 +141,8 @@ export function updateProjectileMotion(
 
     if (projectile.hitMode === 'tick' && projectile.orbitRadius > 0) {
       syncOrbitProjectile(projectile, dt);
+      projectile.x = wrapX(projectile.x, bounds);
+      projectile.y = wrapY(projectile.y, bounds);
     } else {
       if (projectile.hitMode === 'boomerang' && !projectile.boomerangTurned) {
         if (projectile.ageSec >= projectile.maxLifeSec * 0.5) {
@@ -148,8 +151,15 @@ export function updateProjectileMotion(
           projectile.boomerangTurned = true;
         }
       }
-      projectile.x += projectile.dx * dt;
-      projectile.y += projectile.dy * dt;
+      projectile.x = wrapX(projectile.x + projectile.dx * dt, bounds);
+      projectile.y = wrapY(projectile.y + projectile.dy * dt, bounds);
+    }
+
+    if (Math.abs(projectile.x - projectile.prevX) > (bounds.maxX - bounds.minX) * 0.5) {
+      projectile.prevX = projectile.x;
+    }
+    if (Math.abs(projectile.y - projectile.prevY) > (bounds.maxY - bounds.minY) * 0.5) {
+      projectile.prevY = projectile.y;
     }
 
     if (projectile.radiusGrowthPerSec !== 0) {
@@ -164,7 +174,7 @@ export function updateProjectileMotion(
 
     projectile.lifeSec -= dt;
 
-    if (projectile.lifeSec <= 0 || isOutside(projectile, bounds)) {
+    if (projectile.lifeSec <= 0) {
       pool.release(projectile);
     }
   }
@@ -236,13 +246,4 @@ function syncOrbitProjectile(projectile: ProjectileEntity, dt: number): void {
   projectile.orbitAngleRad += projectile.orbitAngularSpeed * dt;
   projectile.x = projectile.ownerX + Math.cos(projectile.orbitAngleRad) * projectile.orbitRadius;
   projectile.y = projectile.ownerY + Math.sin(projectile.orbitAngleRad) * projectile.orbitRadius;
-}
-
-function isOutside(projectile: ProjectileEntity, bounds: ProjectileBounds): boolean {
-  return (
-    projectile.x + projectile.radius < bounds.minX ||
-    projectile.x - projectile.radius > bounds.maxX ||
-    projectile.y + projectile.radius < bounds.minY ||
-    projectile.y - projectile.radius > bounds.maxY
-  );
 }

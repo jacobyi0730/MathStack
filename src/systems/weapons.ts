@@ -22,7 +22,8 @@ import {
   type ProjectilePool,
 } from '../entities/projectile.js';
 import type { GameState } from '../engine/state.js';
-import { findEnemyHit } from './collision.js';
+import { shortestDeltaX, shortestDeltaY, wrappedDistanceSq, type WorldBounds } from '../engine/world.js';
+import { findEnemyHit, queryNearbyEnemies } from './collision.js';
 import { applyEnemyDamage } from './damage.js';
 
 export interface WeaponSlotRuntime {
@@ -158,6 +159,7 @@ export function findClosestEnemy(
   radius: number,
   query: EnemyTargetQuery,
   candidates: EnemyEntity[],
+  bounds: WorldBounds,
 ): EnemyEntity | undefined {
   const count = query.queryNearby(x, y, radius, candidates);
   let closest: EnemyEntity | undefined;
@@ -166,8 +168,8 @@ export function findClosestEnemy(
   for (let i = 0; i < count; i += 1) {
     const enemy = candidates[i] as EnemyEntity;
     if (!enemy.active) continue;
-    const dx = enemy.x - x;
-    const dy = enemy.y - y;
+    const dx = shortestDeltaX(x, enemy.x, bounds);
+    const dy = shortestDeltaY(y, enemy.y, bounds);
     const distSq = dx * dx + dy * dy;
     if (distSq >= closestDistSq) continue;
     closest = enemy;
@@ -376,8 +378,8 @@ function fireAimedProjectiles(
   );
   if (!target) return false;
 
-  const dx = target.x - player.x;
-  const dy = target.y - player.y;
+  const dx = shortestDeltaX(player.x, target.x, state.world);
+  const dy = shortestDeltaY(player.y, target.y, state.world);
   const len = Math.hypot(dx, dy);
   if (len <= 0.0001) return false;
 
@@ -439,15 +441,15 @@ function findClosestCombatTarget(
   radius: number,
   candidates: EnemyEntity[],
 ): CombatTarget | undefined {
-  const closest = findClosestEnemy(x, y, radius, state.collision.enemyHash, candidates);
-  let closestDistSq = closest ? distanceSq(x, y, closest) : Number.POSITIVE_INFINITY;
+  const closest = findClosestEnemyInState(state, x, y, radius, candidates);
+  let closestDistSq = closest ? wrappedDistanceSq(x, y, closest.x, closest.y, state.world) : Number.POSITIVE_INFINITY;
   let closestBoss: BossEntity | undefined;
 
   for (let i = 0; i < state.bosses.activeCount; i += 1) {
     const boss = state.bosses.items[i];
     if (!boss.active) continue;
     const hitRadius = radius + boss.radius;
-    const distSq = distanceSq(x, y, boss);
+    const distSq = wrappedDistanceSq(x, y, boss.x, boss.y, state.world);
     if (distSq > hitRadius * hitRadius || distSq >= closestDistSq) continue;
     closestBoss = boss;
     closestDistSq = distSq;
@@ -460,16 +462,39 @@ function findBossHit(state: GameState, x: number, y: number, radius: number): Bo
   for (let i = 0; i < state.bosses.activeCount; i += 1) {
     const boss = state.bosses.items[i];
     const hitRadius = radius + boss.radius;
-    if (distanceSq(x, y, boss) <= hitRadius * hitRadius) return boss;
+    if (wrappedDistanceSq(x, y, boss.x, boss.y, state.world) <= hitRadius * hitRadius) return boss;
   }
   return undefined;
 }
 
 function hasCombatTargetInRange(state: GameState, x: number, y: number, radius: number): boolean {
-  if (findClosestEnemy(x, y, radius, state.collision.enemyHash, state.collision.enemyCandidates)) {
+  if (findClosestEnemyInState(state, x, y, radius, state.collision.enemyCandidates)) {
     return true;
   }
   return findBossHit(state, x, y, radius) !== undefined;
+}
+
+function findClosestEnemyInState(
+  state: GameState,
+  x: number,
+  y: number,
+  radius: number,
+  candidates: EnemyEntity[],
+): EnemyEntity | undefined {
+  const count = queryNearbyEnemies(state, x, y, radius, candidates);
+  let closest: EnemyEntity | undefined;
+  let closestDistSq = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < count; i += 1) {
+    const enemy = candidates[i] as EnemyEntity;
+    if (!enemy.active) continue;
+    const distSq = wrappedDistanceSq(x, y, enemy.x, enemy.y, state.world);
+    if (distSq >= closestDistSq) continue;
+    closest = enemy;
+    closestDistSq = distSq;
+  }
+
+  return closest;
 }
 
 function findCombatHit(state: GameState, x: number, y: number, radius: number): CombatTarget | undefined {
@@ -483,11 +508,11 @@ function damageAreaHits(state: GameState, x: number, y: number, radius: number, 
 
   let hits = 0;
   const candidates = state.collision.enemyCandidates;
-  const count = state.collision.enemyHash.queryNearby(x, y, radius, candidates);
+  const count = queryNearbyEnemies(state, x, y, radius, candidates);
   for (let i = 0; i < count; i += 1) {
     const enemy = candidates[i] as EnemyEntity;
     const hitRadius = radius + enemy.radius;
-    if (distanceSq(x, y, enemy) > hitRadius * hitRadius) continue;
+    if (wrappedDistanceSq(x, y, enemy.x, enemy.y, state.world) > hitRadius * hitRadius) continue;
     applyEnemyDamage(state, enemy, damage);
     hits += 1;
   }
@@ -495,7 +520,7 @@ function damageAreaHits(state: GameState, x: number, y: number, radius: number, 
   for (let i = state.bosses.activeCount - 1; i >= 0; i -= 1) {
     const boss = state.bosses.items[i];
     const hitRadius = radius + boss.radius;
-    if (distanceSq(x, y, boss) > hitRadius * hitRadius) continue;
+    if (wrappedDistanceSq(x, y, boss.x, boss.y, state.world) > hitRadius * hitRadius) continue;
     if (applyBossDamage(boss, damage)) defeatBoss(state.bosses, boss);
     hits += 1;
   }
@@ -512,15 +537,10 @@ function applyCombatTargetDamage(state: GameState, target: CombatTarget, damage:
   }
 }
 
-function distanceSq(x: number, y: number, target: CombatTarget): number {
-  const dx = target.x - x;
-  const dy = target.y - y;
-  return dx * dx + dy * dy;
-}
-
 function rotateX(x: number, y: number, angle: number): number {
   return x * Math.cos(angle) - y * Math.sin(angle);
 }
+
 
 function rotateY(x: number, y: number, angle: number): number {
   return x * Math.sin(angle) + y * Math.cos(angle);

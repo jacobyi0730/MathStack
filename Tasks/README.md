@@ -8,7 +8,7 @@ related: [MathStack기획서]
 
 # 작업 보드
 
-기획서([docs/MathStack기획서.md](../docs/MathStack기획서.md))를 **기능 단위 28개 태스크**로 분해한 것이다.
+기획서([docs/MathStack기획서.md](../docs/MathStack기획서.md))를 **기능 단위 29개 태스크**로 분해한 것이다.
 이 문서는 **구조**를 담는다 — 무엇이 무엇에 걸려 있고, 누가 맡고, 어떤 스킬을 쓰는지.
 
 > **완료 상태는 여기 없다.** 끝났는지·누가 잡고 있는지는 [TodoList.md](../TodoList.md)가 유일한 정본이다.
@@ -79,6 +79,7 @@ related: [MathStack기획서]
 | [T-026](T-026-결과화면-localstorage.md) | 결과 화면 & localStorage | ui-builder | — | T-022, T-023 |
 | [T-027](T-027-접근성-옵션.md) | 접근성 옵션 | ui-builder | — | T-021, T-023 |
 | [T-028](T-028-성능-튜닝.md) | 성능 튜닝 & 스트레스 모드 | game-engine-dev | perf-check | T-015 |
+| [T-029](T-029-월드래핑-스킬선택-버그수정.md) | 월드 래핑 & 스킬 선택 버그 수정 | game-engine-dev | — | T-009, T-011, T-012, T-013, T-021 |
 
 ## 병렬 트랙
 

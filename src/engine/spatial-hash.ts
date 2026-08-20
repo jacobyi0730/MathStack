@@ -36,6 +36,9 @@ export interface SpatialHash<T extends SpatialEntity> {
   /** 격자 밖이거나 셀이 꽉 찼으면 false */
   insert(item: T): boolean;
 
+  /** item 은 그대로 돌려주되, 격자 좌표만 별도 위치로 넣는다 */
+  insertAt(item: T, x: number, y: number): boolean;
+
   /**
    * 근처 후보를 `out` 에 채우고 **개수를 돌려준다.**
    *
@@ -90,8 +93,12 @@ export function createSpatialHash<T extends SpatialEntity>(
     },
 
     insert(item: T): boolean {
-      const cx = Math.floor((item.x - originX) / cellSize);
-      const cy = Math.floor((item.y - originY) / cellSize);
+      return this.insertAt(item, item.x, item.y);
+    },
+
+    insertAt(item: T, x: number, y: number): boolean {
+      const cx = Math.floor((x - originX) / cellSize);
+      const cy = Math.floor((y - originY) / cellSize);
 
       if (cx < 0 || cx >= cols || cy < 0 || cy >= rows) {
         outsideCount += 1;

@@ -1,6 +1,7 @@
 import type { MovementBounds } from '../data/characters.js';
 import type { PlayerEntity } from '../entities/player.js';
 import type { DirectionVector } from '../engine/input.js';
+import { wrapX, wrapY } from '../engine/world.js';
 
 export function movePlayer(player: PlayerEntity, dt: number, bounds: MovementBounds): void {
   updatePlayerMovement(player, player.movementIntent, dt, bounds);
@@ -18,12 +19,13 @@ export function updatePlayerMovement(
   player.dx = direction.x === 0 ? 0 : direction.x * player.moveSpeed;
   player.dy = direction.y === 0 ? 0 : direction.y * player.moveSpeed;
 
-  player.x = clamp(player.x + player.dx * dt, bounds.minX + player.radius, bounds.maxX - player.radius);
-  player.y = clamp(player.y + player.dy * dt, bounds.minY + player.radius, bounds.maxY - player.radius);
-}
+  player.x = wrapX(player.x + player.dx * dt, bounds);
+  player.y = wrapY(player.y + player.dy * dt, bounds);
 
-function clamp(value: number, min: number, max: number): number {
-  if (value < min) return min;
-  if (value > max) return max;
-  return value;
+  if (Math.abs(player.x - player.prevX) > (bounds.maxX - bounds.minX) * 0.5) {
+    player.prevX = player.x;
+  }
+  if (Math.abs(player.y - player.prevY) > (bounds.maxY - bounds.minY) * 0.5) {
+    player.prevY = player.y;
+  }
 }
