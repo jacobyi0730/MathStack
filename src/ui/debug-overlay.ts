@@ -10,6 +10,17 @@ import { formatSnapshot, type Timer } from '../engine/timing.js';
 /** 12프레임(60fps 기준 약 5Hz)마다 한 번 */
 const UPDATE_EVERY = 12;
 
+/**
+ * 개발 중에는 기본으로 켜고, 배포본에서는 `?debug=1` 일 때만 켠다.
+ * 아이가 보는 화면에 `frame 4.2ms sim 0.0` 이 떠 있으면 안 된다.
+ */
+export function debugEnabled(search: string = window.location.search): boolean {
+  const params = new URLSearchParams(search);
+  if (params.get('debug') === '0') return false;
+  if (params.get('debug') === '1') return true;
+  return import.meta.env.DEV;
+}
+
 export interface DebugOverlay {
   update(timer: Timer): void;
   setVisible(visible: boolean): void;
@@ -17,14 +28,18 @@ export interface DebugOverlay {
   destroy(): void;
 }
 
-export function createDebugOverlay(parent: HTMLElement = document.body): DebugOverlay {
+export function createDebugOverlay(
+  parent: HTMLElement = document.body,
+  initiallyVisible: boolean = debugEnabled(),
+): DebugOverlay {
   const el = document.createElement('pre');
   el.className = 'debug-overlay';
   el.setAttribute('aria-hidden', 'true');
+  el.style.display = initiallyVisible ? 'block' : 'none';
   parent.appendChild(el);
 
   let counter = 0;
-  let visible = true;
+  let visible = initiallyVisible;
 
   return {
     update(timer: Timer): void {

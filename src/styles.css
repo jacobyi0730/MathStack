@@ -33,11 +33,13 @@ body {
   touch-action: none;
 }
 
-/* 계측 오버레이 — 개발용. 34-성능예산 §3 */
+/* 계측 오버레이 — 개발용. 34-성능예산 §3
+   배포본에서는 ?debug=1 일 때만 나타난다 */
 .debug-overlay {
   position: fixed;
-  top: 8px;
-  left: 8px;
+  inset: 8px auto auto 8px;
+  z-index: 10;
+  max-width: calc(100vw - 16px);
   margin: 0;
   padding: 6px 10px;
   border-radius: 6px;
@@ -48,7 +50,10 @@ body {
     'Cascadia Mono',
     Consolas,
     monospace;
-  white-space: pre;
+
+  /* 폭이 좁으면 잘리지 말고 접히게 한다 */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   pointer-events: none;
   user-select: none;
 }

@@ -50,10 +50,38 @@ describe('QuestionSchema', () => {
     expect(QuestionSchema.safeParse({ ...valid, misconceptionTag: '' }).success).toBe(false);
   });
 
+  it('오개념_태그가_공백뿐이면_거부한다', () => {
+    expect(QuestionSchema.safeParse({ ...valid, misconceptionTag: '   ' }).success).toBe(false);
+  });
+
   it('응답_시간이_10에서_20초_밖이면_거부한다', () => {
     expect(QuestionSchema.safeParse({ ...valid, timeLimitSec: 9 }).success).toBe(false);
     expect(QuestionSchema.safeParse({ ...valid, timeLimitSec: 21 }).success).toBe(false);
     expect(QuestionSchema.safeParse({ ...valid, timeLimitSec: 20 }).success).toBe(true);
+  });
+
+  it('정답이_choices에_정확히_한_번_없으면_거부한다', () => {
+    expect(
+      QuestionSchema.safeParse({ ...valid, answer: '9/5', choices: ['4/5', '4/10', '3/10', '2/5'] }).success,
+    ).toBe(false);
+    expect(
+      QuestionSchema.safeParse({ ...valid, choices: ['4/5', '4/5', '3/10', '2/5'] }).success,
+    ).toBe(false);
+  });
+
+  it('오답_근거_개수가_choices와_다르면_거부한다', () => {
+    expect(
+      QuestionSchema.safeParse({ ...valid, distractorReason: ['정답', '분모까지 더함'] }).success,
+    ).toBe(false);
+  });
+
+  it('학년군_접두와_grade가_다르면_거부한다', () => {
+    expect(QuestionSchema.safeParse({ ...valid, grade: 5, standard: '4수01-15' }).success).toBe(false);
+    expect(QuestionSchema.safeParse({ ...valid, grade: 4, standard: '6수01-10' }).success).toBe(false);
+  });
+
+  it('커리큘럼에_없는_성취기준은_거부한다', () => {
+    expect(QuestionSchema.safeParse({ ...valid, standard: '4수01-99' }).success).toBe(false);
   });
 });
 

@@ -82,3 +82,4 @@ scratch/
 *.tmp
 *.bak
 *.orig
+.codex-out/

@@ -2,7 +2,7 @@
 id: T-002
 title: Netlify 배포 파이프라인
 phase: 0
-status: doing
+status: done
 agent: deploy-ops
 skills: [build-bank]
 depends: [T-001]
@@ -21,7 +21,7 @@ refs: ["기획서 §15.1", "기획서 §15.4", "31-아키텍처"]
 
 ## 범위
 
-- [ ] `netlify.toml` 작성 — 빌드 명령, `publish = "dist"`, `NODE_VERSION=20`
+- [ ] `netlify.toml` 작성 — 빌드 명령, `publish = "dist"`, `NODE_VERSION`
 - [ ] `/data/*`에 `Cache-Control: public, max-age=31536000, immutable` 헤더
 - [ ] `shared/schema.ts` 최소 Zod 스키마 (필드 확정은 T-016)
 - [ ] `tools/build-bank.ts` 스텁 — 빈 뱅크 JSON 4개를 `public/data/`에 산출
@@ -50,9 +50,9 @@ Netlify가 `package-lock.json`을 보고 의존성을 자동 설치하므로 `np
 
 ---
 
-## 결과 (2026-08-20) — `doing`
+## 결과 (2026-08-20)
 
-**로컬 재현은 전부 통과. Netlify 계정 연결이 필요한 3개 항목이 남았다.**
+**로컬 재현 + 실제 배포 모두 통과.**
 
 ### 산출
 
@@ -93,10 +93,35 @@ FAIL  bank-g4.json  questions.0.misconceptionTag: Too small: expected string to 
 3. **`tests/tools/schema.test.ts`를 추가했다.** 원래 범위 밖이지만 `npm run test`가 파일 0개로 통과하던 상태라 게이트가 무의미했다. 계약이 잘못된 문항을 실제로 막는지 11케이스로 검증한다.
 4. **ESLint에 `argsIgnorePattern: '^_'`를 추가했다.** tsconfig의 `noUnusedParameters`는 `_` 접두를 허용하는데 ESLint 기본값은 아니라 서로 충돌했다.
 
-### 남은 것 — 계정 필요
+### 배포 완료 (2026-08-20)
 
-- [ ] Netlify 사이트 연결 및 첫 배포
-- [ ] 배포 로그에 `build:bank`·`validate:bank` 흔적 확인
-- [ ] `https://<site>/data/bank-g3.json` 200 + `Cache-Control: immutable` 헤더 확인
+GitHub 연결 후 **첫 배포 성공.** `https://mathstack.netlify.app` 가 열리고 게임 루프가 돈다.
 
-저장소를 Netlify에 연결하면 `netlify.toml`이 자동으로 읽히므로, 대시보드에서 별도 빌드 설정은 필요 없다.
+| DoD | 결과 |
+| --- | --- |
+| Netlify 사이트 연결 및 첫 배포 | ✅ |
+| 배포 로그에 `build:bank`·`validate:bank` 흔적 | ✅ **배포 성공 자체가 증거다** — command 가 `&&` 체인이라 둘 중 하나라도 exit 1 이면 배포가 실패한다 |
+| 배포된 URL 이 열리고 캔버스가 보인다 | ✅ 실기기 240Hz 에서 확인 |
+| `/data/bank-gN.json` 200 | ✅ 3·4·5·6학년 4개 전부 200 |
+| `Cache-Control: immutable` 헤더 | ✅ 아래 실측 |
+
+`netlify.toml` 이 자동으로 읽혀 대시보드 빌드 설정은 건드리지 않았다.
+
+### 배포 헤더 실측 (사이트 Public 전환 후)
+
+```
+GET /data/bank-g3.json
+  200  Cache-Control: public,max-age=31536000,immutable   ← 뱅크는 영구 캐시
+       Content-Type: application/json
+       Etag: "202e336baf3a4b37a89667507ae01fdc-ssl"
+       X-Content-Type-Options: nosniff
+       Referrer-Policy: strict-origin-when-cross-origin
+
+GET /
+  200  Cache-Control: public,max-age=0,must-revalidate    ← 진입 문서는 항상 최신
+       X-Content-Type-Options: nosniff
+```
+
+`netlify.toml` 의 4개 `[[headers]]` 블록이 전부 의도대로 적용됐다. 뱅크는 영구 캐시, 진입 문서는 매번 재검증 — 새 배포가 나가면 `index.html` 이 새 번들 해시를 가리키므로 캐시가 꼬이지 않는다.
+
+**Private/Public** — Netlify pre-launch 기능. 개발 중에는 Private 이 낫고, 교실에서 실제로 쓸 때 Public 으로 전환한다. 현재 Public.

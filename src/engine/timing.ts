@@ -20,8 +20,12 @@ export interface FrameSnapshot {
   sim: number;
   collide: number;
   render: number;
-  /** 직전 프레임의 시뮬레이션 스텝 수 */
-  steps: number;
+  /**
+   * 초당 시뮬레이션 스텝 수. 주사율과 무관하게 **60이어야 한다**.
+   * 직전 프레임의 스텝 수를 그대로 보면 240Hz 에서 대부분 0으로 찍혀
+   * 고장난 것처럼 보인다 — 실제로는 4프레임에 1번 도는 게 정상이다.
+   */
+  stepsPerSec: number;
   entities: number;
   /** 이번 프레임의 신규 할당 수. 목표는 0 (34-성능예산 §1) */
   poolAlloc: number;
@@ -41,6 +45,7 @@ export function createTimer(now: () => number = () => performance.now()): Timer 
   const simRing = new Float64Array(WINDOW);
   const collideRing = new Float64Array(WINDOW);
   const renderRing = new Float64Array(WINDOW);
+  const stepsRing = new Float64Array(WINDOW);
 
   let cursor = 0;
   let filled = 0;
@@ -55,7 +60,7 @@ export function createTimer(now: () => number = () => performance.now()): Timer 
     sim: 0,
     collide: 0,
     render: 0,
-    steps: 0,
+    stepsPerSec: 0,
     entities: 0,
     poolAlloc: 0,
   };
@@ -88,11 +93,11 @@ export function createTimer(now: () => number = () => performance.now()): Timer 
       simRing[cursor] = elapsed.sim;
       collideRing[cursor] = elapsed.collide;
       renderRing[cursor] = elapsed.render;
+      stepsRing[cursor] = steps;
 
       cursor = (cursor + 1) % WINDOW;
       if (filled < WINDOW) filled += 1;
 
-      snap.steps = steps;
       snap.entities = entities;
       snap.poolAlloc = poolAlloc;
     },
@@ -103,6 +108,8 @@ export function createTimer(now: () => number = () => performance.now()): Timer 
       snap.collide = mean(collideRing);
       snap.render = mean(renderRing);
       snap.fps = snap.frameMs > 0 ? 1000 / snap.frameMs : 0;
+      // 프레임당 평균 스텝 × 초당 프레임 = 초당 스텝. 주사율이 약분돼 60이 남는다
+      snap.stepsPerSec = mean(stepsRing) * snap.fps;
       return snap;
     },
   };
@@ -114,6 +121,6 @@ export function formatSnapshot(s: Readonly<FrameSnapshot>): string {
   return (
     `frame ${n(s.frameMs)}ms (${n(s.fps, 0)}fps)  ` +
     `sim ${n(s.sim)}  collide ${n(s.collide)}  render ${n(s.render)}  ` +
-    `steps ${s.steps}  entities ${s.entities}  pool ${s.poolAlloc} alloc`
+    `tick ${n(s.stepsPerSec, 0)}/s  entities ${s.entities}  pool ${s.poolAlloc} alloc`
   );
 }
