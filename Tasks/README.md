@@ -25,9 +25,9 @@ related: [MathStack기획서]
 | --- | --- | --- | --- | --- | --- |
 | [T-001](T-001-프로젝트-스캐폴딩.md) | 프로젝트 스캐폴딩 | deploy-ops | — | — | `done` ✅ |
 | [T-002](T-002-netlify-배포-파이프라인.md) | Netlify 배포 파이프라인 | deploy-ops | build-bank | T-001 | `doing` ⏳ |
-| [T-003](T-003-게임-루프.md) | 게임 루프 & 고정 타임스텝 | game-engine-dev | perf-check | T-001 | `todo` |
-| [T-004](T-004-렌더러-캐릭터.md) | 렌더러 & 캐릭터 스프라이트 | game-engine-dev | — | T-003 | `blocked` |
-| [T-005](T-005-오브젝트풀-공간해시.md) | 오브젝트 풀 & 공간 해시 | game-engine-dev | perf-check | T-003 | `blocked` |
+| [T-003](T-003-게임-루프.md) | 게임 루프 & 고정 타임스텝 | game-engine-dev | perf-check | T-001 | `done` ✅ |
+| [T-004](T-004-렌더러-캐릭터.md) | 렌더러 & 캐릭터 스프라이트 | game-engine-dev | — | T-003 | `todo` |
+| [T-005](T-005-오브젝트풀-공간해시.md) | 오브젝트 풀 & 공간 해시 | game-engine-dev | perf-check | T-003 | `todo` |
 
 ## Phase 1 — 게임 코어 (M1)
 
@@ -92,9 +92,9 @@ related: [MathStack기획서]
 
 | Phase | 전체 | done | doing | todo/blocked |
 | --- | --- | --- | --- | --- |
-| 0 | 5 | 1 | 1 | 3 |
+| 0 | 5 | 2 | 1 | 2 |
 | 1 | 5 | 0 | 0 | 5 |
 | 2 | 5 | 0 | 0 | 5 |
 | 3 | 7 | 0 | 0 | 7 |
 | 4 | 6 | 0 | 0 | 6 |
-| **합계** | **28** | **1** | **1** | **26** |
+| **합계** | **28** | **2** | **1** | **25** |

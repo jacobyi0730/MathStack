@@ -78,12 +78,19 @@ describe('고정 타임스텝', () => {
     const at30 = harness();
     for (let i = 0; i < 30; i += 1) at30.advance(1000 / 30);
 
-    // 셋이 서로 같아야 한다. 이게 이 루프의 존재 이유다
-    expect(at144.updates()).toBe(at60.updates());
-    expect(at30.updates()).toBe(at60.updates());
+    // 주사율이 달라도 스텝 수가 같아야 한다. 이게 이 루프의 존재 이유다.
+    //
+    // 정확히 같지는 않고 최대 1스텝 차가 난다 — 프레임 간격(1000/60 등)이
+    // 이진 부동소수점으로 딱 떨어지지 않아, 1초 경계의 마지막 스텝이
+    // 다음 프레임으로 밀릴 수 있기 때문이다. 누산기가 나머지를 이월하므로
+    // **누적되지 않는다.** 그 증명은 아래 10분 테스트가 한다.
+    for (const [name, got] of [
+      ['144Hz', at144.updates()],
+      ['30Hz', at30.updates()],
+    ] as const) {
+      expect(Math.abs(got - at60.updates()), `${name} vs 60Hz`).toBeLessThanOrEqual(1);
+    }
 
-    // 부동소수점 누산 때문에 경계 스텝 하나가 다음 프레임으로 밀릴 수 있다.
-    // 누산기가 나머지를 이월하므로 누적 오차는 아니다 (아래 장시간 테스트가 증명)
     expect(at60.updates()).toBeGreaterThanOrEqual(59);
     expect(at60.updates()).toBeLessThanOrEqual(60);
   });
