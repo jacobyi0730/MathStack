@@ -112,11 +112,13 @@ export function createQuizModal(
       this.updateTimer(state.remainingSec, state.totalSec);
       elements.root.hidden = false;
       elements.root.setAttribute('aria-hidden', 'false');
+      elements.root.style.display = 'grid';
     },
 
     hide(): void {
       elements.root.hidden = true;
       elements.root.setAttribute('aria-hidden', 'true');
+      elements.root.style.display = 'none';
       options.onHide?.();
     },
 
@@ -165,7 +167,7 @@ function createElements(parent: HTMLElement): QuizModalElements {
   root.setAttribute('aria-labelledby', 'mathstack-quiz-prompt');
   root.style.position = 'fixed';
   root.style.inset = '0';
-  root.style.display = 'grid';
+  root.style.display = 'none';
   root.style.placeItems = 'center';
   root.style.padding = '24px';
   root.style.background = 'rgb(0 0 0 / 40%)';

@@ -48,10 +48,12 @@ export function createResultScreen(
     show(summary: ResultScreenSummary): void {
       render(root, summary, handlers);
       root.hidden = false;
+      root.style.display = 'grid';
     },
 
     hide(): void {
       root.hidden = true;
+      root.style.display = 'none';
     },
 
     destroy(): void {
@@ -189,7 +191,7 @@ function rootStyle(): string {
     'position:fixed',
     'inset:0',
     'z-index:40',
-    'display:grid',
+    'display:none',
     'place-items:center',
     'padding:24px',
     'box-sizing:border-box',

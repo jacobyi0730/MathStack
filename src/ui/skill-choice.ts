@@ -29,9 +29,11 @@ export function createSkillChoiceView(
     show(choices: readonly LevelRewardChoice[]): void {
       render(root, choices, options);
       root.hidden = false;
+      root.style.display = 'grid';
     },
     hide(): void {
       root.hidden = true;
+      root.style.display = 'none';
     },
     destroy(): void {
       root.remove();
@@ -97,7 +99,7 @@ function rootStyle(): string {
     'position:fixed',
     'inset:0',
     'z-index:30',
-    'display:grid',
+    'display:none',
     'place-items:center',
     'padding:24px',
     'box-sizing:border-box',

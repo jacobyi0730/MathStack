@@ -20,8 +20,12 @@ describe('skill choice view', () => {
         selected = next;
       },
     });
+    expect(view.element.hidden).toBe(true);
+    expect(view.element.style.cssText).toContain('display:none');
     view.show([choice]);
 
+    expect(view.element.hidden).toBe(false);
+    expect(view.element.style.display).toBe('grid');
     expect(parent.textContent).toContain('스킬 선택');
     expect(parent.textContent).toContain('수소 화살');
     expect(parent.textContent).toContain('Lv.2');
@@ -30,12 +34,13 @@ describe('skill choice view', () => {
 
     view.hide();
     expect(view.element.hidden).toBe(true);
+    expect(view.element.style.display).toBe('none');
     view.destroy();
   });
 });
 
 class FakeElement {
-  readonly style = { cssText: '' } as CSSStyleDeclaration;
+  readonly style = createStyle();
   readonly children: FakeElement[] = [];
   readonly attributes = new Map<string, string>();
   private readonly listeners = new Map<string, () => void>();
@@ -89,6 +94,13 @@ class FakeElement {
     if (index >= 0) this.parent.children.splice(index, 1);
     this.parent = null;
   }
+}
+
+function createStyle(): CSSStyleDeclaration {
+  return {
+    cssText: '',
+    display: '',
+  } as CSSStyleDeclaration;
 }
 
 class FakeDocument {

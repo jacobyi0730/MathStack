@@ -9,6 +9,8 @@ describe('result screen', () => {
     const parent = doc.createElement('main');
     const view = createResultScreen(parent as unknown as HTMLElement);
 
+    expect(view.element.hidden).toBe(true);
+    expect(view.element.style.cssText).toContain('display:none');
     view.show({
       result: 'victory',
       survivalSec: 600,
@@ -36,6 +38,8 @@ describe('result screen', () => {
       },
     });
 
+    expect(view.element.hidden).toBe(false);
+    expect(view.element.style.display).toBe('grid');
     const text = parent.textContent;
     expect(text).toContain('안정화 성공');
     expect(text).toContain('수와 연산: 50%');
@@ -44,11 +48,15 @@ describe('result screen', () => {
     expect(text).not.toContain('decimal_alignment');
     expect(text).toContain('다시 하기');
     expect(text).toContain('학년 바꾸기');
+
+    view.hide();
+    expect(view.element.hidden).toBe(true);
+    expect(view.element.style.display).toBe('none');
   });
 });
 
 class FakeElement {
-  readonly style = { cssText: '' } as CSSStyleDeclaration;
+  readonly style = createStyle();
   readonly children: FakeElement[] = [];
   readonly attributes = new Map<string, string>();
   private ownText = '';
@@ -95,6 +103,13 @@ class FakeElement {
     if (index >= 0) this.parent.children.splice(index, 1);
     this.parent = null;
   }
+}
+
+function createStyle(): CSSStyleDeclaration {
+  return {
+    cssText: '',
+    display: '',
+  } as CSSStyleDeclaration;
 }
 
 class FakeDocument {
