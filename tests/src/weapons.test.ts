@@ -10,6 +10,7 @@ import { rebuildEnemyHash } from '../../src/systems/collision.js';
 import {
   canEvolveWeapon,
   createWeaponRuntime,
+  damageProjectileHits,
   equipWeapon,
   findClosestEnemy,
   resolveWeaponDamage,
@@ -28,6 +29,68 @@ describe('weapons', () => {
       damage: 10,
       cooldownSec: 1.2,
       pattern: 'projectile',
+    });
+  });
+
+  it('all_weapon_data_matches_design_values', () => {
+    expect(Object.keys(WEAPONS)).toEqual([
+      'hydrogen_arrow',
+      'neon_beam',
+      'carbon_ring',
+      'oxygen_wave',
+      'iron_barrier',
+      'magnesium_bomb',
+      'gold_spiral',
+      'boron_shot',
+    ]);
+    expect(WEAPONS.neon_beam).toMatchObject({
+      element: 'Ne',
+      atomicNumber: 10,
+      damage: 14,
+      cooldownSec: 2,
+      pattern: 'pierce',
+    });
+    expect(WEAPONS.carbon_ring).toMatchObject({
+      element: 'C',
+      atomicNumber: 6,
+      damage: 8,
+      cooldownSec: 0,
+      pattern: 'orbit',
+    });
+    expect(WEAPONS.oxygen_wave).toMatchObject({
+      element: 'O',
+      atomicNumber: 8,
+      damage: 12,
+      cooldownSec: 2.5,
+      pattern: 'wave',
+    });
+    expect(WEAPONS.iron_barrier).toMatchObject({
+      element: 'Fe',
+      atomicNumber: 26,
+      damage: 6,
+      cooldownSec: 0,
+      pattern: 'aura',
+    });
+    expect(WEAPONS.magnesium_bomb).toMatchObject({
+      element: 'Mg',
+      atomicNumber: 12,
+      damage: 18,
+      cooldownSec: 3,
+      pattern: 'bomb',
+    });
+    expect(WEAPONS.gold_spiral).toMatchObject({
+      element: 'Au',
+      atomicNumber: 79,
+      damage: 11,
+      cooldownSec: 2.2,
+      pattern: 'boomerang',
+    });
+    expect(WEAPONS.boron_shot).toMatchObject({
+      element: 'B',
+      atomicNumber: 5,
+      damage: 5,
+      cooldownSec: 1.8,
+      pattern: 'spread',
     });
   });
 
@@ -142,5 +205,55 @@ describe('weapons', () => {
 
     expect(runtime.projectiles.activeCount).toBe(0);
     expect(boss.hp).toBe(BOSSES.technetium.hp - WEAPONS.hydrogen_arrow.damage);
+  });
+
+  it('weapon_patterns_spawn_distinct_projectile_modes', () => {
+    const state = createGameState();
+    state.player.x = 0;
+    state.player.y = 0;
+    const enemy = state.enemies.acquire();
+    spawnEnemy(enemy, ENEMIES.radon, 100, 0, 200);
+    rebuildEnemyHash(state);
+
+    const runtime = createWeaponRuntime();
+    equipWeapon(runtime, 'neon_beam');
+    equipWeapon(runtime, 'oxygen_wave');
+    equipWeapon(runtime, 'magnesium_bomb');
+    equipWeapon(runtime, 'gold_spiral');
+    equipWeapon(runtime, 'boron_shot');
+
+    updateWeapons(state, runtime, 1 / 60);
+
+    expect(runtime.projectiles.activeCount).toBe(9);
+    expect(runtime.projectiles.items[0].weaponId).toBe('neon_beam');
+    expect(runtime.projectiles.items[0].hitMode).toBe('pierce');
+    expect(runtime.projectiles.items[1].weaponId).toBe('oxygen_wave');
+    expect(runtime.projectiles.items[1].hitMode).toBe('area');
+    expect(runtime.projectiles.items[2].weaponId).toBe('magnesium_bomb');
+    expect(runtime.projectiles.items[2].hitMode).toBe('bomb');
+    expect(runtime.projectiles.items[3].weaponId).toBe('gold_spiral');
+    expect(runtime.projectiles.items[3].hitMode).toBe('boomerang');
+    expect(runtime.projectiles.items[4].weaponId).toBe('boron_shot');
+    expect(runtime.projectiles.items[8].weaponId).toBe('boron_shot');
+  });
+
+  it('orbit_and_aura_apply_frame_rate_independent_tick_damage', () => {
+    const state = createGameState();
+    state.player.x = 0;
+    state.player.y = 0;
+    const enemy = state.enemies.acquire();
+    spawnEnemy(enemy, ENEMIES.radon, 48, 0, 100);
+    rebuildEnemyHash(state);
+
+    const runtime = createWeaponRuntime();
+    equipWeapon(runtime, 'carbon_ring');
+    equipWeapon(runtime, 'iron_barrier');
+
+    updateWeapons(state, runtime, 1 / 60);
+    expect(runtime.projectiles.activeCount).toBe(4);
+
+    damageProjectileHits(state, runtime.projectiles, 0.5);
+
+    expect(enemy.hp).toBe(100 - WEAPONS.carbon_ring.damage * 0.5 - WEAPONS.iron_barrier.damage * 0.5);
   });
 });

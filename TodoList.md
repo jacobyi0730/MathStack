@@ -39,9 +39,9 @@
 
 ## Phase 2 — 전투 확장
 
-- [ ] **T-011** 무기 8종 — `game-engine-dev` · 선행 T-010 ✅
-- [ ] **T-012** 패시브 8종 — `game-engine-dev` · 선행 T-010 ✅
-- [-] **T-013** 각성 시스템 — `game-engine-dev` · 선행 T-011, T-012
+- [x] **T-011** 무기 8종 — `game-engine-dev` ✅ 2026-08-20
+- [x] **T-012** 패시브 8종 — `game-engine-dev` ✅ 2026-08-20
+- [ ] **T-013** 각성 시스템 — `game-engine-dev` · 선행 T-011 ✅, T-012 ✅
 - [x] **T-014** 적 에이전트 7종 — `game-engine-dev` ✅ 2026-08-20
 - [x] **T-015** 보스 3종 & 웨이브 타임라인 — `game-engine-dev` ✅ 2026-08-20
 
@@ -51,8 +51,8 @@
 - [x] **T-017** 템플릿 엔진 & `build:bank` — `pipeline-engineer` ✅ 2026-08-20
 - [x] **T-018** 뱅크 검증기 `validate:bank` — `pipeline-engineer` ✅ 2026-08-20
 - [x] **T-019** 학년별 문항 저작 — `quiz-author` ✅ 2026-08-20 ⚠ 표본 품질 검수·시각 문항 polish 후속
-- [ ] **T-020** 클라이언트 출제기 — `game-engine-dev` · 선행 T-009 ✅, T-019 ✅
-- [-] **T-021** 퀴즈 모달 UI — `ui-builder` · 선행 T-020
+- [x] **T-020** 클라이언트 출제기 — `game-engine-dev` ✅ 2026-08-20
+- [ ] **T-021** 퀴즈 모달 UI — `ui-builder` · 선행 T-020 ✅
 - [-] **T-022** 오답 큐 & 오개념 복습 — `game-engine-dev` · 선행 T-020, T-021
 
 ## Phase 4 — 세션 & 운영
@@ -62,13 +62,13 @@
 - [-] **T-025** 초월 수련 — `game-engine-dev` · 선행 T-015, T-022
 - [-] **T-026** 결과 화면 & localStorage — `ui-builder` · 선행 T-022, T-023
 - [-] **T-027** 접근성 옵션 — `ui-builder` · 선행 T-021, T-023
-- [ ] **T-028** 성능 튜닝 & 스트레스 모드 — `game-engine-dev` · 선행 T-015 ✅
+- [x] **T-028** 성능 튜닝 & 스트레스 모드 — `game-engine-dev` ✅ 2026-08-20
 
 ---
 
 ## 현황
 
-**16 / 28 완료** · 진행 중 0 · 착수 가능 6 (T-011, T-012, T-020, T-023, T-024, T-028)
+**20 / 28 완료** · 진행 중 0 · 착수 가능 4 (T-013, T-021, T-023, T-024)
 
 ## 병렬 배정 이력
 
@@ -86,6 +86,10 @@
 | 08-20 20:22 | **T-009** 경험치·레벨업 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/data/level.ts`, `src/entities/pickup.ts`, `src/systems/pickup.ts`, `src/systems/level.ts`, `src/engine/state.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과. 레벨업 이벤트 큐와 픽업 풀 런타임 연결 |
 | 08-20 20:22 | **T-010** 무기 기반·수소 화살 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/data/weapons.ts`, `src/entities/projectile.ts`, `src/systems/weapons.ts`, `src/engine/state.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과 (test 120→153). 기본 자동 공격·보스 피격 연결 |
 | 08-20 20:22 | **T-015** 보스·타임라인 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/data/bosses.ts`, `src/entities/boss.ts`, `src/systems/timeline.ts`, `src/engine/state.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과. 보스 패턴 300프레임 max 0.4005ms |
+| 08-20 20:37 | **T-011** 무기 8종 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/data/weapons.ts`, `src/entities/projectile.ts`, `src/systems/weapons.ts`, `tests/src/` | ✅ 게이트 통과 (test 153→182). 8패턴 구현 |
+| 08-20 20:37 | **T-012** 패시브 8종 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/data/passives.ts`, `src/systems/stats.ts`, `src/engine/state.ts`, `src/main.ts`, `src/systems/pickup.ts`, `tests/src/` | ✅ 게이트 통과. 파생 스탯과 자석 반경 연결 |
+| 08-20 20:37 | **T-020** 클라이언트 출제기 | **game-engine-dev 서브에이전트** | `src/data/quiz-rules.ts`, `src/quiz/`, `tests/src/quiz-*` | ✅ 게이트 통과. 로더 fetch 경계 준수 |
+| 08-20 20:37 | **T-028** 스트레스 모드 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/engine/stress.ts`, `src/main.ts`, `docs/30-기술/34-성능예산.md`, `tests/src/stress.test.ts` | ✅ 게이트 통과. Node 렌더 제외 max 1.0585ms, JS gzip 16.75KB |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

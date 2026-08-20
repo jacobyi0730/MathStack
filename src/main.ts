@@ -1,6 +1,7 @@
 import './styles.css';
 import { createGameState, type GameState } from './engine/state.js';
 import { createLoop } from './engine/loop.js';
+import { setupStressMode, stressModeEnabled } from './engine/stress.js';
 import { createTimer } from './engine/timing.js';
 import { createRenderer, type RenderScene } from './engine/renderer.js';
 import { createDebugOverlay } from './ui/debug-overlay.js';
@@ -16,6 +17,7 @@ import { applyEnemyDamage, updatePlayerInvulnerability } from './systems/damage.
 import { consumeCombatRewardsAsPickups, updatePickups } from './systems/pickup.js';
 import { updateBossTimeline } from './systems/timeline.js';
 import { equipWeapon, updateWeapons } from './systems/weapons.js';
+import { recalcStats } from './systems/stats.js';
 import { DEFAULT_CHARACTER_ID, getCharacterArchetype, type CharacterId } from './data/characters.js';
 
 type RuntimeState = GameState & RenderScene;
@@ -47,6 +49,8 @@ function createRuntimeState(): RuntimeState {
   const player = createPlayer(readCharacterFromUrl());
   const state = createGameState({ player });
   equipWeapon(state.weapons, 'hydrogen_arrow');
+  applyResolvedStats(state);
+  if (stressModeEnabled(window.location.search)) setupStressMode(state);
   return state;
 }
 
@@ -58,6 +62,7 @@ function updateRuntimeState(state: RuntimeState, dt: number): void {
   updateBossTimelineAndSpawns(state);
   updateBosses(state.bosses, state.player.x, state.player.y, dt);
   updatePlayerInvulnerability(state.player, dt);
+  applyHealthRegen(state, dt);
 }
 
 function updateAfterCollisions(state: RuntimeState, dt: number): void {
@@ -71,6 +76,27 @@ function updateAfterCollisions(state: RuntimeState, dt: number): void {
     state.pickups.activeCount +
     state.bosses.activeCount +
     1;
+}
+
+function applyResolvedStats(state: RuntimeState): void {
+  state.stats = recalcStats(state.baseStats, state.passives);
+  state.player.maxHealth = state.stats.maxHealth;
+  if (state.player.health > state.player.maxHealth) state.player.health = state.player.maxHealth;
+  state.player.moveSpeed = state.stats.moveSpeed;
+  state.player.projectileCount = state.stats.projectileCount;
+  state.player.attackPowerMultiplier = state.stats.attackPowerMultiplier;
+  state.player.attackRangeMultiplier = state.stats.attackRangeMultiplier;
+  state.player.rangeMultiplier = state.stats.attackRangeMultiplier;
+  state.player.cooldownMultiplier = state.stats.cooldownMultiplier;
+  state.pickupRuntime.baseMagnetRadius = state.stats.magnetRadius;
+}
+
+function applyHealthRegen(state: RuntimeState, dt: number): void {
+  if (state.stats.healthRegenPerSec <= 0 || state.player.health <= 0) return;
+  state.player.health = Math.min(
+    state.player.maxHealth,
+    state.player.health + state.stats.healthRegenPerSec * dt,
+  );
 }
 
 function updateBossTimelineAndSpawns(state: RuntimeState): void {

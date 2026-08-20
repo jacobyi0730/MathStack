@@ -6,7 +6,14 @@ import { createPickupPool, type PickupPool } from '../entities/pickup.js';
 import { createPlayer, type Player } from '../entities/player.js';
 import { createLevelState, type LevelState } from '../systems/level.js';
 import { createCollisionState, type CollisionState } from '../systems/collision.js';
-import { createPickupRuntime, type PickupRuntime } from '../systems/pickup.js';
+import { BASE_PICKUP_MAGNET_RADIUS, createPickupRuntime, type PickupRuntime } from '../systems/pickup.js';
+import {
+  createPassiveRuntime,
+  recalcStats,
+  type BasePlayerStats,
+  type PassiveRuntime,
+  type ResolvedPlayerStats,
+} from '../systems/stats.js';
 import { createBossTimelineState, type BossTimelineState } from '../systems/timeline.js';
 import { createWeaponRuntime, type WeaponRuntime } from '../systems/weapons.js';
 import { createInputState, type InputState } from './input.js';
@@ -27,6 +34,9 @@ export interface GameState {
   enemies: EnemyPool;
   pickups: PickupPool;
   weapons: WeaponRuntime;
+  passives: PassiveRuntime;
+  baseStats: BasePlayerStats;
+  stats: ResolvedPlayerStats;
   bosses: BossPool;
   level: LevelState;
   pickupRuntime: PickupRuntime;
@@ -61,6 +71,9 @@ export function createGameState(options?: GameStateOptions): GameState & RenderS
   const enemies = createEnemyPool(MAX_ACTIVE_ENEMIES);
   const pickups = createPickupPool();
   const weapons = createWeaponRuntime();
+  const passives = createPassiveRuntime();
+  const baseStats = createBasePlayerStats(player);
+  const stats = recalcStats(baseStats, passives);
   const bosses = createBossPool();
   const entities = options?.entities ?? createEntityList(player, enemies, pickups, weapons, bosses);
   return {
@@ -73,6 +86,9 @@ export function createGameState(options?: GameStateOptions): GameState & RenderS
     enemies,
     pickups,
     weapons,
+    passives,
+    baseStats,
+    stats,
     bosses,
     level: createLevelState(),
     pickupRuntime: createPickupRuntime(),
@@ -95,6 +111,20 @@ export function createGameState(options?: GameStateOptions): GameState & RenderS
       defeatedEnemies: 0,
     },
     entities,
+  };
+}
+
+function createBasePlayerStats(player: Player): BasePlayerStats {
+  return {
+    maxHealth: player.maxHealth,
+    moveSpeed: player.moveSpeed,
+    projectileCount: player.projectileCount,
+    attackPowerMultiplier: player.attackPowerMultiplier,
+    attackRangeMultiplier: player.attackRangeMultiplier,
+    cooldownMultiplier: player.cooldownMultiplier,
+    magnetRadius: BASE_PICKUP_MAGNET_RADIUS,
+    healthRegenPerSec: 0,
+    luck: 1,
   };
 }
 

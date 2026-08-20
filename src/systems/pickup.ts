@@ -10,6 +10,7 @@ export const PICKUP_ATTRACT_SPEED = 420;
 export interface PickupRuntime {
   magnetBoostSec: number;
   pendingMeteorDamage: number;
+  baseMagnetRadius: number;
 }
 
 export interface CombatRewardSource {
@@ -21,6 +22,7 @@ export function createPickupRuntime(): PickupRuntime {
   return {
     magnetBoostSec: 0,
     pendingMeteorDamage: 0,
+    baseMagnetRadius: BASE_PICKUP_MAGNET_RADIUS,
   };
 }
 
@@ -36,7 +38,7 @@ export function updatePickups(
     if (runtime.magnetBoostSec < 0) runtime.magnetBoostSec = 0;
   }
 
-  const magnetRadius = runtime.magnetBoostSec > 0 ? BOOSTED_PICKUP_MAGNET_RADIUS : BASE_PICKUP_MAGNET_RADIUS;
+  const magnetRadius = runtime.magnetBoostSec > 0 ? BOOSTED_PICKUP_MAGNET_RADIUS : runtime.baseMagnetRadius;
   const magnetRadiusSq = magnetRadius * magnetRadius;
   let collected = 0;
 

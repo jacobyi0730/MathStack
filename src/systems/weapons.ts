@@ -12,9 +12,13 @@ import {
 import { applyBossDamage, defeatBoss, type BossEntity } from '../entities/boss.js';
 import type { EnemyEntity } from '../entities/enemy.js';
 import {
+  configureOrbitProjectile,
+  configureProjectileHit,
+  configureWaveProjectile,
   createProjectilePool,
   spawnProjectile,
   updateProjectileMotion,
+  type ProjectileEntity,
   type ProjectilePool,
 } from '../entities/projectile.js';
 import type { GameState } from '../engine/state.js';
@@ -42,9 +46,11 @@ type WeaponPatternHandler = (
   runtime: WeaponRuntime,
   slot: WeaponSlotRuntime,
   definition: WeaponDefinition,
+  dt: number,
 ) => boolean;
 
 interface CombatTarget {
+  kind: 'enemy' | 'boss';
   active: boolean;
   x: number;
   y: number;
@@ -53,14 +59,21 @@ interface CombatTarget {
 
 const PATTERNS = {
   projectile: fireProjectilePattern,
-  pierce: noopPattern,
-  orbit: noopPattern,
-  wave: noopPattern,
-  aura: noopPattern,
-  bomb: noopPattern,
-  boomerang: noopPattern,
-  spread: noopPattern,
+  pierce: firePiercePattern,
+  orbit: updateOrbitPattern,
+  wave: fireWavePattern,
+  aura: updateAuraPattern,
+  bomb: fireBombPattern,
+  boomerang: fireBoomerangPattern,
+  spread: fireSpreadPattern,
 } as const satisfies Record<WeaponPattern, WeaponPatternHandler>;
+
+const FULL_CIRCLE = Math.PI * 2;
+const SPREAD_STEP_RAD = Math.PI / 16;
+const ORBIT_BASE_COUNT = 3;
+const ORBIT_ANGULAR_SPEED = Math.PI * 1.35;
+const DAMAGE_TICK_SEC = 0.2;
+const BOMB_EXPLOSION_RADIUS = 86;
 
 export function createWeaponRuntime(): WeaponRuntime {
   const slots = new Array<WeaponSlotRuntime>(WEAPON_SLOT_CAPACITY);
@@ -106,15 +119,16 @@ export function updateWeapons(state: GameState, runtime: WeaponRuntime, dt: numb
     slot.cooldownRemainingSec = 0;
 
     const definition = WEAPONS[slot.id];
-    if (PATTERNS[definition.pattern](state, runtime, slot, definition)) {
+    if (PATTERNS[definition.pattern](state, runtime, slot, definition, dt)) {
       slot.cooldownRemainingSec += definition.cooldownSec * state.player.cooldownMultiplier;
     }
   }
 }
 
 export function updateWeaponProjectiles(state: GameState, runtime: WeaponRuntime, dt: number): void {
+  syncPersistentProjectiles(state, runtime);
   updateProjectileMotion(runtime.projectiles, dt, state.world);
-  damageProjectileHits(state, runtime.projectiles);
+  damageProjectileHits(state, runtime.projectiles, dt);
 }
 
 export function resolveWeaponDamage(
@@ -163,23 +177,32 @@ export function findClosestEnemy(
   return closest;
 }
 
-export function damageProjectileHits(state: GameState, projectiles: ProjectilePool): number {
+export function damageProjectileHits(state: GameState, projectiles: ProjectilePool, dt: number = 0): number {
   let hits = 0;
   for (let i = projectiles.activeCount - 1; i >= 0; i -= 1) {
     const projectile = projectiles.items[i];
-    const enemy = findEnemyHit(state, projectile.x, projectile.y, projectile.radius);
-    if (enemy) {
-      applyEnemyDamage(state, enemy, projectile.damage);
-      projectiles.release(projectile);
-      hits += 1;
-      continue;
-    }
-
-    const boss = findBossHit(state, projectile.x, projectile.y, projectile.radius);
-    if (boss) {
-      if (applyBossDamage(boss, projectile.damage)) defeatBoss(state.bosses, boss);
-      projectiles.release(projectile);
-      hits += 1;
+    if (projectile.hitMode === 'tick') {
+      if (projectile.damageTimerSec > 0) continue;
+      hits += damageAreaHits(state, projectile.x, projectile.y, projectile.areaRadius, projectile.damage * dt);
+      projectile.damageTimerSec = projectile.damageIntervalSec;
+    } else if (projectile.hitMode === 'area') {
+      hits += damageAreaHits(state, projectile.x, projectile.y, projectile.areaRadius, projectile.damage);
+    } else if (projectile.hitMode === 'pierce') {
+      if (projectile.damageTimerSec > 0) continue;
+      hits += damageAreaHits(state, projectile.x, projectile.y, projectile.areaRadius, projectile.damage);
+      projectile.damageTimerSec = projectile.damageIntervalSec;
+    } else if (projectile.hitMode === 'bomb') {
+      if (findCombatHit(state, projectile.x, projectile.y, projectile.radius)) {
+        hits += damageAreaHits(state, projectile.x, projectile.y, projectile.areaRadius, projectile.damage);
+        projectiles.release(projectile);
+      }
+    } else {
+      const hit = findCombatHit(state, projectile.x, projectile.y, projectile.radius);
+      if (hit) {
+        applyCombatTargetDamage(state, hit, projectile.damage);
+        projectiles.release(projectile);
+        hits += 1;
+      }
     }
   }
   return hits;
@@ -190,6 +213,156 @@ function fireProjectilePattern(
   runtime: WeaponRuntime,
   slot: WeaponSlotRuntime,
   definition: WeaponDefinition,
+  _dt: number,
+): boolean {
+  return fireAimedProjectiles(state, runtime, slot, definition, 0, 0, 'single');
+}
+
+function firePiercePattern(
+  state: GameState,
+  runtime: WeaponRuntime,
+  slot: WeaponSlotRuntime,
+  definition: WeaponDefinition,
+  _dt: number,
+): boolean {
+  return fireAimedProjectiles(state, runtime, slot, definition, 0, 0, 'pierce');
+}
+
+function updateOrbitPattern(
+  state: GameState,
+  runtime: WeaponRuntime,
+  slot: WeaponSlotRuntime,
+  definition: WeaponDefinition,
+  _dt: number,
+): boolean {
+  const player = state.player;
+  const count = resolveWeaponProjectileCount(slot.level, player.projectileCount + ORBIT_BASE_COUNT - 1);
+  const rangeMultiplier = resolveWeaponRangeMultiplier(slot.level, player.attackRangeMultiplier);
+  const orbitRadius = definition.range * rangeMultiplier;
+  const damage = resolveWeaponDamage(definition, slot.level, player.attackPowerMultiplier);
+  let activeForWeapon = 0;
+
+  for (let i = 0; i < runtime.projectiles.activeCount; i += 1) {
+    const projectile = runtime.projectiles.items[i];
+    if (projectile.weaponId !== definition.id) continue;
+    activeForWeapon += 1;
+    projectile.damage = damage;
+    projectile.areaRadius = projectile.radius + 5 * rangeMultiplier;
+    projectile.damageIntervalSec = DAMAGE_TICK_SEC;
+    projectile.ownerX = player.x;
+    projectile.ownerY = player.y;
+    projectile.orbitRadius = orbitRadius;
+    projectile.orbitAngularSpeed = ORBIT_ANGULAR_SPEED;
+  }
+
+  for (let i = activeForWeapon; i < count; i += 1) {
+    const projectile = runtime.projectiles.acquire();
+    const angle = (FULL_CIRCLE * i) / count;
+    spawnProjectile(projectile, definition.id, player.x, player.y, 0, 0, damage, rangeMultiplier);
+    configureOrbitProjectile(projectile, player.x, player.y, orbitRadius, angle, ORBIT_ANGULAR_SPEED);
+    configureProjectileHit(projectile, 'tick', projectile.radius + 5 * rangeMultiplier, DAMAGE_TICK_SEC);
+  }
+
+  return false;
+}
+
+function fireWavePattern(
+  state: GameState,
+  runtime: WeaponRuntime,
+  slot: WeaponSlotRuntime,
+  definition: WeaponDefinition,
+  _dt: number,
+): boolean {
+  const player = state.player;
+  if (!hasCombatTargetInRange(state, player.x, player.y, definition.range * player.attackRangeMultiplier)) {
+    return false;
+  }
+
+  const damage = resolveWeaponDamage(definition, slot.level, player.attackPowerMultiplier);
+  const rangeMultiplier = resolveWeaponRangeMultiplier(slot.level, player.attackRangeMultiplier);
+  const projectile = runtime.projectiles.acquire();
+  spawnProjectile(projectile, definition.id, player.x, player.y, 0, 0, damage, rangeMultiplier);
+  configureWaveProjectile(projectile, definition.range * rangeMultiplier, definition.projectileLifetimeSec);
+  return true;
+}
+
+function updateAuraPattern(
+  state: GameState,
+  runtime: WeaponRuntime,
+  slot: WeaponSlotRuntime,
+  definition: WeaponDefinition,
+  _dt: number,
+): boolean {
+  const player = state.player;
+  const damage = resolveWeaponDamage(definition, slot.level, player.attackPowerMultiplier);
+  const rangeMultiplier = resolveWeaponRangeMultiplier(slot.level, player.attackRangeMultiplier);
+  const radius = definition.range * rangeMultiplier;
+  let aura: ProjectileEntity | undefined;
+
+  for (let i = 0; i < runtime.projectiles.activeCount; i += 1) {
+    const projectile = runtime.projectiles.items[i];
+    if (projectile.weaponId !== definition.id) continue;
+    aura = projectile;
+    break;
+  }
+
+  if (!aura) {
+    aura = runtime.projectiles.acquire();
+    spawnProjectile(aura, definition.id, player.x, player.y, 0, 0, damage, rangeMultiplier);
+    configureProjectileHit(aura, 'tick', radius, DAMAGE_TICK_SEC);
+    aura.lifeSec = Number.POSITIVE_INFINITY;
+    aura.maxLifeSec = Number.POSITIVE_INFINITY;
+  }
+
+  aura.x = player.x;
+  aura.y = player.y;
+  aura.prevX = player.x;
+  aura.prevY = player.y;
+  aura.radius = radius;
+  aura.areaRadius = radius;
+  aura.damage = damage;
+  aura.damageIntervalSec = DAMAGE_TICK_SEC;
+  return false;
+}
+
+function fireBombPattern(
+  state: GameState,
+  runtime: WeaponRuntime,
+  slot: WeaponSlotRuntime,
+  definition: WeaponDefinition,
+  _dt: number,
+): boolean {
+  return fireAimedProjectiles(state, runtime, slot, definition, 0, BOMB_EXPLOSION_RADIUS, 'bomb');
+}
+
+function fireBoomerangPattern(
+  state: GameState,
+  runtime: WeaponRuntime,
+  slot: WeaponSlotRuntime,
+  definition: WeaponDefinition,
+  _dt: number,
+): boolean {
+  return fireAimedProjectiles(state, runtime, slot, definition, 0, 0, 'boomerang');
+}
+
+function fireSpreadPattern(
+  state: GameState,
+  runtime: WeaponRuntime,
+  slot: WeaponSlotRuntime,
+  definition: WeaponDefinition,
+  _dt: number,
+): boolean {
+  return fireAimedProjectiles(state, runtime, slot, definition, SPREAD_STEP_RAD, 0, 'single');
+}
+
+function fireAimedProjectiles(
+  state: GameState,
+  runtime: WeaponRuntime,
+  slot: WeaponSlotRuntime,
+  definition: WeaponDefinition,
+  spreadStepRad: number,
+  areaRadius: number,
+  hitMode: ProjectileEntity['hitMode'],
 ): boolean {
   const player = state.player;
   const target = findClosestCombatTarget(
@@ -211,13 +384,44 @@ function fireProjectilePattern(
   const count = resolveWeaponProjectileCount(slot.level, player.projectileCount);
   const damage = resolveWeaponDamage(definition, slot.level, player.attackPowerMultiplier);
   const rangeMultiplier = resolveWeaponRangeMultiplier(slot.level, player.attackRangeMultiplier);
+  const patternCount = definition.pattern === 'spread' ? definition.atomicNumber : count;
+  const totalCount = patternCount + (definition.pattern === 'spread' ? count - 1 : 0);
+  const angleStart = -spreadStepRad * (totalCount - 1) * 0.5;
 
-  for (let i = 0; i < count; i += 1) {
+  for (let i = 0; i < totalCount; i += 1) {
+    const angle = angleStart + spreadStepRad * i;
+    const dirX = spreadStepRad === 0 ? baseDirX : rotateX(baseDirX, baseDirY, angle);
+    const dirY = spreadStepRad === 0 ? baseDirY : rotateY(baseDirX, baseDirY, angle);
     const projectile = runtime.projectiles.acquire();
-    spawnProjectile(projectile, definition.id, player.x, player.y, baseDirX, baseDirY, damage, rangeMultiplier);
+    spawnProjectile(projectile, definition.id, player.x, player.y, dirX, dirY, damage, rangeMultiplier);
+    if (hitMode === 'pierce') {
+      configureProjectileHit(projectile, 'pierce', projectile.radius * 1.5, DAMAGE_TICK_SEC);
+    } else if (hitMode === 'bomb') {
+      configureProjectileHit(projectile, 'bomb', areaRadius * rangeMultiplier, 0);
+    } else if (hitMode === 'boomerang') {
+      configureProjectileHit(projectile, 'boomerang', projectile.radius, 0);
+      projectile.ownerX = player.x;
+      projectile.ownerY = player.y;
+    }
   }
 
   return true;
+}
+
+function syncPersistentProjectiles(state: GameState, runtime: WeaponRuntime): void {
+  const player = state.player;
+  for (let i = 0; i < runtime.projectiles.activeCount; i += 1) {
+    const projectile = runtime.projectiles.items[i];
+    if (projectile.hitMode !== 'tick') continue;
+    projectile.ownerX = player.x;
+    projectile.ownerY = player.y;
+    if (projectile.orbitRadius <= 0) {
+      projectile.x = player.x;
+      projectile.y = player.y;
+      projectile.prevX = player.x;
+      projectile.prevY = player.y;
+    }
+  }
 }
 
 function levelWeapon(slot: WeaponSlotRuntime): void {
@@ -257,10 +461,65 @@ function findBossHit(state: GameState, x: number, y: number, radius: number): Bo
   return undefined;
 }
 
+function hasCombatTargetInRange(state: GameState, x: number, y: number, radius: number): boolean {
+  if (findClosestEnemy(x, y, radius, state.collision.enemyHash, state.collision.enemyCandidates)) {
+    return true;
+  }
+  return findBossHit(state, x, y, radius) !== undefined;
+}
+
+function findCombatHit(state: GameState, x: number, y: number, radius: number): CombatTarget | undefined {
+  const enemy = findEnemyHit(state, x, y, radius);
+  if (enemy) return enemy;
+  return findBossHit(state, x, y, radius);
+}
+
+function damageAreaHits(state: GameState, x: number, y: number, radius: number, damage: number): number {
+  if (damage <= 0) return 0;
+
+  let hits = 0;
+  const candidates = state.collision.enemyCandidates;
+  const count = state.collision.enemyHash.queryNearby(x, y, radius, candidates);
+  for (let i = 0; i < count; i += 1) {
+    const enemy = candidates[i] as EnemyEntity;
+    const hitRadius = radius + enemy.radius;
+    if (distanceSq(x, y, enemy) > hitRadius * hitRadius) continue;
+    applyEnemyDamage(state, enemy, damage);
+    hits += 1;
+  }
+
+  for (let i = state.bosses.activeCount - 1; i >= 0; i -= 1) {
+    const boss = state.bosses.items[i];
+    const hitRadius = radius + boss.radius;
+    if (distanceSq(x, y, boss) > hitRadius * hitRadius) continue;
+    if (applyBossDamage(boss, damage)) defeatBoss(state.bosses, boss);
+    hits += 1;
+  }
+
+  return hits;
+}
+
+function applyCombatTargetDamage(state: GameState, target: CombatTarget, damage: number): void {
+  if (target.kind === 'boss') {
+    const boss = target as BossEntity;
+    if (applyBossDamage(boss, damage)) defeatBoss(state.bosses, boss);
+  } else {
+    applyEnemyDamage(state, target as EnemyEntity, damage);
+  }
+}
+
 function distanceSq(x: number, y: number, target: CombatTarget): number {
   const dx = target.x - x;
   const dy = target.y - y;
   return dx * dx + dy * dy;
+}
+
+function rotateX(x: number, y: number, angle: number): number {
+  return x * Math.cos(angle) - y * Math.sin(angle);
+}
+
+function rotateY(x: number, y: number, angle: number): number {
+  return x * Math.sin(angle) + y * Math.cos(angle);
 }
 
 function findWeaponSlot(runtime: WeaponRuntime, id: WeaponId): WeaponSlotRuntime | undefined {
@@ -269,8 +528,4 @@ function findWeaponSlot(runtime: WeaponRuntime, id: WeaponId): WeaponSlotRuntime
     if (slot.id === id) return slot;
   }
   return undefined;
-}
-
-function noopPattern(): boolean {
-  return false;
 }
