@@ -69,6 +69,7 @@ describe('weapons', () => {
       damage: 8,
       cooldownSec: 0,
       pattern: 'orbit',
+      range: 144,
     });
     expect(WEAPONS.oxygen_wave).toMatchObject({
       element: 'O',
@@ -83,6 +84,7 @@ describe('weapons', () => {
       damage: 6,
       cooldownSec: 0,
       pattern: 'aura',
+      range: 96,
     });
     expect(WEAPONS.magnesium_bomb).toMatchObject({
       element: 'Mg',
@@ -115,7 +117,14 @@ describe('weapons', () => {
       element: 'C',
       atomicNumber: 6,
       projectileCount: 6,
+      range: 184,
       evolutionOf: 'carbon_ring',
+    });
+    expect(WEAPONS.steel_identity_barrier).toMatchObject({
+      element: 'FeC',
+      atomicNumber: 26,
+      range: 136,
+      evolutionOf: 'iron_barrier',
     });
     expect(WEAPONS.boron_infinite_barrage).toMatchObject({
       element: 'B',
@@ -311,8 +320,10 @@ describe('weapons', () => {
     const state = createGameState();
     state.player.x = 0;
     state.player.y = 0;
-    const enemy = state.enemies.acquire();
-    spawnEnemy(enemy, ENEMIES.radon, 48, 0, 100);
+    const auraEnemy = state.enemies.acquire();
+    spawnEnemy(auraEnemy, ENEMIES.radon, 90, 0, 100);
+    const orbitEnemy = state.enemies.acquire();
+    spawnEnemy(orbitEnemy, ENEMIES.radon, WEAPONS.carbon_ring.range, 0, 100);
     rebuildEnemyHash(state);
 
     const runtime = createWeaponRuntime();
@@ -324,6 +335,30 @@ describe('weapons', () => {
 
     damageProjectileHits(state, runtime.projectiles, 0.5);
 
-    expect(enemy.hp).toBe(100 - WEAPONS.carbon_ring.damage * 0.5 - WEAPONS.iron_barrier.damage * 0.5);
+    expect(auraEnemy.hp).toBe(100 - WEAPONS.iron_barrier.damage * 0.5);
+    expect(orbitEnemy.hp).toBe(100 - WEAPONS.carbon_ring.damage * 0.5);
+  });
+
+  it('iron_barrier_leveling_never_shrinks_its_aura_radius', () => {
+    const state = createGameState();
+    state.player.x = 0;
+    state.player.y = 0;
+    const runtime = createWeaponRuntime();
+
+    equipWeapon(runtime, 'iron_barrier');
+    updateWeapons(state, runtime, 1 / 60);
+    const levelOneRadius = runtime.projectiles.items[0].areaRadius;
+
+    equipWeapon(runtime, 'iron_barrier');
+    updateWeapons(state, runtime, 1 / 60);
+    const levelTwoRadius = runtime.projectiles.items[0].areaRadius;
+
+    equipWeapon(runtime, 'iron_barrier');
+    updateWeapons(state, runtime, 1 / 60);
+    const levelThreeRadius = runtime.projectiles.items[0].areaRadius;
+
+    expect(levelOneRadius).toBe(WEAPONS.iron_barrier.range);
+    expect(levelTwoRadius).toBeGreaterThanOrEqual(levelOneRadius);
+    expect(levelThreeRadius).toBeGreaterThan(levelTwoRadius);
   });
 });

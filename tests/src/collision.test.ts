@@ -15,11 +15,11 @@ describe('collision', () => {
 
     expect(contacts).toBe(1);
     expect(state.collision.playerEnemyContacts).toBe(1);
-    expect(state.player.health).toBeCloseTo(state.player.maxHealth - ENEMIES.radon.contactDamage * 0.25);
+    expect(state.player.health).toBeCloseTo(state.player.maxHealth - ENEMIES.radon.contactDamage);
 
     damagePlayerEnemyContacts(state, 0.25);
 
-    expect(state.player.health).toBeCloseTo(state.player.maxHealth - ENEMIES.radon.contactDamage * 0.25);
+    expect(state.player.health).toBeCloseTo(state.player.maxHealth - ENEMIES.radon.contactDamage);
   });
 
   it('nearby_query_reduces_candidates_below_full_enemy_count', () => {

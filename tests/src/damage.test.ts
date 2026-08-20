@@ -11,28 +11,28 @@ import {
 } from '../../src/systems/damage.js';
 
 describe('damage', () => {
-  it('contact_damage_uses_damage_per_second_and_dt', () => {
+  it('contact_damage_applies_a_visible_hit_once_per_invulnerability_window', () => {
     const player = createPlayer('hydrogen');
 
-    const dealt = applyContactDamage(player, 10, 0.25);
+    const dealt = applyContactDamage(player, 10);
 
-    expect(dealt).toBe(2.5);
-    expect(player.health).toBe(player.maxHealth - 2.5);
+    expect(dealt).toBe(10);
+    expect(player.health).toBe(player.maxHealth - 10);
     expect(player.invulnerableSec).toBe(PLAYER_HIT_INVULNERABLE_SEC);
   });
 
   it('player_invulnerability_blocks_repeated_contact_hits', () => {
     const player = createPlayer('hydrogen');
 
-    applyContactDamage(player, 10, 0.1);
-    applyContactDamage(player, 10, 0.1);
+    applyContactDamage(player, 10);
+    applyContactDamage(player, 10);
 
-    expect(player.health).toBe(player.maxHealth - 1);
+    expect(player.health).toBe(player.maxHealth - 10);
 
     updatePlayerInvulnerability(player, 0.5);
-    applyContactDamage(player, 10, 0.1);
+    applyContactDamage(player, 10);
 
-    expect(player.health).toBe(player.maxHealth - 2);
+    expect(player.health).toBe(player.maxHealth - 20);
   });
 
   it('dead_enemy_returns_to_pool_and_queues_future_rewards', () => {

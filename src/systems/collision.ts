@@ -46,13 +46,13 @@ export function rebuildEnemyHash(state: GameState): void {
   collision.enemyHashOverflow = collision.enemyHash.overflowCount;
 }
 
-export function damagePlayerEnemyContacts(state: GameState, dt: number): number {
+export function damagePlayerEnemyContacts(state: GameState, _dt: number): number {
   const player = state.player;
   const candidates = state.collision.enemyCandidates;
   const count = queryNearbyEnemies(state, player.x, player.y, player.radius, candidates);
 
   let contacts = 0;
-  let strongestDamagePerSec = 0;
+  let strongestContactDamage = 0;
   for (let i = 0; i < count; i += 1) {
     const enemy = candidates[i] as EnemyEntity;
     const radius = player.radius + enemy.radius;
@@ -60,13 +60,13 @@ export function damagePlayerEnemyContacts(state: GameState, dt: number): number 
     if (wrappedDistanceSq(player.x, player.y, enemy.x, enemy.y, state.world) > radius * radius) continue;
 
     contacts += 1;
-    if (enemy.contactDamage > strongestDamagePerSec) {
-      strongestDamagePerSec = enemy.contactDamage;
+    if (enemy.contactDamage > strongestContactDamage) {
+      strongestContactDamage = enemy.contactDamage;
     }
   }
 
   state.collision.playerEnemyContacts = contacts;
-  if (strongestDamagePerSec > 0) applyContactDamage(player, strongestDamagePerSec, dt);
+  if (strongestContactDamage > 0) applyContactDamage(player, strongestContactDamage);
   return contacts;
 }
 

@@ -12,11 +12,11 @@ export function updatePlayerInvulnerability(player: Player, dt: number): void {
   if (player.invulnerableSec < 0) player.invulnerableSec = 0;
 }
 
-export function applyContactDamage(player: Player, damagePerSec: number, dt: number): number {
+export function applyContactDamage(player: Player, damagePerHit: number): number {
   if (player.health <= 0) return 0;
   if (player.invulnerableSec > 0) return 0;
 
-  const damage = damagePerSec * dt;
+  const damage = damagePerHit;
   player.health -= damage;
   if (player.health < 0) player.health = 0;
   player.invulnerableSec = PLAYER_HIT_INVULNERABLE_SEC;

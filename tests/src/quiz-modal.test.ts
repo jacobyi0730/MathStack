@@ -34,7 +34,6 @@ describe('quiz modal', () => {
       question,
       phase: 'first',
       retry: false,
-      remainingSec: 15,
     });
 
     const choices = modal.root.querySelector<HTMLElement>('.mathstack-quiz__choices');
@@ -57,7 +56,6 @@ describe('quiz modal', () => {
       question: numberQuestion,
       phase: 'retry',
       retry: true,
-      remainingSec: 4,
     });
     modal.showResult(
       {
@@ -73,14 +71,15 @@ describe('quiz modal', () => {
 
     expect(modal.root.querySelector<HTMLElement>('.mathstack-quiz__choices')?.style.display).toBe('none');
     expect(modal.root.querySelector<HTMLElement>('.mathstack-quiz__input-wrap')?.style.display).toBe('flex');
-    expect(modal.root.querySelector<HTMLElement>('.mathstack-quiz__timer-text')?.textContent).toBe('4초');
+    expect(modal.root.querySelector<HTMLElement>('.mathstack-quiz__timer')?.hidden).toBe(true);
+    expect(modal.root.querySelector<HTMLElement>('.mathstack-quiz__timer-text')?.textContent).toBe('');
     expect(modal.root.querySelector<HTMLElement>('.mathstack-quiz__feedback')?.textContent).toContain('[X]');
     expect(modal.root.textContent).toContain('체력은 줄지 않습니다');
 
     modal.destroy();
   });
 
-  it.runIf(typeof document !== 'undefined')('applies_accessibility_settings_to_timer_text_and_effects', () => {
+  it.runIf(typeof document !== 'undefined')('applies_accessibility_settings_without_quiz_timer', () => {
     const host = document.createElement('div');
     const modal = createQuizModal(host, {
       settings: {
@@ -95,7 +94,6 @@ describe('quiz modal', () => {
       question,
       phase: 'first',
       retry: false,
-      remainingSec: 15,
     });
     modal.showResult({
       kind: 'incorrect',

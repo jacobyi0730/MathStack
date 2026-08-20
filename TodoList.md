@@ -65,12 +65,16 @@
 - [x] **T-028** 성능 튜닝 & 스트레스 모드 — `game-engine-dev` ✅ 2026-08-20
 - [x] **T-029** 월드 래핑 & 스킬 선택 버그 수정 — `game-engine-dev` ✅ 2026-08-20
 - [x] **T-030** 전투 피드백 · 스킬 설명 · 초반 밸런스 — `game-engine-dev` ✅ 2026-08-20
+- [x] **T-031** 기획 문서 분리 & 기록 지침 — `doc-keeper` ✅ 2026-08-20
+- [x] **T-032** MathStack기획서 허브화 — `doc-keeper` ✅ 2026-08-20
+- [x] **T-033** 기획서 상세 이관 보정 — `doc-keeper` ✅ 2026-08-20
+- [x] **T-034** 근접 무기 범위·접촉 피해·퀴즈 시간 제한 — `game-engine-dev` ✅ 2026-08-20
 
 ---
 
 ## 현황
 
-**30 / 30 완료** · 진행 중 0 · 착수 가능 0
+**34 / 34 완료** · 진행 중 0 · 착수 가능 0
 
 ## 병렬 배정 이력
 
@@ -102,6 +106,10 @@
 | 08-20 21:04 | **T-026** 결과 화면·localStorage | **오케스트레이터 구현** | `src/quiz/stats.ts`, `src/storage.ts`, `src/ui/result.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과 (test 217→222). 결과 화면·저장 스키마·오개념 한국어 표시 구현 |
 | 08-20 21:19 | **T-029** 월드 래핑·스킬 선택 버그 수정 | **오케스트레이터 구현** | `src/engine/world.ts`, `src/systems/`, `src/entities/projectile.ts`, `src/ui/skill-choice.ts`, `src/main.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 토러스 월드·투사체 사거리·레벨업 퀴즈→스킬 선택 흐름 구현 |
 | 08-20 21:37 | **T-030** 전투 피드백·스킬 설명·초반 밸런스 | **오케스트레이터 구현** | `src/entities/damage-number.ts`, `src/engine/renderer.ts`, `src/systems/damage.ts`, `src/systems/level-reward.ts`, `src/data/enemies.ts`, `src/data/waves.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 데미지 숫자·구체적 스킬 설명·초반 적 수치 완화 구현 |
+| 08-20 21:44 | **T-031** 기획 문서 분리·기록 지침 | **오케스트레이터 구현** | `AGENTS.md`, `docs/MathStack기획서.md`, `docs/01-기반.md`~`docs/06-개선기록.md`, `Tasks/`, `TodoList.md` | ✅ 기획 허브·세부 문서·지속 기록 규칙 추가 |
+| 08-20 21:48 | **T-032** MathStack기획서 허브화 | **오케스트레이터 구현** | `docs/MathStack기획서.md`, `Tasks/`, `TodoList.md`, `docs/06-개선기록.md` | ✅ 900라인 이상 전체본을 목차형 허브 문서로 축소 |
+| 08-20 21:53 | **T-033** 기획서 상세 이관 보정 | **오케스트레이터 구현** | `docs/01-기반.md`~`docs/05-세션-운영.md`, `Tasks/`, `TodoList.md`, `docs/06-개선기록.md` | ✅ 원본 기획서 상세 섹션을 세부 문서로 재배치 |
+| 08-20 21:59 | **T-034** 근접 무기 범위·접촉 피해·퀴즈 시간 제한 | **오케스트레이터 구현** | `src/data/weapons.ts`, `src/systems/damage.ts`, `src/systems/collision.ts`, `src/ui/quiz-modal.ts`, `src/main.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 근접 무기 반경 확대, 접촉 피해 체감화, 퀴즈 시간 제한 UI 제거 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

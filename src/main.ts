@@ -450,8 +450,6 @@ function createQuizState(
     question,
     phase,
     retry,
-    remainingSec: question.timeLimitSec,
-    totalSec: question.timeLimitSec,
   };
 }
 

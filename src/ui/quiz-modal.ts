@@ -12,7 +12,7 @@ export type QuizModalState = {
   question: Question;
   phase: QuizAttemptPhase;
   retry: boolean;
-  remainingSec: number;
+  remainingSec?: number;
   totalSec?: number;
 };
 
@@ -34,7 +34,7 @@ export type QuizModal = {
   root: HTMLElement;
   show(state: QuizModalState): void;
   hide(): void;
-  updateTimer(remainingSec: number, totalSec?: number): void;
+  updateTimer(remainingSec?: number, totalSec?: number): void;
   showResult(result: QuizGradeResult, explanation?: string): void;
   resetResult(): void;
   getAnswer(): string;
@@ -122,12 +122,18 @@ export function createQuizModal(
       options.onHide?.();
     },
 
-    updateTimer(remainingSec: number, totalSec = currentState?.totalSec ?? currentState?.question.timeLimitSec ?? 15): void {
+    updateTimer(remainingSec?: number, totalSec = currentState?.totalSec ?? currentState?.question.timeLimitSec ?? 15): void {
+      elements.timer.hidden = true;
+      elements.timer.setAttribute('aria-hidden', 'true');
+      elements.timerRing.style.strokeDashoffset = '0';
+      elements.timerText.textContent = '';
+      elements.timerRing.classList.remove('mathstack-quiz__timer-ring--danger');
+      elements.timerText.classList.remove('mathstack-quiz__timer-text--danger');
+      if (remainingSec === undefined) return;
+
       const safeTotal = Math.max(1, totalSec);
       const clampedRemaining = Math.max(0, Math.min(remainingSec, safeTotal));
       const progress = clampedRemaining / safeTotal;
-      elements.timer.hidden = currentSettings.slowMode;
-      elements.timer.setAttribute('aria-hidden', currentSettings.slowMode ? 'true' : 'false');
       elements.timerRing.style.strokeDashoffset = `${TIMER_CIRCUMFERENCE * (1 - progress)}`;
       elements.timerText.textContent = `${Math.ceil(clampedRemaining)}초`;
       elements.timerRing.classList.toggle('mathstack-quiz__timer-ring--danger', clampedRemaining <= 5);
@@ -403,8 +409,8 @@ function applyQuizSettings(
   settings: AccessibilitySettings,
 ): void {
   elements.prompt.style.fontSize = settings.textSize === 'large' ? '32px' : '24px';
-  elements.timer.hidden = settings.slowMode;
-  elements.timer.setAttribute('aria-hidden', settings.slowMode ? 'true' : 'false');
+  elements.timer.hidden = true;
+  elements.timer.setAttribute('aria-hidden', 'true');
   elements.root.classList.toggle('mathstack-quiz--slow-mode', settings.slowMode);
   elements.root.classList.toggle('mathstack-quiz--large-text', settings.textSize === 'large');
   elements.root.classList.toggle(
