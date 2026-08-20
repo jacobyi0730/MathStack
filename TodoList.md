@@ -34,16 +34,16 @@
 - [x] **T-006** 플레이어 이동 & 입력 — `game-engine-dev` ✅ 2026-08-20 ⚠ 캐릭터 선택은 `?character=` 임시 노출
 - [x] **T-007** 적 스폰 & 추격 AI — `game-engine-dev` ✅ 2026-08-20 ⚠ 렌더+투사체 포함 실측은 T-028
 - [x] **T-008** 충돌 판정 & 데미지 — `game-engine-dev` ✅ 2026-08-20
-- [ ] **T-009** 경험치 & 레벨업 — `game-engine-dev` · 선행 T-008 ✅
-- [ ] **T-010** 무기 시스템 기반 + 1종 — `game-engine-dev` · 선행 T-008 ✅
+- [x] **T-009** 경험치 & 레벨업 — `game-engine-dev` ✅ 2026-08-20
+- [x] **T-010** 무기 시스템 기반 + 1종 — `game-engine-dev` ✅ 2026-08-20
 
 ## Phase 2 — 전투 확장
 
-- [-] **T-011** 무기 8종 — `game-engine-dev` · 선행 T-010
-- [-] **T-012** 패시브 8종 — `game-engine-dev` · 선행 T-010
+- [ ] **T-011** 무기 8종 — `game-engine-dev` · 선행 T-010 ✅
+- [ ] **T-012** 패시브 8종 — `game-engine-dev` · 선행 T-010 ✅
 - [-] **T-013** 각성 시스템 — `game-engine-dev` · 선행 T-011, T-012
 - [x] **T-014** 적 에이전트 7종 — `game-engine-dev` ✅ 2026-08-20
-- [ ] **T-015** 보스 3종 & 웨이브 타임라인 — `game-engine-dev` · 선행 T-014 ✅
+- [x] **T-015** 보스 3종 & 웨이브 타임라인 — `game-engine-dev` ✅ 2026-08-20
 
 ## Phase 3 — 수학 시스템
 
@@ -51,24 +51,24 @@
 - [x] **T-017** 템플릿 엔진 & `build:bank` — `pipeline-engineer` ✅ 2026-08-20
 - [x] **T-018** 뱅크 검증기 `validate:bank` — `pipeline-engineer` ✅ 2026-08-20
 - [x] **T-019** 학년별 문항 저작 — `quiz-author` ✅ 2026-08-20 ⚠ 표본 품질 검수·시각 문항 polish 후속
-- [-] **T-020** 클라이언트 출제기 — `game-engine-dev` · 선행 T-009, T-019
+- [ ] **T-020** 클라이언트 출제기 — `game-engine-dev` · 선행 T-009 ✅, T-019 ✅
 - [-] **T-021** 퀴즈 모달 UI — `ui-builder` · 선행 T-020
 - [-] **T-022** 오답 큐 & 오개념 복습 — `game-engine-dev` · 선행 T-020, T-021
 
 ## Phase 4 — 세션 & 운영
 
-- [-] **T-023** 인게임 HUD — `ui-builder` · 선행 T-009, T-010
-- [-] **T-024** 타이틀 & 학년/캐릭터 선택 — `ui-builder` · 선행 T-019
+- [ ] **T-023** 인게임 HUD — `ui-builder` · 선행 T-009 ✅, T-010 ✅
+- [ ] **T-024** 타이틀 & 학년/캐릭터 선택 — `ui-builder` · 선행 T-019 ✅
 - [-] **T-025** 초월 수련 — `game-engine-dev` · 선행 T-015, T-022
 - [-] **T-026** 결과 화면 & localStorage — `ui-builder` · 선행 T-022, T-023
 - [-] **T-027** 접근성 옵션 — `ui-builder` · 선행 T-021, T-023
-- [-] **T-028** 성능 튜닝 & 스트레스 모드 — `game-engine-dev` · 선행 T-015
+- [ ] **T-028** 성능 튜닝 & 스트레스 모드 — `game-engine-dev` · 선행 T-015 ✅
 
 ---
 
 ## 현황
 
-**13 / 28 완료** · 진행 중 0 · 착수 가능 3 (T-009, T-010, T-015)
+**16 / 28 완료** · 진행 중 0 · 착수 가능 6 (T-011, T-012, T-020, T-023, T-024, T-028)
 
 ## 병렬 배정 이력
 
@@ -83,6 +83,9 @@
 | 08-20 18:27 | **T-019** 학년별 문항 저작 | **quiz-author 서브에이전트 + 오케스트레이터 보정** | `content/`, `docs/MathStack기획서.md`, `shared/curriculum.ts` | ✅ 4개 학년 각 721문항. 영역·난이도 검증 통과 |
 | 08-20 20:10 | **T-008** 충돌 판정·데미지 | **game-engine-dev 서브에이전트 + 오케스트레이터 보정** | `src/systems/collision.ts`, `src/systems/damage.ts`, `src/engine/state.ts`, `src/entities/player.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과 (test 104→120). 적 처치 보상 경로 통합 보정 |
 | 08-20 20:10 | **T-014** 적 에이전트 7종 | **game-engine-dev 서브에이전트** | `src/data/enemies.ts`, `src/data/waves.ts`, `src/entities/enemy.ts`, `src/systems/enemy-ai.ts`, `src/systems/spawn.ts`, `tests/src/` | ✅ 게이트 통과. 300체 혼합 AI p99 0.0193ms |
+| 08-20 20:22 | **T-009** 경험치·레벨업 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/data/level.ts`, `src/entities/pickup.ts`, `src/systems/pickup.ts`, `src/systems/level.ts`, `src/engine/state.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과. 레벨업 이벤트 큐와 픽업 풀 런타임 연결 |
+| 08-20 20:22 | **T-010** 무기 기반·수소 화살 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/data/weapons.ts`, `src/entities/projectile.ts`, `src/systems/weapons.ts`, `src/engine/state.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과 (test 120→153). 기본 자동 공격·보스 피격 연결 |
+| 08-20 20:22 | **T-015** 보스·타임라인 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/data/bosses.ts`, `src/entities/boss.ts`, `src/systems/timeline.ts`, `src/engine/state.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과. 보스 패턴 300프레임 max 0.4005ms |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

@@ -6,11 +6,16 @@ import { createRenderer, type RenderScene } from './engine/renderer.js';
 import { createDebugOverlay } from './ui/debug-overlay.js';
 import { createInputController } from './engine/input.js';
 import { createPlayer, syncPlayerIntent } from './entities/player.js';
+import { BOSSES } from './data/bosses.js';
+import { spawnBoss, updateBosses } from './entities/boss.js';
 import { updateEnemies } from './systems/enemy-ai.js';
 import { movePlayer } from './systems/movement.js';
 import { updateSpawns } from './systems/spawn.js';
 import { updateCollisions } from './systems/collision.js';
-import { updatePlayerInvulnerability } from './systems/damage.js';
+import { applyEnemyDamage, updatePlayerInvulnerability } from './systems/damage.js';
+import { consumeCombatRewardsAsPickups, updatePickups } from './systems/pickup.js';
+import { updateBossTimeline } from './systems/timeline.js';
+import { equipWeapon, updateWeapons } from './systems/weapons.js';
 import { DEFAULT_CHARACTER_ID, getCharacterArchetype, type CharacterId } from './data/characters.js';
 
 type RuntimeState = GameState & RenderScene;
@@ -40,7 +45,9 @@ function readCharacterFromUrl(): CharacterId {
 
 function createRuntimeState(): RuntimeState {
   const player = createPlayer(readCharacterFromUrl());
-  return createGameState({ player });
+  const state = createGameState({ player });
+  equipWeapon(state.weapons, 'hydrogen_arrow');
+  return state;
 }
 
 function updateRuntimeState(state: RuntimeState, dt: number): void {
@@ -48,8 +55,51 @@ function updateRuntimeState(state: RuntimeState, dt: number): void {
   movePlayer(state.player, dt, state.world);
   updateSpawns(state, dt);
   updateEnemies(state, dt);
+  updateBossTimelineAndSpawns(state);
+  updateBosses(state.bosses, state.player.x, state.player.y, dt);
   updatePlayerInvulnerability(state.player, dt);
-  state.entityCount = state.enemies.activeCount + 1;
+}
+
+function updateAfterCollisions(state: RuntimeState, dt: number): void {
+  updateWeapons(state, state.weapons, dt);
+  consumeCombatRewardsAsPickups(state.combat, state.pickups, state.player.x, state.player.y);
+  updatePickups(state.pickups, state.player, state.level, state.pickupRuntime, dt);
+  applyPendingMeteorDamage(state);
+  state.entityCount =
+    state.enemies.activeCount +
+    state.weapons.projectiles.activeCount +
+    state.pickups.activeCount +
+    state.bosses.activeCount +
+    1;
+}
+
+function updateBossTimelineAndSpawns(state: RuntimeState): void {
+  const event = updateBossTimeline(
+    state.timeline,
+    state.elapsedSec,
+    state.player.health,
+    state.timeline.resultFired && state.timeline.latestResultKind === 'victory',
+  );
+  if (event !== 'spawn_boss') return;
+
+  const boss = state.bosses.acquire();
+  const definition = BOSSES[state.timeline.latestBossId];
+  spawnBoss(
+    boss,
+    definition,
+    state.player.x + state.viewport.width * 0.35,
+    state.player.y - state.viewport.height * 0.25,
+  );
+}
+
+function applyPendingMeteorDamage(state: RuntimeState): void {
+  const damage = state.pickupRuntime.pendingMeteorDamage;
+  if (damage <= 0) return;
+  state.pickupRuntime.pendingMeteorDamage = 0;
+
+  for (let i = state.enemies.activeCount - 1; i >= 0; i -= 1) {
+    applyEnemyDamage(state, state.enemies.items[i], damage);
+  }
 }
 
 function bootstrap(): void {
@@ -82,7 +132,9 @@ function bootstrap(): void {
       timer.end('sim');
       timer.begin('collide');
       updateCollisions(baseState as RuntimeState, dt);
+      updateAfterCollisions(baseState as RuntimeState, dt);
       timer.end('collide');
+      if (state.level.queuedCount > 0) loop.pause();
     },
 
     render(baseState, alpha) {
