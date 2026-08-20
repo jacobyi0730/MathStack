@@ -32,6 +32,11 @@ describe('weapons', () => {
     });
   });
 
+  it('early_radon_dies_to_one_base_hydrogen_arrow_for_onboarding_pace', () => {
+    expect(ENEMIES.radon.hp).toBeLessThanOrEqual(WEAPONS.hydrogen_arrow.damage);
+    expect(ENEMIES.sodium.hp).toBeLessThanOrEqual(WEAPONS.hydrogen_arrow.damage * 3);
+  });
+
   it('all_weapon_data_matches_design_values', () => {
     expect(Object.keys(WEAPONS)).toEqual([
       'hydrogen_arrow',

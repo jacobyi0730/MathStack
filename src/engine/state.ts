@@ -1,6 +1,7 @@
 import { FIELD_BOUNDS } from '../data/characters.js';
 import { MAX_ACTIVE_ENEMIES } from '../data/enemies.js';
 import { createBossPool, type BossPool } from '../entities/boss.js';
+import { createDamageNumberPool, type DamageNumberPool } from '../entities/damage-number.js';
 import { createEnemyPool, type EnemyPool } from '../entities/enemy.js';
 import { createPickupPool, type PickupPool } from '../entities/pickup.js';
 import { createPlayer, type Player } from '../entities/player.js';
@@ -40,6 +41,7 @@ export interface GameState {
   baseStats: BasePlayerStats;
   stats: ResolvedPlayerStats;
   bosses: BossPool;
+  damageNumbers: DamageNumberPool;
   level: LevelState;
   pickupRuntime: PickupRuntime;
   timeline: BossTimelineState;
@@ -94,6 +96,7 @@ export function createGameState(options?: GameStateOptions): GameState & RenderS
     baseStats,
     stats,
     bosses,
+    damageNumbers: createDamageNumberPool(),
     level: createLevelState(),
     pickupRuntime: createPickupRuntime(),
     timeline: createBossTimelineState(),

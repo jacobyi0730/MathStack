@@ -10,6 +10,7 @@ import { createQuizModal, type QuizModal, type QuizModalState } from './ui/quiz-
 import { createResultScreen, type ResultScreenSummary } from './ui/result.js';
 import { createSkillChoiceView } from './ui/skill-choice.js';
 import { createInputController } from './engine/input.js';
+import { updateDamageNumbers } from './entities/damage-number.js';
 import { createPlayer, syncPlayerIntent } from './entities/player.js';
 import { BOSSES } from './data/bosses.js';
 import { PASSIVES } from './data/passives.js';
@@ -100,6 +101,7 @@ function updateRuntimeState(state: RuntimeState, dt: number): void {
   updateBosses(state.bosses, state.player.x, state.player.y, dt);
   updatePlayerInvulnerability(state.player, dt);
   applyHealthRegen(state, dt);
+  updateDamageNumbers(state.damageNumbers, dt);
 }
 
 function updateAfterCollisions(state: RuntimeState, dt: number): void {

@@ -15,6 +15,8 @@ describe('level reward choices', () => {
 
     expect(choices).toHaveLength(3);
     expect(new Set(choices.map((choice) => `${choice.kind}:${choice.id}`)).size).toBe(3);
+    expect(choices[0].detail).toMatch(/새 무기 추가|패시브 Lv\.1/);
+    expect(choices[0].detail).not.toMatch(/projectile|pierce|orbit|wave/);
   });
 
   it('prioritizes_ready_evolution_choice', () => {

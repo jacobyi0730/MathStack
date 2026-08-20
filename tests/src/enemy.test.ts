@@ -8,13 +8,13 @@ import {
 } from '../../src/entities/enemy.js';
 
 const EXPECTED_ENEMIES = {
-  radon: ['Rn', 86, 0, 20, 40, 4, 'chase'],
-  sodium: ['Na', 11, 60, 40, 55, 6, 'charge'],
-  lead: ['Pb', 82, 180, 120, 22, 8, 'tank'],
-  uranium: ['U', 92, 210, 60, 35, 5, 'split'],
-  caesium: ['Cs', 55, 270, 50, 25, 4, 'ranged'],
-  iridium: ['Ir', 77, 120, 30, 60, 3, 'flee'],
-  iodine: ['I', 53, 120, 25, 45, 0, 'flee'],
+  radon: ['Rn', 86, 0, 10, 40, 2, 'chase'],
+  sodium: ['Na', 11, 60, 24, 55, 4, 'charge'],
+  lead: ['Pb', 82, 180, 90, 22, 6, 'tank'],
+  uranium: ['U', 92, 210, 42, 35, 4, 'split'],
+  caesium: ['Cs', 55, 270, 35, 25, 3, 'ranged'],
+  iridium: ['Ir', 77, 120, 18, 60, 3, 'flee'],
+  iodine: ['I', 53, 120, 16, 45, 0, 'flee'],
 } as const satisfies Record<EnemyId, readonly [string, number, number, number, number, number, string]>;
 
 describe('enemy entities', () => {

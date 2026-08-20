@@ -43,6 +43,8 @@ describe('damage', () => {
     const killed = applyEnemyDamage(state, enemy, 3);
 
     expect(killed).toBe(true);
+    expect(state.damageNumbers.activeCount).toBe(1);
+    expect(state.damageNumbers.items[0].value).toBe(3);
     expect(state.enemies.activeCount).toBe(0);
     expect(enemy.active).toBe(false);
     expect(state.combat.pendingXp).toBe(ENEMIES.radon.xp);

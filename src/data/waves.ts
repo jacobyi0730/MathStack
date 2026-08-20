@@ -6,8 +6,8 @@ export interface WaveEntry {
   readonly baseSpawnPerMinute: number;
 }
 
-export const DENSITY_GROWTH_PER_MIN = 0.35;
-export const HP_GROWTH_PER_MIN = 0.18;
+export const DENSITY_GROWTH_PER_MIN = 0.28;
+export const HP_GROWTH_PER_MIN = 0.12;
 
 export const SPAWN_MIN_PLAYER_DISTANCE = 400;
 export const SPAWN_RING_MARGIN = 64;

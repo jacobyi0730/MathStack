@@ -4,6 +4,7 @@ import {
   writeSpriteFrame,
   type DirectionLike,
 } from '../entities/sprite.js';
+import type { DamageNumberPool } from '../entities/damage-number.js';
 import { createCameraState, interpolatePosition, isCircleVisible, worldToScreen, type CameraTarget } from './camera.js';
 import { shortestDeltaX, shortestDeltaY, type WorldBounds } from './world.js';
 
@@ -18,6 +19,7 @@ export interface RenderableEntity extends CameraTarget, DirectionLike {
 export interface RenderScene {
   player: RenderableEntity;
   entities: readonly RenderableEntity[];
+  damageNumbers: DamageNumberPool;
   world: WorldBounds;
 }
 
@@ -236,6 +238,29 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
     }
   }
 
+  function drawDamageNumbers(scene: RenderScene, camera: ReturnType<typeof createCameraState>): void {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '800 18px "Pretendard", "Segoe UI", sans-serif';
+    ctx.lineWidth = 3;
+    for (let i = 0; i < scene.damageNumbers.items.length; i += 1) {
+      const item = scene.damageNumbers.items[i];
+      if (!item.active) continue;
+      const renderX = camera.centerX + shortestDeltaX(camera.centerX, item.x, scene.world);
+      const renderY = camera.centerY + shortestDeltaY(camera.centerY, item.y, scene.world);
+      if (!isCircleVisible(camera, renderX, renderY, 24)) continue;
+      const screen = worldToScreen(camera, renderX, renderY);
+      const alpha = Math.max(0, Math.min(1, item.lifeSec / 0.65));
+      const text = `${item.value}`;
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = '#111827';
+      ctx.fillStyle = '#ffe082';
+      ctx.strokeText(text, screen.x, screen.y);
+      ctx.fillText(text, screen.x, screen.y);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   const visibleCountRef = { value: 0 };
 
   return {
@@ -331,6 +356,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
       drawAccessories(visibleCount);
       drawEyes(visibleCount);
       drawSymbols(visibleCount);
+      drawDamageNumbers(scene, camera);
 
       // 고해상도 디스플레이에서도 선 두께가 과하게 흐려지지 않게 유지한다.
       void dpr;

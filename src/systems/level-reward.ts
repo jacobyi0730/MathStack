@@ -1,5 +1,5 @@
 import { EVOLUTIONS } from '../data/evolutions.js';
-import { PASSIVES, type PassiveId } from '../data/passives.js';
+import { PASSIVES, type PassiveDefinition, type PassiveId } from '../data/passives.js';
 import {
   WEAPONS,
   type BaseWeaponId,
@@ -121,24 +121,63 @@ function appendReadyEvolution(
 
 function createWeaponChoice(id: BaseWeaponId, weapons: WeaponRuntime): LevelRewardChoice {
   const definition = WEAPONS[id];
+  const levelAfter = getWeaponLevelAfter(weapons, id);
   return {
     kind: 'weapon',
     id,
     name: definition.name,
-    detail: `${definition.element} · ${definition.pattern}`,
-    levelAfter: getWeaponLevelAfter(weapons, id),
+    detail: describeWeapon(definition, levelAfter),
+    levelAfter,
   };
 }
 
 function createPassiveChoice(id: PassiveId, passives: PassiveRuntime): LevelRewardChoice {
   const definition = PASSIVES[id];
+  const levelAfter = getPassiveLevelAfter(passives, id);
   return {
     kind: 'passive',
     id,
     name: definition.name,
-    detail: `${definition.element} · ${definition.mathReason}`,
-    levelAfter: getPassiveLevelAfter(passives, id),
+    detail: describePassive(definition, levelAfter),
+    levelAfter,
   };
+}
+
+function describeWeapon(definition: typeof WEAPONS[BaseWeaponId], levelAfter: number): string {
+  const action = levelAfter === 1 ? '새 무기 추가' : `무기 Lv.${levelAfter} 강화`;
+  const range = levelAfter >= 3 ? ', 발사 수/범위 추가 강화' : '';
+  return `${action}: ${weaponPatternText(definition.pattern)}. 피해 ${definition.damage} 기준, 레벨당 공격력 +20%${range}`;
+}
+
+function describePassive(definition: PassiveDefinition, levelAfter: number): string {
+  return `패시브 Lv.${levelAfter}: ${passiveEffectText(definition, levelAfter)}`;
+}
+
+function weaponPatternText(pattern: typeof WEAPONS[BaseWeaponId]['pattern']): string {
+  if (pattern === 'projectile') return '가장 가까운 적에게 단일 투사체 발사';
+  if (pattern === 'pierce') return '직선 관통 광선 발사';
+  if (pattern === 'orbit') return '플레이어 주변 회전 공격 추가';
+  if (pattern === 'wave') return '원형으로 퍼지는 파동 공격';
+  if (pattern === 'aura') return '근접 적에게 지속 피해를 주는 결계';
+  if (pattern === 'bomb') return '적에게 날아가 폭발하는 투사체';
+  if (pattern === 'boomerang') return '왕복하는 부메랑 투사체';
+  return '여러 발을 부채꼴로 발사';
+}
+
+function passiveEffectText(definition: PassiveDefinition, levelAfter: number): string {
+  const total = definition.valuePerLevel * levelAfter;
+  if (definition.effect === 'magnetRadius') return `경험치 획득 범위 +${Math.round(total * 100)}%`;
+  if (definition.effect === 'attackPower') return `모든 무기 공격력 +${Math.round(total * 100)}%`;
+  if (definition.effect === 'moveSpeed') return `이동속도 +${Math.round(total * 100)}%`;
+  if (definition.effect === 'cooldown') return `모든 무기 쿨타임 -${Math.round(total * 100)}%`;
+  if (definition.effect === 'attackRange') return `무기 사거리/범위 +${Math.round(total * 100)}%`;
+  if (definition.effect === 'maxHealthAndRegen') {
+    return `최대 체력 +${definition.valuePerLevel * levelAfter}, 초당 회복 +${(definition.secondaryValuePerLevel * levelAfter).toFixed(1)}`;
+  }
+  if (definition.effect === 'projectileCount') {
+    return levelAfter >= 2 ? '투사체 수 +1' : 'Lv.2부터 투사체 수 +1 준비';
+  }
+  return `행운 +${Math.round(total * 100)}%`;
 }
 
 function getWeaponLevelAfter(weapons: WeaponRuntime, id: WeaponId): number {
