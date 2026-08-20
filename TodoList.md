@@ -41,7 +41,7 @@
 
 - [x] **T-011** 무기 8종 — `game-engine-dev` ✅ 2026-08-20
 - [x] **T-012** 패시브 8종 — `game-engine-dev` ✅ 2026-08-20
-- [ ] **T-013** 각성 시스템 — `game-engine-dev` · 선행 T-011 ✅, T-012 ✅
+- [x] **T-013** 각성 시스템 — `game-engine-dev` ✅ 2026-08-20
 - [x] **T-014** 적 에이전트 7종 — `game-engine-dev` ✅ 2026-08-20
 - [x] **T-015** 보스 3종 & 웨이브 타임라인 — `game-engine-dev` ✅ 2026-08-20
 
@@ -52,23 +52,23 @@
 - [x] **T-018** 뱅크 검증기 `validate:bank` — `pipeline-engineer` ✅ 2026-08-20
 - [x] **T-019** 학년별 문항 저작 — `quiz-author` ✅ 2026-08-20 ⚠ 표본 품질 검수·시각 문항 polish 후속
 - [x] **T-020** 클라이언트 출제기 — `game-engine-dev` ✅ 2026-08-20
-- [ ] **T-021** 퀴즈 모달 UI — `ui-builder` · 선행 T-020 ✅
-- [-] **T-022** 오답 큐 & 오개념 복습 — `game-engine-dev` · 선행 T-020, T-021
+- [x] **T-021** 퀴즈 모달 UI — `ui-builder` ✅ 2026-08-20
+- [ ] **T-022** 오답 큐 & 오개념 복습 — `game-engine-dev` · 선행 T-020 ✅, T-021 ✅
 
 ## Phase 4 — 세션 & 운영
 
-- [ ] **T-023** 인게임 HUD — `ui-builder` · 선행 T-009 ✅, T-010 ✅
-- [ ] **T-024** 타이틀 & 학년/캐릭터 선택 — `ui-builder` · 선행 T-019 ✅
+- [x] **T-023** 인게임 HUD — `ui-builder` ✅ 2026-08-20
+- [x] **T-024** 타이틀 & 학년/캐릭터 선택 — `ui-builder` ✅ 2026-08-20
 - [-] **T-025** 초월 수련 — `game-engine-dev` · 선행 T-015, T-022
-- [-] **T-026** 결과 화면 & localStorage — `ui-builder` · 선행 T-022, T-023
-- [-] **T-027** 접근성 옵션 — `ui-builder` · 선행 T-021, T-023
+- [-] **T-026** 결과 화면 & localStorage — `ui-builder` · 선행 T-022, T-023 ✅
+- [ ] **T-027** 접근성 옵션 — `ui-builder` · 선행 T-021 ✅, T-023 ✅
 - [x] **T-028** 성능 튜닝 & 스트레스 모드 — `game-engine-dev` ✅ 2026-08-20
 
 ---
 
 ## 현황
 
-**20 / 28 완료** · 진행 중 0 · 착수 가능 4 (T-013, T-021, T-023, T-024)
+**24 / 28 완료** · 진행 중 0 · 착수 가능 2 (T-022, T-027)
 
 ## 병렬 배정 이력
 
@@ -90,6 +90,10 @@
 | 08-20 20:37 | **T-012** 패시브 8종 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/data/passives.ts`, `src/systems/stats.ts`, `src/engine/state.ts`, `src/main.ts`, `src/systems/pickup.ts`, `tests/src/` | ✅ 게이트 통과. 파생 스탯과 자석 반경 연결 |
 | 08-20 20:37 | **T-020** 클라이언트 출제기 | **game-engine-dev 서브에이전트** | `src/data/quiz-rules.ts`, `src/quiz/`, `tests/src/quiz-*` | ✅ 게이트 통과. 로더 fetch 경계 준수 |
 | 08-20 20:37 | **T-028** 스트레스 모드 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/engine/stress.ts`, `src/main.ts`, `docs/30-기술/34-성능예산.md`, `tests/src/stress.test.ts` | ✅ 게이트 통과. Node 렌더 제외 max 1.0585ms, JS gzip 16.75KB |
+| 08-20 20:46 | **T-013** 각성 시스템 | **game-engine-dev 서브에이전트 + 오케스트레이터 통합** | `src/data/evolutions.ts`, `src/systems/evolution.ts`, `src/data/weapons.ts`, `src/systems/weapons.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과. HUD 각성 가능 표시 연결 |
+| 08-20 20:46 | **T-021** 퀴즈 모달 UI | **ui-builder 서브에이전트** | `src/ui/fraction.ts`, `src/ui/quiz-modal.ts`, `tests/src/` | ✅ 게이트 통과. 분수 렌더·모달 API 구현 |
+| 08-20 20:46 | **T-023** 인게임 HUD | **ui-builder 서브에이전트 + 오케스트레이터 통합** | `src/ui/hud.ts`, `src/main.ts`, `tests/src/hud.test.ts` | ✅ 게이트 통과. 런타임 HUD 마운트 |
+| 08-20 20:46 | **T-024** 타이틀·선택 흐름 | **ui-builder 서브에이전트** | `src/ui/title.ts`, `src/ui/grade-select.ts`, `src/ui/character-select.ts`, `tests/src/` | ✅ 게이트 통과. 저장/복원·뱅크 로더 hook 구현 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

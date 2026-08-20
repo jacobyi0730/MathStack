@@ -1,5 +1,7 @@
+import type { PassiveId } from './passives.js';
+
 export type WeaponPattern = 'projectile' | 'pierce' | 'orbit' | 'wave' | 'aura' | 'bomb' | 'boomerang' | 'spread';
-export type WeaponId =
+export type BaseWeaponId =
   | 'hydrogen_arrow'
   | 'neon_beam'
   | 'carbon_ring'
@@ -8,6 +10,16 @@ export type WeaponId =
   | 'magnesium_bomb'
   | 'gold_spiral'
   | 'boron_shot';
+export type EvolutionWeaponId =
+  | 'heavy_hydrogen_storm'
+  | 'neon_infinite_beam'
+  | 'diamond_orbit'
+  | 'ozone_shockwave'
+  | 'steel_identity_barrier'
+  | 'magnesium_chain_flash'
+  | 'golden_ratio_cycle'
+  | 'boron_infinite_barrage';
+export type WeaponId = BaseWeaponId | EvolutionWeaponId;
 
 export interface WeaponDefinition {
   readonly id: WeaponId;
@@ -21,8 +33,10 @@ export interface WeaponDefinition {
   readonly projectileRadius: number;
   readonly projectileLifetimeSec: number;
   readonly range: number;
-  readonly evolvesWith: string;
-  readonly evolvesTo: string;
+  readonly projectileCount?: number;
+  readonly evolvesWith?: PassiveId;
+  readonly evolvesTo?: EvolutionWeaponId;
+  readonly evolutionOf?: BaseWeaponId;
 }
 
 export const WEAPON_SLOT_CAPACITY = 6;
@@ -151,5 +165,124 @@ export const WEAPONS = {
     range: 430,
     evolvesWith: 'silver',
     evolvesTo: 'boron_infinite_barrage',
+  },
+  heavy_hydrogen_storm: {
+    id: 'heavy_hydrogen_storm',
+    name: 'Heavy Hydrogen Storm',
+    element: 'D',
+    atomicNumber: 1,
+    damage: 12,
+    cooldownSec: 1.1,
+    pattern: 'spread',
+    projectileSpeed: 520,
+    projectileRadius: 5,
+    projectileLifetimeSec: 1.25,
+    range: 560,
+    projectileCount: 8,
+    evolutionOf: 'hydrogen_arrow',
+  },
+  neon_infinite_beam: {
+    id: 'neon_infinite_beam',
+    name: 'Neon Infinite Beam',
+    element: 'Ne',
+    atomicNumber: 10,
+    damage: 22,
+    cooldownSec: 0.7,
+    pattern: 'pierce',
+    projectileSpeed: 860,
+    projectileRadius: 10,
+    projectileLifetimeSec: 0.7,
+    range: 900,
+    projectileCount: 2,
+    evolutionOf: 'neon_beam',
+  },
+  diamond_orbit: {
+    id: 'diamond_orbit',
+    name: 'Diamond Orbit',
+    element: 'C',
+    atomicNumber: 6,
+    damage: 13,
+    cooldownSec: 0,
+    pattern: 'orbit',
+    projectileSpeed: 0,
+    projectileRadius: 9,
+    projectileLifetimeSec: Number.POSITIVE_INFINITY,
+    range: 92,
+    projectileCount: 6,
+    evolutionOf: 'carbon_ring',
+  },
+  ozone_shockwave: {
+    id: 'ozone_shockwave',
+    name: 'Ozone Shockwave',
+    element: 'O3',
+    atomicNumber: 8,
+    damage: 20,
+    cooldownSec: 2.1,
+    pattern: 'wave',
+    projectileSpeed: 360,
+    projectileRadius: 22,
+    projectileLifetimeSec: 0.8,
+    range: 330,
+    projectileCount: 3,
+    evolutionOf: 'oxygen_wave',
+  },
+  steel_identity_barrier: {
+    id: 'steel_identity_barrier',
+    name: 'Steel Identity Barrier',
+    element: 'FeC',
+    atomicNumber: 26,
+    damage: 10,
+    cooldownSec: 0,
+    pattern: 'aura',
+    projectileSpeed: 0,
+    projectileRadius: 68,
+    projectileLifetimeSec: Number.POSITIVE_INFINITY,
+    range: 68,
+    evolutionOf: 'iron_barrier',
+  },
+  magnesium_chain_flash: {
+    id: 'magnesium_chain_flash',
+    name: 'Magnesium Chain Flash',
+    element: 'Mg',
+    atomicNumber: 12,
+    damage: 26,
+    cooldownSec: 2.4,
+    pattern: 'bomb',
+    projectileSpeed: 340,
+    projectileRadius: 12,
+    projectileLifetimeSec: 1.55,
+    range: 520,
+    projectileCount: 4,
+    evolutionOf: 'magnesium_bomb',
+  },
+  golden_ratio_cycle: {
+    id: 'golden_ratio_cycle',
+    name: 'Golden Ratio Cycle',
+    element: 'Au',
+    atomicNumber: 79,
+    damage: 17,
+    cooldownSec: 1.8,
+    pattern: 'boomerang',
+    projectileSpeed: 420,
+    projectileRadius: 10,
+    projectileLifetimeSec: 1.45,
+    range: 520,
+    projectileCount: 3,
+    evolutionOf: 'gold_spiral',
+  },
+  boron_infinite_barrage: {
+    id: 'boron_infinite_barrage',
+    name: 'Boron Infinite Barrage',
+    element: 'B',
+    atomicNumber: 5,
+    damage: 8,
+    cooldownSec: 1.35,
+    pattern: 'spread',
+    projectileSpeed: 470,
+    projectileRadius: 5,
+    projectileLifetimeSec: 1,
+    range: 470,
+    projectileCount: 12,
+    evolutionOf: 'boron_shot',
   },
 } as const satisfies Record<WeaponId, WeaponDefinition>;

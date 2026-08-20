@@ -42,6 +42,14 @@ describe('weapons', () => {
       'magnesium_bomb',
       'gold_spiral',
       'boron_shot',
+      'heavy_hydrogen_storm',
+      'neon_infinite_beam',
+      'diamond_orbit',
+      'ozone_shockwave',
+      'steel_identity_barrier',
+      'magnesium_chain_flash',
+      'golden_ratio_cycle',
+      'boron_infinite_barrage',
     ]);
     expect(WEAPONS.neon_beam).toMatchObject({
       element: 'Ne',
@@ -91,6 +99,24 @@ describe('weapons', () => {
       damage: 5,
       cooldownSec: 1.8,
       pattern: 'spread',
+    });
+    expect(WEAPONS.heavy_hydrogen_storm).toMatchObject({
+      element: 'D',
+      atomicNumber: 1,
+      projectileCount: 8,
+      evolutionOf: 'hydrogen_arrow',
+    });
+    expect(WEAPONS.diamond_orbit).toMatchObject({
+      element: 'C',
+      atomicNumber: 6,
+      projectileCount: 6,
+      evolutionOf: 'carbon_ring',
+    });
+    expect(WEAPONS.boron_infinite_barrage).toMatchObject({
+      element: 'B',
+      atomicNumber: 5,
+      projectileCount: 12,
+      evolutionOf: 'boron_shot',
     });
   });
 

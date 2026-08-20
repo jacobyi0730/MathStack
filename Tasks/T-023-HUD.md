@@ -2,7 +2,7 @@
 id: T-023
 title: 인게임 HUD
 phase: 4
-status: blocked
+status: done
 agent: ui-builder
 skills: []
 depends: [T-009, T-010]
@@ -58,3 +58,10 @@ HUD는 DOM이다. **매 프레임 DOM을 갱신하지 않는다.**
 ## 주의
 
 HUD를 캔버스에 그리고 싶은 유혹이 있지만 **DOM 오버레이로 유지한다.** 텍스트 렌더 비용이 캔버스가 훨씬 비싸고, 접근성(스크린 리더·확대)도 DOM이 낫다.
+
+## 결과
+
+- 구현: `src/ui/hud.ts`, `src/main.ts`
+- 테스트: `tests/src/hud.test.ts`
+- 검증: `npm run typecheck`, `npm run lint`, `npm run test`(202개, 2 skipped), `npm run build:bank`, `npm run validate:bank`, `npm run build` 통과
+- 메모: HUD를 런타임에 마운트하고 게임 상태, 슬롯, 각성 가능 표시를 연결했다. DOM 값 갱신은 10프레임 스로틀이다.

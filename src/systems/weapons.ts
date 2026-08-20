@@ -149,7 +149,7 @@ export function resolveWeaponProjectileCount(level: number, playerProjectileCoun
 }
 
 export function canEvolveWeapon(slot: WeaponSlotRuntime): boolean {
-  return slot.id !== null && slot.level >= WEAPON_EVOLUTION_LEVEL;
+  return slot.id !== null && 'evolvesTo' in WEAPONS[slot.id] && slot.level >= WEAPON_EVOLUTION_LEVEL;
 }
 
 export function findClosestEnemy(
@@ -236,7 +236,9 @@ function updateOrbitPattern(
   _dt: number,
 ): boolean {
   const player = state.player;
-  const count = resolveWeaponProjectileCount(slot.level, player.projectileCount + ORBIT_BASE_COUNT - 1);
+  const count =
+    definition.projectileCount ??
+    resolveWeaponProjectileCount(slot.level, player.projectileCount + ORBIT_BASE_COUNT - 1);
   const rangeMultiplier = resolveWeaponRangeMultiplier(slot.level, player.attackRangeMultiplier);
   const orbitRadius = definition.range * rangeMultiplier;
   const damage = resolveWeaponDamage(definition, slot.level, player.attackPowerMultiplier);
@@ -381,11 +383,13 @@ function fireAimedProjectiles(
 
   const baseDirX = dx / len;
   const baseDirY = dy / len;
-  const count = resolveWeaponProjectileCount(slot.level, player.projectileCount);
+  const count = definition.projectileCount ?? resolveWeaponProjectileCount(slot.level, player.projectileCount);
   const damage = resolveWeaponDamage(definition, slot.level, player.attackPowerMultiplier);
   const rangeMultiplier = resolveWeaponRangeMultiplier(slot.level, player.attackRangeMultiplier);
-  const patternCount = definition.pattern === 'spread' ? definition.atomicNumber : count;
-  const totalCount = patternCount + (definition.pattern === 'spread' ? count - 1 : 0);
+  const patternCount =
+    definition.pattern === 'spread' && definition.projectileCount === undefined ? definition.atomicNumber : count;
+  const totalCount =
+    patternCount + (definition.pattern === 'spread' && definition.projectileCount === undefined ? count - 1 : 0);
   const angleStart = -spreadStepRad * (totalCount - 1) * 0.5;
 
   for (let i = 0; i < totalCount; i += 1) {

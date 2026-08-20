@@ -5,9 +5,12 @@ import { setupStressMode, stressModeEnabled } from './engine/stress.js';
 import { createTimer } from './engine/timing.js';
 import { createRenderer, type RenderScene } from './engine/renderer.js';
 import { createDebugOverlay } from './ui/debug-overlay.js';
+import { createHud, type Hud, type HudSlotState, type HudState } from './ui/hud.js';
 import { createInputController } from './engine/input.js';
 import { createPlayer, syncPlayerIntent } from './entities/player.js';
 import { BOSSES } from './data/bosses.js';
+import { PASSIVES } from './data/passives.js';
+import { WEAPONS } from './data/weapons.js';
 import { spawnBoss, updateBosses } from './entities/boss.js';
 import { updateEnemies } from './systems/enemy-ai.js';
 import { movePlayer } from './systems/movement.js';
@@ -18,6 +21,7 @@ import { consumeCombatRewardsAsPickups, updatePickups } from './systems/pickup.j
 import { updateBossTimeline } from './systems/timeline.js';
 import { equipWeapon, updateWeapons } from './systems/weapons.js';
 import { recalcStats } from './systems/stats.js';
+import { getReadyEvolutionForBaseWeapon, isEvolutionWeaponId } from './systems/evolution.js';
 import { DEFAULT_CHARACTER_ID, getCharacterArchetype, type CharacterId } from './data/characters.js';
 
 type RuntimeState = GameState & RenderScene;
@@ -128,6 +132,61 @@ function applyPendingMeteorDamage(state: RuntimeState): void {
   }
 }
 
+function createHudState(state: RuntimeState, frame: number): HudState {
+  return {
+    frame,
+    elapsedSec: state.elapsedSec,
+    level: state.level.level,
+    xp: state.level.xp,
+    xpRequired: state.level.xpForNextLevel,
+    health: state.player.health,
+    maxHealth: state.player.maxHealth,
+    kills: state.combat.defeatedEnemies,
+    quizCorrect: 0,
+    quizTotal: state.level.queuedCount,
+    weapons: createWeaponHudSlots(state),
+    passives: createPassiveHudSlots(state),
+  };
+}
+
+function createWeaponHudSlots(state: RuntimeState): HudSlotState[] {
+  return state.weapons.slots.map((slot) => {
+    if (slot.id === null) return emptyHudSlot();
+    const weapon = WEAPONS[slot.id];
+    const evolutionReady = !isEvolutionWeaponId(slot.id) &&
+      getReadyEvolutionForBaseWeapon(state.weapons, state.passives, slot.id) !== undefined;
+    return {
+      id: slot.id,
+      label: weapon.name,
+      level: slot.level,
+      element: weapon.element,
+      evolutionReady,
+    };
+  });
+}
+
+function createPassiveHudSlots(state: RuntimeState): HudSlotState[] {
+  return state.passives.slots.map((slot) => {
+    if (slot.id === null) return emptyHudSlot();
+    const passive = PASSIVES[slot.id];
+    return {
+      id: slot.id,
+      label: passive.name,
+      level: slot.level,
+      element: passive.element,
+    };
+  });
+}
+
+function emptyHudSlot(): HudSlotState {
+  return {
+    id: null,
+    label: '',
+    level: 0,
+    element: '',
+  };
+}
+
 function bootstrap(): void {
   const canvas = document.querySelector<HTMLCanvasElement>('#game');
   if (!canvas) throw new Error('#game 캔버스를 찾을 수 없습니다.');
@@ -138,6 +197,7 @@ function bootstrap(): void {
   const state = createRuntimeState();
   const timer = createTimer();
   const overlay = createDebugOverlay();
+  const hud: Hud = createHud();
   const input = createInputController(canvas, state.input);
 
   let size = resize(canvas);
@@ -172,6 +232,7 @@ function bootstrap(): void {
     onFrame(steps) {
       timer.endFrame(steps, state.entityCount, state.enemies.recycles);
       state.enemies.resetFrameStats();
+      hud.update(createHudState(state, state.ticks));
       overlay.update(timer);
       timer.beginFrame();
     },
@@ -192,6 +253,7 @@ function bootstrap(): void {
 
   window.addEventListener('beforeunload', () => {
     input.destroy();
+    hud.destroy();
   });
 
   timer.beginFrame();
