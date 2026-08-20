@@ -1,28 +1,14 @@
 import './styles.css';
 import { createGameState, type GameState } from './engine/state.js';
-import { createLoop, FIXED_DT } from './engine/loop.js';
+import { createLoop } from './engine/loop.js';
 import { createTimer } from './engine/timing.js';
+import { createRenderer, type RenderableEntity, type RenderScene } from './engine/renderer.js';
 import { createDebugOverlay } from './ui/debug-overlay.js';
+import { ENEMY_PALETTES, PLAYER_PALETTES } from './data/palette.js';
 
-/**
- * T-003 부트스트랩.
- *
- * 고정 타임스텝 루프를 붙이고, 그것이 실제로 도는지 눈으로 보이게 한다.
- * 실제 렌더러·캐릭터는 T-004, 입력은 T-006 에서 붙는다.
- */
-
-const CELL = 48; // 주기율표 칸 (기획서 §5.3)
-const COLORS = {
-  field: '#1A1A2E',
-  grid: '#252540',
-  accent: '#FFC107',
-  probe: '#00E5FF',
-  muted: '#8888AA',
-} as const;
-
-/** 고정 타임스텝이 도는지 눈으로 확인하는 지표. 6초에 한 바퀴 */
-const PROBE_PERIOD_SEC = 6;
-const PROBE_RADIUS = 90;
+interface DemoState extends GameState, RenderScene {
+  drift: number;
+}
 
 function resize(canvas: HTMLCanvasElement): { w: number; h: number } {
   const dpr = Math.min(window.devicePixelRatio, 2);
@@ -35,59 +21,104 @@ function resize(canvas: HTMLCanvasElement): { w: number; h: number } {
   return { w, h };
 }
 
-function drawField(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-  ctx.fillStyle = COLORS.field;
-  ctx.fillRect(0, 0, w, h);
-
-  ctx.strokeStyle = COLORS.grid;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let x = 0; x <= w; x += CELL) {
-    ctx.moveTo(x + 0.5, 0);
-    ctx.lineTo(x + 0.5, h);
-  }
-  for (let y = 0; y <= h; y += CELL) {
-    ctx.moveTo(0, y + 0.5);
-    ctx.lineTo(w, y + 0.5);
-  }
-  ctx.stroke();
+function createEntity(
+  x: number,
+  y: number,
+  radius: number,
+  paletteGroup: 0 | 1,
+  paletteIndex: number,
+  symbol: string,
+  accessoryKind: number,
+): RenderableEntity {
+  return {
+    x,
+    y,
+    prevX: x,
+    prevY: y,
+    radius,
+    paletteGroup,
+    paletteIndex,
+    symbol,
+    accessoryKind,
+    dx: 0,
+    dy: 0,
+  };
 }
 
-function drawProbe(
-  ctx: CanvasRenderingContext2D,
-  state: GameState,
-  alpha: number,
-  cx: number,
-  cy: number,
-): void {
-  // alpha 로 보간해 60Hz·144Hz 어디서든 같은 속도로 매끄럽게 돈다
-  const t = state.elapsedSec + alpha * FIXED_DT;
-  const angle = (t / PROBE_PERIOD_SEC) * Math.PI * 2;
+function createDemoState(): DemoState {
+  const player = createEntity(0, 0, 24, 0, 0, PLAYER_PALETTES[0].symbol, 0);
+  const entities: RenderableEntity[] = [
+    player,
+    createEntity(-90, -56, 22, 0, 1, PLAYER_PALETTES[1].symbol, 1),
+    createEntity(88, 44, 20, 0, 2, PLAYER_PALETTES[2].symbol, 2),
+    createEntity(0, 112, 26, 0, 3, PLAYER_PALETTES[3].symbol, 0),
+  ];
 
-  ctx.beginPath();
-  ctx.arc(cx, cy, PROBE_RADIUS, 0, Math.PI * 2);
-  ctx.strokeStyle = COLORS.grid;
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  for (let i = 0; i < 36; i += 1) {
+    const angle = (i / 36) * Math.PI * 2;
+    const radius = 260 + (i % 6) * 45;
+    const paletteIndex = i % ENEMY_PALETTES.length;
+    const enemyRadius = 12 + (i % 4) * 3;
+    entities.push(
+      createEntity(
+        Math.cos(angle) * radius,
+        Math.sin(angle) * radius,
+        enemyRadius,
+        1,
+        paletteIndex,
+        ENEMY_PALETTES[paletteIndex].symbol,
+        i % 3,
+      ),
+    );
+  }
 
-  ctx.beginPath();
-  ctx.arc(cx + Math.cos(angle) * PROBE_RADIUS, cy + Math.sin(angle) * PROBE_RADIUS, 9, 0, Math.PI * 2);
-  ctx.fillStyle = COLORS.probe;
-  ctx.fill();
+  return {
+    ...createGameState(),
+    player,
+    entities,
+    drift: 0,
+    entityCount: entities.length,
+  };
 }
 
-function drawLabels(ctx: CanvasRenderingContext2D, state: GameState, cx: number, cy: number): void {
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+function updateDemoState(state: DemoState, dt: number): void {
+  state.drift += dt;
 
-  ctx.fillStyle = COLORS.accent;
-  ctx.font = '600 30px system-ui, sans-serif';
-  ctx.fillText('MathStack', cx, cy - 8);
+  for (let i = 0; i < state.entities.length; i += 1) {
+    const entity = state.entities[i];
+    entity.prevX = entity.x;
+    entity.prevY = entity.y;
+  }
 
-  ctx.fillStyle = COLORS.muted;
-  ctx.font = '400 14px ui-monospace, monospace';
-  ctx.fillText(`${state.elapsedSec.toFixed(2)}s · ${state.ticks} ticks`, cx, cy + 20);
-  ctx.fillText('Space 일시정지 · D 계측 표시', cx, cy + PROBE_RADIUS + 40);
+  const t = state.elapsedSec + dt;
+  const player = state.player;
+  player.x = Math.cos(t * 0.65) * 140;
+  player.y = Math.sin(t * 0.5) * 110;
+  player.dx = player.x - player.prevX;
+  player.dy = player.y - player.prevY;
+
+  for (let i = 1; i < 4; i += 1) {
+    const ally = state.entities[i] as RenderableEntity;
+    const angle = t * 0.8 + i * 1.7;
+    const radius = 78 + i * 18;
+    ally.x = player.x + Math.cos(angle) * radius;
+    ally.y = player.y + Math.sin(angle) * radius * 0.7;
+    ally.dx = ally.x - ally.prevX;
+    ally.dy = ally.y - ally.prevY;
+  }
+
+  for (let i = 4; i < state.entities.length; i += 1) {
+    const enemy = state.entities[i] as RenderableEntity;
+    const swarmIndex = i - 4;
+    const angle = t * (0.25 + (swarmIndex % 5) * 0.05) + swarmIndex * 0.4;
+    const ring = 220 + (swarmIndex % 6) * 52 + Math.sin(t + swarmIndex) * 18;
+    enemy.x = player.x + Math.cos(angle) * ring;
+    enemy.y = player.y + Math.sin(angle * 1.1) * ring * 0.82;
+    enemy.dx = enemy.x - enemy.prevX;
+    enemy.dy = enemy.y - enemy.prevY;
+  }
+
+  state.entityCount = state.entities.length;
 }
 
 function bootstrap(): void {
@@ -97,29 +128,27 @@ function bootstrap(): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2D 컨텍스트를 만들 수 없습니다.');
 
-  const state = createGameState();
+  const state = createDemoState();
   const timer = createTimer();
   const overlay = createDebugOverlay();
 
   let size = resize(canvas);
+  const renderer = createRenderer(ctx, { width: size.w, height: size.h, dpr: Math.min(window.devicePixelRatio, 2) });
   window.addEventListener('resize', () => {
     size = resize(canvas);
+    renderer.resize({ width: size.w, height: size.h, dpr: Math.min(window.devicePixelRatio, 2) });
   });
 
   const loop = createLoop(state, {
-    update(_state, _dt) {
+    update(baseState, dt) {
       timer.begin('sim');
-      // T-006 부터 이동·스폰·충돌 시스템이 여기 들어온다
+      updateDemoState(baseState as DemoState, dt);
       timer.end('sim');
     },
 
-    render(s, alpha) {
+    render(baseState, alpha) {
       timer.begin('render');
-      const cx = size.w / 2;
-      const cy = size.h / 2;
-      drawField(ctx, size.w, size.h);
-      drawProbe(ctx, s, alpha, cx, cy);
-      drawLabels(ctx, s, cx, cy);
+      renderer.render(baseState as DemoState, alpha);
       timer.end('render');
     },
 

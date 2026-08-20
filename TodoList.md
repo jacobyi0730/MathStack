@@ -27,11 +27,11 @@
 - [x] **T-002** Netlify 배포 파이프라인 — `deploy-ops` ✅ 2026-08-20
 - [x] **T-003** 게임 루프 & 고정 타임스텝 — `game-engine-dev` ✅ 2026-08-20
 - [x] **T-005** 오브젝트 풀 & 공간 해시 — `game-engine-dev` ✅ 2026-08-20
-- [~] **T-004** 렌더러 & 캐릭터 스프라이트 — `game-engine-dev` 🔒 claude/game-engine-dev
+- [x] **T-004** 렌더러 & 캐릭터 스프라이트 — `game-engine-dev` ✅ 2026-08-20 (codex) ⚠ 500개 렌더 실측은 T-028 이월
 
 ## Phase 1 — 게임 코어
 
-- [-] **T-006** 플레이어 이동 & 입력 — `game-engine-dev` · 선행 T-004
+- [ ] **T-006** 플레이어 이동 & 입력 — `game-engine-dev` · 선행 T-004 ✅
 - [-] **T-007** 적 스폰 & 추격 AI — `game-engine-dev` · 선행 T-005 ✅, T-006
 - [-] **T-008** 충돌 판정 & 데미지 — `game-engine-dev` · 선행 T-005 ✅, T-007
 - [-] **T-009** 경험치 & 레벨업 — `game-engine-dev` · 선행 T-008
@@ -47,9 +47,9 @@
 
 ## Phase 3 — 수학 시스템
 
-- [~] **T-016** 공유 스키마 & 커리큘럼 테이블 — `pipeline-engineer` 🔒 codex
-- [-] **T-017** 템플릿 엔진 & `build:bank` — `pipeline-engineer` · 선행 T-016
-- [-] **T-018** 뱅크 검증기 `validate:bank` — `pipeline-engineer` · 선행 T-016
+- [x] **T-016** 공유 스키마 & 커리큘럼 테이블 — `pipeline-engineer` ✅ 2026-08-20 (codex) ⚠ 1:1 배치 결함 → T-018 전 수정 필요
+- [ ] **T-017** 템플릿 엔진 & `build:bank` — `pipeline-engineer` · 선행 T-016 ✅
+- [ ] **T-018** 뱅크 검증기 `validate:bank` — `pipeline-engineer` · 선행 T-016 ✅ ⚠ 착수 전 커리큘럼 1:1 배치 결함 수정
 - [-] **T-019** 학년별 문항 저작 — `quiz-author` · 선행 T-017, T-018
 - [-] **T-020** 클라이언트 출제기 — `game-engine-dev` · 선행 T-009, T-019
 - [-] **T-021** 퀴즈 모달 UI — `ui-builder` · 선행 T-020
@@ -68,14 +68,24 @@
 
 ## 현황
 
-**4 / 28 완료** · 진행 중 2 (T-004 claude · T-016 codex) · 착수 가능 0
+**6 / 28 완료** · 진행 중 0 · 착수 가능 3 (T-006, T-017, T-018)
 
 ## 병렬 배정 이력
 
 | 시각 | 태스크 | 실행자 | 파일 집합 | 결과 |
 | --- | --- | --- | --- | --- |
-| 08-20 17:4x | **T-004** 렌더러·캐릭터 | Claude `game-engine-dev` | `src/engine/renderer·camera`, `src/entities/sprite`, `src/data/palette`, `src/main`, `tests/src/` | 진행 중 |
-| 08-20 17:4x | **T-016** 스키마·커리큘럼 | **codex** | `shared/curriculum·schema·domain`, `tests/tools/` | 진행 중 |
+| 08-20 17:34 | **T-016** 스키마·커리큘럼 | **codex** | `shared/`, `tests/tools/` | ✅ 게이트 통과 (test 48→59). 경계 준수 |
+| 08-20 17:39 | **T-004** 렌더러·캐릭터 | **codex** | `src/engine`, `src/entities`, `src/data`, `src/main`, `tests/src/` | ✅ 게이트 통과 (test 59→66). 경계 준수 |
 
-> 두 집합은 **완전히 분리돼 있다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없다.
-> 공통으로 읽기만 하는 것: `AGENTS.md`, `docs/`, `Tasks/T-*.md`.
+> 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
+
+### 이 라운드에서 배운 것
+
+| 문제 | 원인 | 대응 |
+| --- | --- | --- |
+| 첫 codex 실행이 아무것도 안 만듦 | `nohup ... &` 로 띄워 호출 종료 시 같이 죽음 | 하네스 백그라운드 실행을 쓴다 |
+| **codex 2개 동시 실행 시 하나가 즉시 죽음** | codex CLI 가 동시 인스턴스를 못 버팀 | **한 번에 하나만.** 병렬이 필요하면 순차로 |
+| 작업 중단 후에도 프로세스가 살아남음 | `TaskStop` 은 하네스 추적만 끊음 | `Stop-Process -Id <PID> -Force` 로 실제 종료 |
+| 실행 중 출력이 0바이트로 보임 | `\| tail -N` 이 파이프가 닫혀야 출력 | 생존 확인은 `Get-Process codex` 로 |
+
+전부 [AGENTS.md §5.4](AGENTS.md#54-실행자-선택--claude-에이전트-vs-codex)에 기록했다.
