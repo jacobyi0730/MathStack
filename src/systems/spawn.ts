@@ -4,23 +4,24 @@ import {
   HP_GROWTH_PER_MIN,
   SPAWN_MIN_PLAYER_DISTANCE,
   SPAWN_RING_MARGIN,
-  getActiveWave,
+  chooseActiveEnemyId,
+  getActiveSpawnPerMinute,
 } from '../data/waves.js';
-import { spawnEnemy, type EnemyEntity } from '../entities/enemy.js';
+import { resolveEnemyReward, spawnEnemy, type EnemyEntity } from '../entities/enemy.js';
 import type { GameState } from '../engine/state.js';
 
 const MIN_DISTANCE_SQ = SPAWN_MIN_PLAYER_DISTANCE * SPAWN_MIN_PLAYER_DISTANCE;
 
 export function updateSpawns(state: GameState, dt: number): void {
-  const wave = getActiveWave(state.elapsedSec);
   const elapsedMin = state.elapsedSec / 60;
-  const spawnPerSec = (wave.baseSpawnPerMinute * (1 + elapsedMin * DENSITY_GROWTH_PER_MIN)) / 60;
+  const baseSpawnPerMinute = getActiveSpawnPerMinute(state.elapsedSec);
+  const spawnPerSec = (baseSpawnPerMinute * (1 + elapsedMin * DENSITY_GROWTH_PER_MIN)) / 60;
 
   state.spawn.accumulator += spawnPerSec * dt;
 
   while (state.spawn.accumulator >= 1) {
     state.spawn.accumulator -= 1;
-    spawnWaveEnemy(state, wave.enemyId, elapsedMin);
+    spawnWaveEnemy(state, chooseActiveEnemyId(state.elapsedSec, nextRandom(state)), elapsedMin);
   }
 }
 
@@ -34,6 +35,56 @@ export function spawnWaveEnemy(state: GameState, enemyId: keyof typeof ENEMIES, 
   const hp = Math.ceil(definition.hp * (1 + elapsedMin * HP_GROWTH_PER_MIN));
   writeSpawnPosition(state);
   spawnEnemy(enemy, definition, state.spawn.nextX, state.spawn.nextY, hp);
+  return enemy;
+}
+
+export function defeatEnemy(state: GameState, enemy: EnemyEntity): void {
+  if (enemy.ai === 'split' && !enemy.hasSplit) {
+    splitEnemy(state, enemy);
+    return;
+  }
+
+  state.combat.pendingXp += enemy.xp;
+  state.combat.defeatedEnemies += 1;
+
+  const reward = resolveEnemyReward(enemy, state.spawn.seed);
+  if (reward === 'heal') {
+    state.player.health = Math.min(state.player.maxHealth, state.player.health + enemy.rewardAmount);
+  }
+
+  state.enemies.release(enemy);
+}
+
+function splitEnemy(state: GameState, enemy: EnemyEntity): void {
+  const x = enemy.x;
+  const y = enemy.y;
+  const hp = Math.max(1, Math.ceil(enemy.maxHp * 0.5));
+  const childRadius = Math.max(10, enemy.radius * 0.5);
+  const offset = Math.max(childRadius + 2, enemy.radius * 0.6);
+  state.enemies.release(enemy);
+
+  const left = spawnWaveEnemyAt(state, 'uranium', x - offset, y, hp);
+  left.radius = childRadius;
+  left.hasSplit = true;
+
+  const right = spawnWaveEnemyAt(state, 'uranium', x + offset, y, hp);
+  right.radius = childRadius;
+  right.hasSplit = true;
+}
+
+function spawnWaveEnemyAt(
+  state: GameState,
+  enemyId: keyof typeof ENEMIES,
+  x: number,
+  y: number,
+  hp: number,
+): EnemyEntity {
+  if (state.enemies.activeCount >= state.enemies.capacity) {
+    releaseFarthestEnemy(state);
+  }
+
+  const enemy = state.enemies.acquire();
+  spawnEnemy(enemy, ENEMIES[enemyId], x, y, hp);
   return enemy;
 }
 

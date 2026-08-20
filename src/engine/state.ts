@@ -2,6 +2,7 @@ import { FIELD_BOUNDS } from '../data/characters.js';
 import { MAX_ACTIVE_ENEMIES } from '../data/enemies.js';
 import { createEnemyPool, type EnemyPool } from '../entities/enemy.js';
 import { createPlayer, type Player } from '../entities/player.js';
+import { createCollisionState, type CollisionState } from '../systems/collision.js';
 import { createInputState, type InputState } from './input.js';
 import type { RenderableEntity, RenderScene } from './renderer.js';
 
@@ -28,6 +29,12 @@ export interface GameState {
     sideCursor: number;
     nextX: number;
     nextY: number;
+  };
+  collision: CollisionState;
+  combat: {
+    pendingXp: number;
+    pendingShards: number;
+    defeatedEnemies: number;
   };
   entities: RenderableEntity[];
 }
@@ -59,6 +66,12 @@ export function createGameState(options?: GameStateOptions): GameState & RenderS
       sideCursor: 0,
       nextX: 0,
       nextY: 0,
+    },
+    collision: createCollisionState(),
+    combat: {
+      pendingXp: 0,
+      pendingShards: 0,
+      defeatedEnemies: 0,
     },
     entities,
   };

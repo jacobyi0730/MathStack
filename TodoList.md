@@ -33,17 +33,17 @@
 
 - [x] **T-006** 플레이어 이동 & 입력 — `game-engine-dev` ✅ 2026-08-20 ⚠ 캐릭터 선택은 `?character=` 임시 노출
 - [x] **T-007** 적 스폰 & 추격 AI — `game-engine-dev` ✅ 2026-08-20 ⚠ 렌더+투사체 포함 실측은 T-028
-- [ ] **T-008** 충돌 판정 & 데미지 — `game-engine-dev` · 선행 T-005 ✅, T-007 ✅
-- [-] **T-009** 경험치 & 레벨업 — `game-engine-dev` · 선행 T-008
-- [-] **T-010** 무기 시스템 기반 + 1종 — `game-engine-dev` · 선행 T-008
+- [x] **T-008** 충돌 판정 & 데미지 — `game-engine-dev` ✅ 2026-08-20
+- [ ] **T-009** 경험치 & 레벨업 — `game-engine-dev` · 선행 T-008 ✅
+- [ ] **T-010** 무기 시스템 기반 + 1종 — `game-engine-dev` · 선행 T-008 ✅
 
 ## Phase 2 — 전투 확장
 
 - [-] **T-011** 무기 8종 — `game-engine-dev` · 선행 T-010
 - [-] **T-012** 패시브 8종 — `game-engine-dev` · 선행 T-010
 - [-] **T-013** 각성 시스템 — `game-engine-dev` · 선행 T-011, T-012
-- [ ] **T-014** 적 에이전트 7종 — `game-engine-dev` · 선행 T-007 ✅
-- [-] **T-015** 보스 3종 & 웨이브 타임라인 — `game-engine-dev` · 선행 T-014
+- [x] **T-014** 적 에이전트 7종 — `game-engine-dev` ✅ 2026-08-20
+- [ ] **T-015** 보스 3종 & 웨이브 타임라인 — `game-engine-dev` · 선행 T-014 ✅
 
 ## Phase 3 — 수학 시스템
 
@@ -68,7 +68,7 @@
 
 ## 현황
 
-**11 / 28 완료** · 진행 중 0 · 착수 가능 2 (T-008, T-014)
+**13 / 28 완료** · 진행 중 0 · 착수 가능 3 (T-009, T-010, T-015)
 
 ## 병렬 배정 이력
 
@@ -81,6 +81,8 @@
 | 08-20 18:27 | **T-007** 적 스폰·추격 AI | **game-engine-dev 서브에이전트** | `src/entities`, `src/systems`, `src/data`, `src/engine`, `src/main`, `tests/src/`, `docs/30-기술/34-성능예산.md` | ✅ 게이트 통과 (test 80→104). 헤드리스 300체 p99 0.0105ms |
 | 08-20 18:27 | **T-018** 뱅크 검증기 | **pipeline-engineer 서브에이전트** | `tools/`, `shared/`, `tests/tools/` | ✅ 12개 검사 구현. 콘텐츠 보강 후 `validate:bank` 통과 |
 | 08-20 18:27 | **T-019** 학년별 문항 저작 | **quiz-author 서브에이전트 + 오케스트레이터 보정** | `content/`, `docs/MathStack기획서.md`, `shared/curriculum.ts` | ✅ 4개 학년 각 721문항. 영역·난이도 검증 통과 |
+| 08-20 20:10 | **T-008** 충돌 판정·데미지 | **game-engine-dev 서브에이전트 + 오케스트레이터 보정** | `src/systems/collision.ts`, `src/systems/damage.ts`, `src/engine/state.ts`, `src/entities/player.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과 (test 104→120). 적 처치 보상 경로 통합 보정 |
+| 08-20 20:10 | **T-014** 적 에이전트 7종 | **game-engine-dev 서브에이전트** | `src/data/enemies.ts`, `src/data/waves.ts`, `src/entities/enemy.ts`, `src/systems/enemy-ai.ts`, `src/systems/spawn.ts`, `tests/src/` | ✅ 게이트 통과. 300체 혼합 AI p99 0.0193ms |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

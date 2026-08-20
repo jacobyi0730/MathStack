@@ -9,6 +9,8 @@ import { createPlayer, syncPlayerIntent } from './entities/player.js';
 import { updateEnemies } from './systems/enemy-ai.js';
 import { movePlayer } from './systems/movement.js';
 import { updateSpawns } from './systems/spawn.js';
+import { updateCollisions } from './systems/collision.js';
+import { updatePlayerInvulnerability } from './systems/damage.js';
 import { DEFAULT_CHARACTER_ID, getCharacterArchetype, type CharacterId } from './data/characters.js';
 
 type RuntimeState = GameState & RenderScene;
@@ -46,6 +48,7 @@ function updateRuntimeState(state: RuntimeState, dt: number): void {
   movePlayer(state.player, dt, state.world);
   updateSpawns(state, dt);
   updateEnemies(state, dt);
+  updatePlayerInvulnerability(state.player, dt);
   state.entityCount = state.enemies.activeCount + 1;
 }
 
@@ -77,6 +80,9 @@ function bootstrap(): void {
       timer.begin('sim');
       updateRuntimeState(baseState as RuntimeState, dt);
       timer.end('sim');
+      timer.begin('collide');
+      updateCollisions(baseState as RuntimeState, dt);
+      timer.end('collide');
     },
 
     render(baseState, alpha) {

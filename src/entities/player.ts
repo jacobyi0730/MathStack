@@ -28,6 +28,7 @@ export interface PlayerEntity extends RenderableEntity {
   attackRangeMultiplier: number;
   rangeMultiplier: number;
   cooldownMultiplier: number;
+  invulnerableSec: number;
   movementIntent: { x: number; y: number };
   weaponSlots: Array<string | null>;
   passiveSlots: Array<string | null>;
@@ -81,6 +82,7 @@ function createPlayerFromArchetype(archetype: CharacterArchetype, paletteIndex: 
     attackRangeMultiplier,
     rangeMultiplier: attackRangeMultiplier,
     cooldownMultiplier: archetype.cooldownMultiplier,
+    invulnerableSec: 0,
     movementIntent: { x: 0, y: 0 },
     weaponSlots: new Array<string | null>(PLAYER_SLOT_CAPACITY).fill(null),
     passiveSlots: new Array<string | null>(PLAYER_SLOT_CAPACITY).fill(null),

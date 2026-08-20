@@ -1,4 +1,11 @@
-import { ENEMIES, MAX_ACTIVE_ENEMIES, type EnemyAiKind, type EnemyDefinition, type EnemyId } from '../data/enemies.js';
+import {
+  ENEMIES,
+  MAX_ACTIVE_ENEMIES,
+  type EnemyAiKind,
+  type EnemyDefinition,
+  type EnemyId,
+  type EnemyRewardKind,
+} from '../data/enemies.js';
 import { createPool, type Pool, type Poolable } from '../engine/pool.js';
 import type { RenderableEntity } from '../engine/renderer.js';
 
@@ -15,9 +22,21 @@ export interface EnemyEntity extends RenderableEntity, Poolable {
   contactDamage: number;
   xp: number;
   ai: EnemyAiKind;
+  rewardKind: EnemyRewardKind;
+  rewardAmount: number;
+  aiTimerSec: number;
+  aiPhase: number;
+  chargeDirX: number;
+  chargeDirY: number;
+  hasSplit: boolean;
+  rangedCooldownSec: number;
+  rangedShotSeq: number;
+  rangedAimX: number;
+  rangedAimY: number;
 }
 
 export type EnemyPool = Pool<EnemyEntity>;
+export type ResolvedEnemyRewardKind = 'none' | 'magnet' | 'bomb' | 'heal';
 
 export function createEnemyPool(capacity: number = MAX_ACTIVE_ENEMIES): EnemyPool {
   return createPool<EnemyEntity>(createEnemy, resetEnemy, capacity);
@@ -45,6 +64,46 @@ export function spawnEnemy(enemy: EnemyEntity, definition: EnemyDefinition, x: n
   enemy.contactDamage = definition.contactDamage;
   enemy.xp = definition.xp;
   enemy.ai = definition.ai;
+  enemy.rewardKind = definition.rewardKind;
+  enemy.rewardAmount = definition.rewardAmount;
+  resetEnemyAiState(enemy);
+}
+
+export function resetEnemyAiState(enemy: EnemyEntity): void {
+  enemy.aiTimerSec = 0;
+  enemy.aiPhase = 0;
+  enemy.chargeDirX = 0;
+  enemy.chargeDirY = 0;
+  enemy.hasSplit = false;
+  enemy.rangedCooldownSec = 0;
+  enemy.rangedShotSeq = 0;
+  enemy.rangedAimX = 0;
+  enemy.rangedAimY = 0;
+}
+
+export function getIncomingDamageMultiplier(
+  enemy: EnemyEntity,
+  sourceX: number,
+  sourceY: number,
+): number {
+  if (enemy.ai !== 'tank') return 1;
+
+  const directionLenSq = enemy.dx * enemy.dx + enemy.dy * enemy.dy;
+  if (directionLenSq <= 0.0001) return 1;
+
+  const sourceXFromEnemy = sourceX - enemy.x;
+  const sourceYFromEnemy = sourceY - enemy.y;
+  const sourceLenSq = sourceXFromEnemy * sourceXFromEnemy + sourceYFromEnemy * sourceYFromEnemy;
+  if (sourceLenSq <= 0.0001) return 1;
+
+  const dot = enemy.dx * sourceXFromEnemy + enemy.dy * sourceYFromEnemy;
+  return dot > 0 ? 0.5 : 1;
+}
+
+export function resolveEnemyReward(enemy: EnemyEntity, seed: number): ResolvedEnemyRewardKind {
+  if (enemy.rewardKind === 'heal') return 'heal';
+  if (enemy.rewardKind === 'magnet_or_bomb') return (seed & 1) === 0 ? 'magnet' : 'bomb';
+  return 'none';
 }
 
 function createEnemy(): EnemyEntity {
@@ -72,6 +131,17 @@ function createEnemy(): EnemyEntity {
     contactDamage: 0,
     xp: 0,
     ai: 'chase',
+    rewardKind: 'none',
+    rewardAmount: 0,
+    aiTimerSec: 0,
+    aiPhase: 0,
+    chargeDirX: 0,
+    chargeDirY: 0,
+    hasSplit: false,
+    rangedCooldownSec: 0,
+    rangedShotSeq: 0,
+    rangedAimX: 0,
+    rangedAimY: 0,
     poolIndex: -1,
     poolSeq: 0,
   };
@@ -88,4 +158,11 @@ function resetEnemy(enemy: EnemyEntity): void {
   enemy.radius = 0;
   enemy.hp = 0;
   enemy.maxHp = 0;
+  enemy.speed = 0;
+  enemy.contactDamage = 0;
+  enemy.xp = 0;
+  enemy.ai = 'chase';
+  enemy.rewardKind = 'none';
+  enemy.rewardAmount = 0;
+  resetEnemyAiState(enemy);
 }
