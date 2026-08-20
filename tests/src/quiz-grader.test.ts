@@ -61,6 +61,11 @@ describe('quiz grader', () => {
       misconceptionTag: 'addition_counting',
     });
     expect(session.retryQueue[0]).toEqual({ question, misconceptionTag: 'addition_counting' });
+    expect(session.reviewQueue.entries[0]).toMatchObject({
+      misconceptionTag: 'addition_counting',
+      misses: 1,
+      priority: 1,
+    });
   });
 
   it('treats_timeout_as_wrong_without_consuming_retry', () => {
@@ -74,5 +79,61 @@ describe('quiz grader', () => {
       healthDelta: 0,
     });
     expect(session.retryQueue).toHaveLength(0);
+    expect(session.reviewQueue.entries).toHaveLength(0);
+  });
+
+  it('converts_an_active_review_on_correct_answer', () => {
+    const session = createQuizSession(3);
+    session.reviewQueue.entries.push({
+      misconceptionTag: question.misconceptionTag,
+      misses: 2,
+      priority: 2,
+      targetDifficulty: 1,
+      sourceQuestionIds: ['source'],
+    });
+    session.reviewQueue.active = {
+      misconceptionTag: question.misconceptionTag,
+      questionId: question.id,
+    };
+    session.reviewQueue.stats.reviewed = 1;
+
+    expect(gradeAnswer(session, { question, selectedAnswer: '2', phase: 'retry' })).toMatchObject({
+      kind: 'correct',
+      retryConsumed: true,
+    });
+    expect(session.reviewQueue.entries).toHaveLength(0);
+    expect(session.reviewQueue.stats).toEqual({
+      reviewed: 1,
+      converted: 1,
+      conversionRate: 1,
+    });
+  });
+
+  it('keeps_an_active_review_after_retry_incorrect_answer', () => {
+    const session = createQuizSession(3);
+    session.reviewQueue.entries.push({
+      misconceptionTag: question.misconceptionTag,
+      misses: 2,
+      priority: 2,
+      targetDifficulty: 1,
+      sourceQuestionIds: ['source'],
+    });
+    session.reviewQueue.active = {
+      misconceptionTag: question.misconceptionTag,
+      questionId: question.id,
+    };
+    session.reviewQueue.stats.reviewed = 1;
+
+    expect(gradeAnswer(session, { question, selectedAnswer: '3', phase: 'retry' })).toMatchObject({
+      kind: 'incorrect',
+      retryConsumed: true,
+    });
+    expect(session.reviewQueue.entries).toHaveLength(1);
+    expect(session.retryQueue).toHaveLength(0);
+    expect(session.reviewQueue.stats).toEqual({
+      reviewed: 1,
+      converted: 0,
+      conversionRate: 0,
+    });
   });
 });

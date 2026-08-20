@@ -1,6 +1,12 @@
 import type { Question } from '../../shared/schema.js';
 import type { QuizAttemptPhase, QuizGradeResult } from '../quiz/grader.js';
 import { renderMathText } from './fraction.js';
+import {
+  DEFAULT_ACCESSIBILITY_SETTINGS,
+  effectiveEffectIntensity,
+  normalizeAccessibilitySettings,
+  type AccessibilitySettings,
+} from './settings.js';
 
 export type QuizModalState = {
   question: Question;
@@ -20,6 +26,10 @@ export type QuizModalHandlers = {
   onHide?: () => void;
 };
 
+export type QuizModalOptions = QuizModalHandlers & {
+  settings?: Partial<AccessibilitySettings>;
+};
+
 export type QuizModal = {
   root: HTMLElement;
   show(state: QuizModalState): void;
@@ -34,6 +44,7 @@ export type QuizModal = {
 type QuizModalElements = {
   root: HTMLElement;
   panel: HTMLElement;
+  timer: HTMLElement;
   prompt: HTMLElement;
   meta: HTMLElement;
   timerRing: SVGCircleElement;
@@ -50,14 +61,15 @@ const TIMER_CIRCUMFERENCE = 100;
 
 export function createQuizModal(
   parent: HTMLElement = document.body,
-  handlers: QuizModalHandlers = {},
+  options: QuizModalOptions = {},
 ): QuizModal {
   const elements = createElements(parent);
   let currentState: QuizModalState | undefined;
+  let currentSettings = normalizeQuizSettings(options.settings);
 
   const submitAnswer = (answer: string): void => {
     if (currentState === undefined) return;
-    handlers.onSubmit?.({ answer, phase: currentState.phase });
+    options.onSubmit?.({ answer, phase: currentState.phase });
   };
 
   elements.choices.addEventListener('click', (event) => {
@@ -94,6 +106,8 @@ export function createQuizModal(
     show(state: QuizModalState): void {
       currentState = state;
       renderQuestion(elements, state);
+      currentSettings = normalizeQuizSettings(options.settings);
+      applyQuizSettings(elements, currentSettings);
       this.resetResult();
       this.updateTimer(state.remainingSec, state.totalSec);
       elements.root.hidden = false;
@@ -103,13 +117,15 @@ export function createQuizModal(
     hide(): void {
       elements.root.hidden = true;
       elements.root.setAttribute('aria-hidden', 'true');
-      handlers.onHide?.();
+      options.onHide?.();
     },
 
     updateTimer(remainingSec: number, totalSec = currentState?.totalSec ?? currentState?.question.timeLimitSec ?? 15): void {
       const safeTotal = Math.max(1, totalSec);
       const clampedRemaining = Math.max(0, Math.min(remainingSec, safeTotal));
       const progress = clampedRemaining / safeTotal;
+      elements.timer.hidden = currentSettings.slowMode;
+      elements.timer.setAttribute('aria-hidden', currentSettings.slowMode ? 'true' : 'false');
       elements.timerRing.style.strokeDashoffset = `${TIMER_CIRCUMFERENCE * (1 - progress)}`;
       elements.timerText.textContent = `${Math.ceil(clampedRemaining)}초`;
       elements.timerRing.classList.toggle('mathstack-quiz__timer-ring--danger', clampedRemaining <= 5);
@@ -117,7 +133,7 @@ export function createQuizModal(
     },
 
     showResult(result: QuizGradeResult, explanation = currentState?.question.explanation ?? ''): void {
-      renderResult(elements, result, explanation);
+      renderResult(elements, result, explanation, currentSettings);
     },
 
     resetResult(): void {
@@ -234,6 +250,7 @@ function createElements(parent: HTMLElement): QuizModalElements {
   return {
     root,
     panel,
+    timer: timer.wrap,
     prompt,
     meta,
     timerRing: timer.ring,
@@ -342,23 +359,54 @@ function createChoiceButton(doc: Document, choice: string, index: number): HTMLB
   return button;
 }
 
-function renderResult(elements: QuizModalElements, result: QuizGradeResult, explanation: string): void {
+function renderResult(
+  elements: QuizModalElements,
+  result: QuizGradeResult,
+  explanation: string,
+  settings: AccessibilitySettings,
+): void {
+  const effectsEnabled = effectiveEffectIntensity(settings) > 0;
+
   if (result.kind === 'correct') {
-    elements.panel.dataset.result = 'correct';
+    elements.panel.dataset.result = effectsEnabled ? 'correct' : '';
     elements.feedback.textContent = '[OK] 정답입니다. 보상을 고를 수 있어요.';
     return;
   }
 
   if (result.kind === 'try_again') {
-    elements.panel.dataset.result = 'try-again';
+    elements.panel.dataset.result = effectsEnabled ? 'try-again' : '';
     elements.feedback.textContent = '[!] 다시 한 번 풀어봅시다.';
     elements.explanation.hidden = false;
     elements.explanation.replaceChildren(renderMathText(explanation, elements.explanation.ownerDocument));
     return;
   }
 
-  elements.panel.dataset.result = 'incorrect';
+  elements.panel.dataset.result = effectsEnabled ? 'incorrect' : '';
   elements.feedback.textContent = '[X] 아쉬워요. 그래도 체력은 줄지 않습니다.';
   elements.explanation.hidden = false;
   elements.explanation.replaceChildren(renderMathText(explanation, elements.explanation.ownerDocument));
+}
+
+function normalizeQuizSettings(
+  settings: Partial<AccessibilitySettings> | undefined,
+): AccessibilitySettings {
+  return normalizeAccessibilitySettings({
+    ...DEFAULT_ACCESSIBILITY_SETTINGS,
+    ...settings,
+  });
+}
+
+function applyQuizSettings(
+  elements: QuizModalElements,
+  settings: AccessibilitySettings,
+): void {
+  elements.prompt.style.fontSize = settings.textSize === 'large' ? '32px' : '24px';
+  elements.timer.hidden = settings.slowMode;
+  elements.timer.setAttribute('aria-hidden', settings.slowMode ? 'true' : 'false');
+  elements.root.classList.toggle('mathstack-quiz--slow-mode', settings.slowMode);
+  elements.root.classList.toggle('mathstack-quiz--large-text', settings.textSize === 'large');
+  elements.root.classList.toggle(
+    'mathstack-quiz--no-effects',
+    effectiveEffectIntensity(settings) === 0,
+  );
 }

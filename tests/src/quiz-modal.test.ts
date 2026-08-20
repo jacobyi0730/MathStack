@@ -79,4 +79,41 @@ describe('quiz modal', () => {
 
     modal.destroy();
   });
+
+  it.runIf(typeof document !== 'undefined')('applies_accessibility_settings_to_timer_text_and_effects', () => {
+    const host = document.createElement('div');
+    const modal = createQuizModal(host, {
+      settings: {
+        slowMode: true,
+        effectIntensity: 0,
+        textSize: 'large',
+        keyboardOnlyHints: true,
+      },
+    });
+
+    modal.show({
+      question,
+      phase: 'first',
+      retry: false,
+      remainingSec: 15,
+    });
+    modal.showResult({
+      kind: 'incorrect',
+      choicesOffered: 2,
+      shouldRetry: false,
+      retryConsumed: false,
+      healthDelta: 0,
+      misconceptionTag: 'fraction_notation',
+    });
+
+    expect(modal.root.querySelector<HTMLElement>('.mathstack-quiz__timer')?.hidden).toBe(true);
+    expect(modal.root.querySelector<HTMLElement>('.mathstack-quiz__prompt')?.style.fontSize).toBe(
+      '32px',
+    );
+    expect(modal.root.querySelector<HTMLElement>('.mathstack-quiz__panel')?.dataset.result).toBe(
+      '',
+    );
+
+    modal.destroy();
+  });
 });

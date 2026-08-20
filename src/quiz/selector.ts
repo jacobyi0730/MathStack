@@ -7,17 +7,21 @@ import {
 import { DOMAIN_QUOTA, DOMAINS } from '../../shared/domain.js';
 import type { Difficulty, Domain, Semester } from '../../shared/domain.js';
 import type { Bank, Question } from '../../shared/schema.js';
+import { selectReviewQuestion, type ReviewFallbackSignal } from './review-queue.js';
 import {
   getAskedCount,
   nextRandom,
   rememberQuestion,
-  shiftRetryQuestion,
   type QuizSessionState,
 } from './session.js';
 
 export type SelectedQuestion = {
   question: Question;
   retry: boolean;
+  review?: {
+    misconceptionTag: string;
+    fallback?: ReviewFallbackSignal;
+  };
 };
 
 export function selectQuestion(
@@ -27,11 +31,18 @@ export function selectQuestion(
   session: QuizSessionState,
 ): SelectedQuestion {
   if (level >= 10) {
-    const retry = shiftRetryQuestion(session);
+    const review = selectReviewQuestion(session.reviewQueue, bank, semester, () => nextRandom(session));
 
-    if (retry !== undefined) {
-      rememberQuestion(session, retry.question);
-      return { question: shuffleQuestionChoices(retry.question, session), retry: true };
+    if (review !== undefined) {
+      rememberQuestion(session, review.question);
+      return {
+        question: shuffleQuestionChoices(review.question, session),
+        retry: true,
+        review: {
+          misconceptionTag: review.entry.misconceptionTag,
+          fallback: review.fallback,
+        },
+      };
     }
   }
 

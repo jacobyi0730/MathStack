@@ -41,6 +41,11 @@ describe('quiz session', () => {
     expect(session.askedQuestionIds).toEqual(['G3-N-001-01']);
     expect(session.domainCounts[Domain.Number]).toBe(1);
     expect(shiftRetryQuestion(session)?.misconceptionTag).toBe('addition_counting');
+    expect(session.reviewQueue.entries[0]).toMatchObject({
+      misconceptionTag: 'addition_counting',
+      misses: 1,
+      priority: 1,
+    });
   });
 
   it('can_reset_for_a_new_run', () => {
@@ -52,6 +57,7 @@ describe('quiz session', () => {
 
     expect(session.askedQuestionIds).toHaveLength(0);
     expect(session.retryQueue).toHaveLength(0);
+    expect(session.reviewQueue.entries).toHaveLength(0);
     expect(session.domainCounts[Domain.Number]).toBe(0);
     expect(session.seed).toBe(456);
   });

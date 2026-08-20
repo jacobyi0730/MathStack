@@ -2,7 +2,7 @@
 id: T-026
 title: 결과 화면 & localStorage
 phase: 4
-status: blocked
+status: done
 agent: ui-builder
 skills: []
 depends: [T-022, T-023]
@@ -53,13 +53,20 @@ refs: ["기획서 §4", "기획서 §15.2", "기획서 §17"]
 
 ## 완료 조건 (DoD)
 
-- [ ] 승리·패배 양쪽에서 결과 화면이 뜬다
-- [ ] 영역별 정답률이 4개 영역 전부 표시된다
-- [ ] 오개념 전환율이 계산되어 표시된다
-- [ ] 자주 틀린 오개념이 **한국어 설명**으로 나온다 (태그 문자열 노출 금지)
-- [ ] 기록이 `localStorage`에 저장되고 다음 판에서 복원된다
-- [ ] 저장 데이터가 없거나 손상됐을 때 크래시하지 않는다
-- [ ] `npm run lint` · `npm run test` 통과
+- [x] 승리·패배 양쪽에서 결과 화면이 뜬다
+- [x] 영역별 정답률이 4개 영역 전부 표시된다
+- [x] 오개념 전환율이 계산되어 표시된다
+- [x] 자주 틀린 오개념이 **한국어 설명**으로 나온다 (태그 문자열 노출 금지)
+- [x] 기록이 `localStorage`에 저장되고 다음 판에서 복원된다
+- [x] 저장 데이터가 없거나 손상됐을 때 크래시하지 않는다
+- [x] `npm run lint` · `npm run test` 통과
+
+## 결과 메모
+
+- `src/quiz/stats.ts`에 1차 정답률, 영역별 정답률, 오개념 전환율, 상위 오개념 집계를 추가했다.
+- `src/storage.ts`에 `version: 1` 저장 스키마, 손상 데이터 복구, 개인 최고 기록과 오개념 누적 저장을 구현했다.
+- `src/ui/result.ts`에 결과 화면과 다시 하기/학년 바꾸기 액션을 추가하고, 세션 종료 시 `main.ts`에서 표시·저장하도록 연결했다.
+- 게이트: `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build:bank`, `npm run validate:bank`, `npm run build` 통과.
 
 ## 주의
 

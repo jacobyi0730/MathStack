@@ -6,11 +6,12 @@ import { createTimer } from './engine/timing.js';
 import { createRenderer, type RenderScene } from './engine/renderer.js';
 import { createDebugOverlay } from './ui/debug-overlay.js';
 import { createHud, type Hud, type HudSlotState, type HudState } from './ui/hud.js';
+import { createResultScreen, type ResultScreenSummary } from './ui/result.js';
 import { createInputController } from './engine/input.js';
 import { createPlayer, syncPlayerIntent } from './entities/player.js';
 import { BOSSES } from './data/bosses.js';
 import { PASSIVES } from './data/passives.js';
-import { WEAPONS } from './data/weapons.js';
+import { WEAPONS, type WeaponId } from './data/weapons.js';
 import { spawnBoss, updateBosses } from './entities/boss.js';
 import { updateEnemies } from './systems/enemy-ai.js';
 import { movePlayer } from './systems/movement.js';
@@ -19,10 +20,14 @@ import { updateCollisions } from './systems/collision.js';
 import { applyEnemyDamage, updatePlayerInvulnerability } from './systems/damage.js';
 import { consumeCombatRewardsAsPickups, updatePickups } from './systems/pickup.js';
 import { updateBossTimeline } from './systems/timeline.js';
+import { claimTrialReward, updateTrialState } from './systems/trial.js';
+import type { TimelineResultKind } from './systems/timeline.js';
 import { equipWeapon, updateWeapons } from './systems/weapons.js';
 import { recalcStats } from './systems/stats.js';
 import { getReadyEvolutionForBaseWeapon, isEvolutionWeaponId } from './systems/evolution.js';
 import { DEFAULT_CHARACTER_ID, getCharacterArchetype, type CharacterId } from './data/characters.js';
+import { summarizeQuizStats } from './quiz/stats.js';
+import { recordSessionResult } from './storage.js';
 
 type RuntimeState = GameState & RenderScene;
 
@@ -59,6 +64,9 @@ function createRuntimeState(): RuntimeState {
 }
 
 function updateRuntimeState(state: RuntimeState, dt: number): void {
+  updateTrialRuntime(state);
+  if (state.trial.phase === 'active') return;
+
   syncPlayerIntent(state.player, state.input);
   movePlayer(state.player, dt, state.world);
   updateSpawns(state, dt);
@@ -70,6 +78,11 @@ function updateRuntimeState(state: RuntimeState, dt: number): void {
 }
 
 function updateAfterCollisions(state: RuntimeState, dt: number): void {
+  if (state.trial.phase === 'active') {
+    state.entityCount = 1;
+    return;
+  }
+
   updateWeapons(state, state.weapons, dt);
   consumeCombatRewardsAsPickups(state.combat, state.pickups, state.player.x, state.player.y);
   updatePickups(state.pickups, state.player, state.level, state.pickupRuntime, dt);
@@ -80,6 +93,21 @@ function updateAfterCollisions(state: RuntimeState, dt: number): void {
     state.pickups.activeCount +
     state.bosses.activeCount +
     1;
+}
+
+function updateTrialRuntime(state: RuntimeState): void {
+  const event = updateTrialState(state.trial, state.elapsedSec);
+
+  if (event === 'started') {
+    state.enemies.releaseAll();
+    state.bosses.releaseAll();
+    state.weapons.projectiles.releaseAll();
+    state.pickups.releaseAll();
+    state.spawn.accumulator = 0;
+  } else if (event === 'completed') {
+    claimTrialReward(state.trial, state.weapons, state.passives, state.player);
+    applyResolvedStats(state);
+  }
 }
 
 function applyResolvedStats(state: RuntimeState): void {
@@ -142,8 +170,8 @@ function createHudState(state: RuntimeState, frame: number): HudState {
     health: state.player.health,
     maxHealth: state.player.maxHealth,
     kills: state.combat.defeatedEnemies,
-    quizCorrect: 0,
-    quizTotal: state.level.queuedCount,
+    quizCorrect: state.quizSession.stats.firstTryCorrect,
+    quizTotal: state.quizSession.stats.attempted,
     weapons: createWeaponHudSlots(state),
     passives: createPassiveHudSlots(state),
   };
@@ -198,7 +226,16 @@ function bootstrap(): void {
   const timer = createTimer();
   const overlay = createDebugOverlay();
   const hud: Hud = createHud();
+  const resultScreen = createResultScreen(document.body, {
+    onRetry() {
+      window.location.reload();
+    },
+    onChangeGrade() {
+      window.location.href = window.location.pathname;
+    },
+  });
   const input = createInputController(canvas, state.input);
+  let resultShown = false;
 
   let size = resize(canvas);
   state.viewport.width = size.w;
@@ -215,6 +252,11 @@ function bootstrap(): void {
     update(baseState, dt) {
       timer.begin('sim');
       updateRuntimeState(baseState as RuntimeState, dt);
+      if (!resultShown && state.timeline.resultFired && state.timeline.latestResultKind !== 'none') {
+        resultShown = true;
+        showResultScreen(state, state.timeline.latestResultKind, resultScreen);
+        loop.pause();
+      }
       timer.end('sim');
       timer.begin('collide');
       updateCollisions(baseState as RuntimeState, dt);
@@ -254,10 +296,48 @@ function bootstrap(): void {
   window.addEventListener('beforeunload', () => {
     input.destroy();
     hud.destroy();
+    resultScreen.destroy();
   });
 
   timer.beginFrame();
   loop.start();
+}
+
+function showResultScreen(
+  state: RuntimeState,
+  result: Exclude<TimelineResultKind, 'none'>,
+  resultScreen: ReturnType<typeof createResultScreen>,
+): void {
+  const quiz = summarizeQuizStats(state.quizSession.stats);
+  const storage = recordSessionResult(window.localStorage, {
+    survivalSec: state.elapsedSec,
+    kills: state.combat.defeatedEnemies,
+    quiz,
+  });
+  resultScreen.show(createResultSummary(state, result, quiz, storage));
+}
+
+function createResultSummary(
+  state: RuntimeState,
+  result: Exclude<TimelineResultKind, 'none'>,
+  quiz: ResultScreenSummary['quiz'],
+  storage: ResultScreenSummary['storage'],
+): ResultScreenSummary {
+  return {
+    result,
+    survivalSec: state.elapsedSec,
+    kills: state.combat.defeatedEnemies,
+    level: state.level.level,
+    weapons: createWeaponHudSlots(state).filter((slot) => slot.id !== null && !isEvolutionHudSlot(slot)),
+    passives: createPassiveHudSlots(state).filter((slot) => slot.id !== null),
+    evolutions: createWeaponHudSlots(state).filter(isEvolutionHudSlot),
+    quiz,
+    storage,
+  };
+}
+
+function isEvolutionHudSlot(slot: HudSlotState): boolean {
+  return slot.id !== null && isEvolutionWeaponId(slot.id as WeaponId);
 }
 
 bootstrap();

@@ -53,22 +53,22 @@
 - [x] **T-019** 학년별 문항 저작 — `quiz-author` ✅ 2026-08-20 ⚠ 표본 품질 검수·시각 문항 polish 후속
 - [x] **T-020** 클라이언트 출제기 — `game-engine-dev` ✅ 2026-08-20
 - [x] **T-021** 퀴즈 모달 UI — `ui-builder` ✅ 2026-08-20
-- [~] **T-022** 오답 큐 & 오개념 복습 — `game-engine-dev` · 선행 T-020 ✅, T-021 ✅
+- [x] **T-022** 오답 큐 & 오개념 복습 — `game-engine-dev` ✅ 2026-08-20
 
 ## Phase 4 — 세션 & 운영
 
 - [x] **T-023** 인게임 HUD — `ui-builder` ✅ 2026-08-20
 - [x] **T-024** 타이틀 & 학년/캐릭터 선택 — `ui-builder` ✅ 2026-08-20
-- [-] **T-025** 초월 수련 — `game-engine-dev` · 선행 T-015, T-022
-- [-] **T-026** 결과 화면 & localStorage — `ui-builder` · 선행 T-022, T-023 ✅
-- [~] **T-027** 접근성 옵션 — `ui-builder` · 선행 T-021 ✅, T-023 ✅
+- [x] **T-025** 초월 수련 — `game-engine-dev` ✅ 2026-08-20 ⚠ 전용 화면 연출은 UI 통합 후속
+- [x] **T-026** 결과 화면 & localStorage — `ui-builder` ✅ 2026-08-20
+- [x] **T-027** 접근성 옵션 — `ui-builder` ✅ 2026-08-20
 - [x] **T-028** 성능 튜닝 & 스트레스 모드 — `game-engine-dev` ✅ 2026-08-20
 
 ---
 
 ## 현황
 
-**24 / 28 완료** · 진행 중 2 (T-022, T-027) · 착수 가능 0
+**28 / 28 완료** · 진행 중 0 · 착수 가능 0
 
 ## 병렬 배정 이력
 
@@ -94,6 +94,10 @@
 | 08-20 20:46 | **T-021** 퀴즈 모달 UI | **ui-builder 서브에이전트** | `src/ui/fraction.ts`, `src/ui/quiz-modal.ts`, `tests/src/` | ✅ 게이트 통과. 분수 렌더·모달 API 구현 |
 | 08-20 20:46 | **T-023** 인게임 HUD | **ui-builder 서브에이전트 + 오케스트레이터 통합** | `src/ui/hud.ts`, `src/main.ts`, `tests/src/hud.test.ts` | ✅ 게이트 통과. 런타임 HUD 마운트 |
 | 08-20 20:46 | **T-024** 타이틀·선택 흐름 | **ui-builder 서브에이전트** | `src/ui/title.ts`, `src/ui/grade-select.ts`, `src/ui/character-select.ts`, `tests/src/` | ✅ 게이트 통과. 저장/복원·뱅크 로더 hook 구현 |
+| 08-20 20:53 | **T-022** 오답 큐·오개념 복습 | **game-engine-dev 실행자 + 오케스트레이터 마감** | `src/quiz/review-queue.ts`, `src/quiz/session.ts`, `src/quiz/selector.ts`, `src/quiz/grader.ts`, `tests/src/` | ✅ 게이트 통과 (test 202→209). 레벨 10 이후 태그 복습·전환율 집계 구현 |
+| 08-20 20:57 | **T-025** 초월 수련 | **game-engine-dev 오케스트레이터 구현** | `src/systems/trial.ts`, `src/engine/state.ts`, `src/main.ts`, `tests/src/trial.test.ts` | ✅ 게이트 통과 (test 209→217). 8~9분 전투 중단·3문항·보상 판정 구현 |
+| 08-20 20:59 | **T-027** 접근성 옵션 | **ui-builder 실행자 + 오케스트레이터 마감** | `src/ui/settings.ts`, `src/ui/quiz-modal.ts`, `tests/src/` | ✅ 게이트 통과. 타이머 숨김·효과 0%·큰 글자·키보드 조작·저장 구현 |
+| 08-20 21:04 | **T-026** 결과 화면·localStorage | **오케스트레이터 구현** | `src/quiz/stats.ts`, `src/storage.ts`, `src/ui/result.ts`, `src/main.ts`, `tests/src/` | ✅ 게이트 통과 (test 217→222). 결과 화면·저장 스키마·오개념 한국어 표시 구현 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

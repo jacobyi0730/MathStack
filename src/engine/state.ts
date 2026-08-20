@@ -15,7 +15,9 @@ import {
   type ResolvedPlayerStats,
 } from '../systems/stats.js';
 import { createBossTimelineState, type BossTimelineState } from '../systems/timeline.js';
+import { createTrialState, type TrialState } from '../systems/trial.js';
 import { createWeaponRuntime, type WeaponRuntime } from '../systems/weapons.js';
+import { createQuizSession, type QuizSessionState } from '../quiz/session.js';
 import { createInputState, type InputState } from './input.js';
 import type { RenderableEntity, RenderScene } from './renderer.js';
 
@@ -41,6 +43,8 @@ export interface GameState {
   level: LevelState;
   pickupRuntime: PickupRuntime;
   timeline: BossTimelineState;
+  trial: TrialState;
+  quizSession: QuizSessionState;
   viewport: {
     width: number;
     height: number;
@@ -93,6 +97,8 @@ export function createGameState(options?: GameStateOptions): GameState & RenderS
     level: createLevelState(),
     pickupRuntime: createPickupRuntime(),
     timeline: createBossTimelineState(),
+    trial: createTrialState(),
+    quizSession: createQuizSession(3),
     viewport: {
       width: 1280,
       height: 720,

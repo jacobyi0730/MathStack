@@ -2,6 +2,13 @@ import { DOMAIN_TARGET_COUNTS } from '../data/quiz-rules.js';
 import { DOMAINS, Domain } from '../../shared/domain.js';
 import type { Domain as DomainType, Grade } from '../../shared/domain.js';
 import type { Question } from '../../shared/schema.js';
+import {
+  createReviewQueueState,
+  recordMisconception,
+  resetReviewQueue,
+  type ReviewQueueState,
+} from './review-queue.js';
+import { createQuizStatsState, type QuizStatsState } from './stats.js';
 
 export type QuizRetryEntry = {
   question: Question;
@@ -14,6 +21,8 @@ export type QuizSessionState = {
   askedQuestionIds: string[];
   domainCounts: Record<DomainType, number>;
   retryQueue: QuizRetryEntry[];
+  reviewQueue: ReviewQueueState;
+  stats: QuizStatsState;
 };
 
 export function createQuizSession(grade: Grade, seed = 1): QuizSessionState {
@@ -23,6 +32,8 @@ export function createQuizSession(grade: Grade, seed = 1): QuizSessionState {
     askedQuestionIds: [],
     domainCounts: createDomainCounts(),
     retryQueue: [],
+    reviewQueue: createReviewQueueState(),
+    stats: createQuizStatsState(),
   };
 }
 
@@ -46,6 +57,7 @@ export function rememberQuestion(session: QuizSessionState, question: Question):
 }
 
 export function enqueueRetryQuestion(session: QuizSessionState, question: Question): void {
+  recordMisconception(session.reviewQueue, question);
   session.retryQueue.push({
     question,
     misconceptionTag: question.misconceptionTag,
@@ -60,9 +72,18 @@ export function resetQuizSession(session: QuizSessionState, seed = session.seed)
   session.seed = normalizeSeed(seed);
   session.askedQuestionIds.length = 0;
   session.retryQueue.length = 0;
+  resetReviewQueue(session.reviewQueue);
+  const freshStats = createQuizStatsState();
+  session.stats.attempted = freshStats.attempted;
+  session.stats.firstTryCorrect = freshStats.firstTryCorrect;
+  session.stats.misconceptions = freshStats.misconceptions;
+  session.stats.review.reviewed = freshStats.review.reviewed;
+  session.stats.review.converted = freshStats.review.converted;
 
   for (const domain of DOMAINS) {
     session.domainCounts[domain] = 0;
+    session.stats.byDomain[domain].attempted = 0;
+    session.stats.byDomain[domain].firstTryCorrect = 0;
   }
 }
 
