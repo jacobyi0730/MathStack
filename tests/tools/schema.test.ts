@@ -31,7 +31,7 @@ describe('QuestionSchema', () => {
   });
 
   it('학년_범위를_벗어나면_거부한다', () => {
-    expect(QuestionSchema.safeParse({ ...valid, grade: 2 }).success).toBe(false);
+    expect(QuestionSchema.safeParse({ ...valid, grade: 0 }).success).toBe(false);
     expect(QuestionSchema.safeParse({ ...valid, grade: 7 }).success).toBe(false);
   });
 

@@ -246,9 +246,35 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
       } else if (accessoryKind[i] === 1) {
         ctx.moveTo(accessoryX[i] - accessoryR[i], accessoryY[i]);
         ctx.lineTo(accessoryX[i] + accessoryR[i], accessoryY[i]);
-      } else {
+      } else if (accessoryKind[i] === 2) {
         ctx.moveTo(accessoryX[i], accessoryY[i] - accessoryR[i]);
         ctx.lineTo(accessoryX[i], accessoryY[i] + accessoryR[i]);
+      } else if (accessoryKind[i] === 3) {
+        ctx.moveTo(accessoryX[i] - accessoryR[i], accessoryY[i]);
+        ctx.lineTo(accessoryX[i] + accessoryR[i], accessoryY[i]);
+        ctx.moveTo(accessoryX[i], accessoryY[i] - accessoryR[i]);
+        ctx.lineTo(accessoryX[i], accessoryY[i] + accessoryR[i]);
+      } else if (accessoryKind[i] === 4) {
+        ctx.rect(
+          accessoryX[i] - accessoryR[i] * 0.6,
+          accessoryY[i] - accessoryR[i] * 0.6,
+          accessoryR[i] * 1.2,
+          accessoryR[i] * 1.2,
+        );
+      } else if (accessoryKind[i] === 5) {
+        ctx.moveTo(accessoryX[i], accessoryY[i] - accessoryR[i]);
+        ctx.lineTo(accessoryX[i] + accessoryR[i] * 0.86, accessoryY[i] + accessoryR[i] * 0.5);
+        ctx.lineTo(accessoryX[i] - accessoryR[i] * 0.86, accessoryY[i] + accessoryR[i] * 0.5);
+        ctx.closePath();
+      } else if (accessoryKind[i] === 6) {
+        ctx.arc(accessoryX[i], accessoryY[i], accessoryR[i] * 0.55, 0, Math.PI * 2);
+        ctx.moveTo(accessoryX[i] - accessoryR[i], accessoryY[i]);
+        ctx.lineTo(accessoryX[i] + accessoryR[i], accessoryY[i]);
+      } else {
+        ctx.moveTo(accessoryX[i] - accessoryR[i], accessoryY[i] - accessoryR[i]);
+        ctx.lineTo(accessoryX[i] + accessoryR[i], accessoryY[i] + accessoryR[i]);
+        ctx.moveTo(accessoryX[i] + accessoryR[i], accessoryY[i] - accessoryR[i]);
+        ctx.lineTo(accessoryX[i] - accessoryR[i], accessoryY[i] + accessoryR[i]);
       }
       ctx.stroke();
     }

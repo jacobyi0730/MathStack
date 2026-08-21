@@ -8,7 +8,7 @@ related: [MathStack기획서]
 
 # 작업 보드
 
-기획서([docs/MathStack기획서.md](../docs/MathStack기획서.md))를 **기능 단위 38개 태스크**로 분해한 것이다.
+기획서([docs/MathStack기획서.md](../docs/MathStack기획서.md))를 **기능 단위 45개 태스크**로 분해한 것이다.
 이 문서는 **구조**를 담는다 — 무엇이 무엇에 걸려 있고, 누가 맡고, 어떤 스킬을 쓰는지.
 
 > **완료 상태는 여기 없다.** 끝났는지·누가 잡고 있는지는 [TodoList.md](../TodoList.md)가 유일한 정본이다.
@@ -89,6 +89,13 @@ related: [MathStack기획서]
 | [T-036](T-036-퀴즈-보기-가독성.md) | 퀴즈 보기 가독성 | ui-builder | — | T-035 |
 | [T-037](T-037-엔티티-모양-아이콘.md) | 엔티티 모양 체계와 아이콘 | game-engine-dev | perf-check | T-036 |
 | [T-038](T-038-드롭산포-램프색-아이콘가독성.md) | 드롭 산포·램프 단일색·아이콘 가독성 | game-engine-dev | — | T-037 |
+| [T-039](T-039-mds7-플레이테스트-개선.md) | mds/7 플레이 테스트 개선 | game-engine-dev | perf-check | T-038 |
+| [T-040](T-040-mds8-작업2-개선.md) | mds/8 작업2 개선 | game-engine-dev | build-bank | T-039 |
+| [T-041](T-041-mds9-시작무기-선택-보정.md) | mds/9 시작 무기 선택 보정 | game-engine-dev | task-close | T-040 |
+| [T-042](T-042-mds10-각성짝꿍-조건-설명.md) | mds/10 각성 짝꿍 설명과 조건 보정 | game-engine-dev | task-close | T-041 |
+| [T-043](T-043-mds11-아이템-보상몬스터-UI-밸런스.md) | mds/11 아이템·보상 몬스터·UI·밸런스 보정 | game-engine-dev | task-close | T-042 |
+| [T-044](T-044-mds12-넵투늄-밸런스-재조정.md) | mds/12 넵투늄 밸런스 재조정 | balance-tuner | task-close | T-043 |
+| [T-045](T-045-mds13-보상선택지-빌드맞춤.md) | mds/13 보상 선택지 빌드 맞춤 | game-engine-dev | task-close | T-044 |
 
 ## 병렬 트랙
 

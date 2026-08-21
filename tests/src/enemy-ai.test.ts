@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../../src/data/enemies.js';
 import { spawnEnemy } from '../../src/entities/enemy.js';
 import { createPlayer } from '../../src/entities/player.js';
@@ -7,7 +7,7 @@ import { updateEnemies } from '../../src/systems/enemy-ai.js';
 
 describe('enemy AI', () => {
   it('chase AI moves directly toward the player', () => {
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     player.x = 100;
     player.y = 0;
     const state = createGameState({ player });
@@ -16,9 +16,9 @@ describe('enemy AI', () => {
 
     updateEnemies(state, 1);
 
-    expect(enemy.x).toBeCloseTo(40);
+    expect(enemy.x).toBeCloseTo(36);
     expect(enemy.y).toBeCloseTo(0);
-    expect(enemy.dx).toBeCloseTo(40);
+    expect(enemy.dx).toBeCloseTo(36);
     expect(enemy.dy).toBeCloseTo(0);
     expect(enemy.prevX).toBe(0);
   });
@@ -36,7 +36,7 @@ describe('enemy AI', () => {
   });
 
   it('charge AI pauses before rushing in a locked direction', () => {
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     player.x = 100;
     const state = createGameState({ player });
     const enemy = state.enemies.acquire();
@@ -56,7 +56,7 @@ describe('enemy AI', () => {
   });
 
   it('flee AI moves away from the player', () => {
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     player.x = 0;
     const state = createGameState({ player });
     const enemy = state.enemies.acquire();
@@ -69,7 +69,7 @@ describe('enemy AI', () => {
   });
 
   it('ranged AI keeps distance and records a projectile handoff signal', () => {
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     player.x = 0;
     const state = createGameState({ player });
     const enemy = state.enemies.acquire();
@@ -83,3 +83,4 @@ describe('enemy AI', () => {
     expect(enemy.rangedAimY).toBeCloseTo(0);
   });
 });
+

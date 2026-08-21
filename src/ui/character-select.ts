@@ -4,6 +4,9 @@ import {
   type CharacterArchetype,
   type CharacterId,
 } from '../data/characters.js';
+import { CHARACTER_PROFILES } from '../data/player.js';
+import { WEAPONS, type WeaponPattern } from '../data/weapons.js';
+import { describeEvolutionPairForWeapon } from '../systems/evolution.js';
 
 export interface CharacterSelection {
   readonly characterId: CharacterId;
@@ -31,15 +34,12 @@ export function normalizeHeroName(name: string): string {
 }
 
 export function formatCharacterTraits(character: CharacterArchetype): readonly string[] {
-  const traits: string[] = [];
-  if (character.maxHealthMultiplier > 1) traits.push('최대 체력 +10%');
-  if (character.maxHealthMultiplier < 1) traits.push('최대 체력 -10%');
-  if (character.moveSpeedMultiplier > 1) traits.push('이동속도 +15%');
-  if (character.projectileBonus > 0) traits.push(`투사체 수 +${character.projectileBonus}`);
-  if (character.attackPowerMultiplier < 1) traits.push('공격력 -10%');
-  if (character.rangeMultiplier > 1) traits.push('공격 범위 +20%');
-  if (character.cooldownMultiplier > 1) traits.push('쿨타임 +10%');
-  return traits.length > 0 ? traits : ['균형형'];
+  const weapon = WEAPONS[CHARACTER_PROFILES[character.id].startingWeaponId];
+  return [
+    `시작 공격: ${weapon.name}`,
+    `${formatWeaponPattern(weapon.pattern)} / 피해 ${weapon.damage} / 쿨타임 ${weapon.cooldownSec}초`,
+    describeEvolutionPairForWeapon(weapon.id) ?? '각성 없음',
+  ];
 }
 
 export function createCharacterSelectView(
@@ -52,7 +52,7 @@ export function createCharacterSelectView(
   root.style.cssText = screenStyle();
 
   const title = document.createElement('h1');
-  title.textContent = '캐릭터 선택';
+  title.textContent = '시작 무기 선택';
   title.style.cssText = 'margin:0;font-size:28px;color:#ffffff;';
   root.appendChild(title);
 
@@ -123,6 +123,7 @@ export function createCharacterSelectView(
 }
 
 function createCharacterCard(character: CharacterArchetype): HTMLButtonElement {
+  const weapon = WEAPONS[CHARACTER_PROFILES[character.id].startingWeaponId];
   const card = document.createElement('button');
   card.type = 'button';
   card.style.cssText = [
@@ -153,8 +154,13 @@ function createCharacterCard(character: CharacterArchetype): HTMLButtonElement {
   card.appendChild(swatch);
 
   const name = document.createElement('strong');
-  name.textContent = `${character.name} (${character.element} ${character.atomicNumber})`;
+  name.textContent = `${weapon.name} (${weapon.element} ${weapon.atomicNumber})`;
   card.appendChild(name);
+
+  const hero = document.createElement('span');
+  hero.textContent = character.name;
+  hero.style.cssText = 'color:#c9d4ff;font-size:13px;';
+  card.appendChild(hero);
 
   const traits = document.createElement('span');
   traits.textContent = formatCharacterTraits(character).join(' / ');
@@ -162,6 +168,27 @@ function createCharacterCard(character: CharacterArchetype): HTMLButtonElement {
   card.appendChild(traits);
 
   return card;
+}
+
+function formatWeaponPattern(pattern: WeaponPattern): string {
+  switch (pattern) {
+    case 'projectile':
+      return '직선 투사체';
+    case 'pierce':
+      return '관통 광선';
+    case 'orbit':
+      return '회전 공격';
+    case 'wave':
+      return '파동 공격';
+    case 'aura':
+      return '범위 지속 공격';
+    case 'bomb':
+      return '폭발 공격';
+    case 'boomerang':
+      return '왕복 투사체';
+    case 'spread':
+      return '산탄 공격';
+  }
 }
 
 function screenStyle(): string {

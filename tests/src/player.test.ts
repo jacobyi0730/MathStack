@@ -1,33 +1,42 @@
 import { describe, expect, it } from 'vitest';
+import { CHARACTER_PROFILES } from '../../src/data/player.js';
+import { WEAPONS } from '../../src/data/weapons.js';
 import { createPlayer } from '../../src/entities/player.js';
 
 describe('플레이어 생성', () => {
   it('무기 슬롯 6칸과 패시브 슬롯 6칸을 만든다', () => {
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
 
     expect(player.weaponSlots).toHaveLength(6);
     expect(player.passiveSlots).toHaveLength(6);
   });
 
-  it('수소 정령은 최대 체력 10퍼센트 보너스를 받는다', () => {
-    const player = createPlayer('hydrogen');
+  it('악티늄 정령은 패시브 체력 보너스를 받지 않는다', () => {
+    const player = createPlayer('actinium');
 
-    expect(player.maxHealth).toBe(110);
-    expect(player.health).toBe(110);
+    expect(player.maxHealth).toBe(100);
+    expect(player.health).toBe(100);
   });
 
-  it('네온 정령은 이동 속도 15퍼센트 보너스를 받는다', () => {
-    const player = createPlayer('neon');
+  it('토륨 정령은 패시브 이동 속도 보너스를 받지 않는다', () => {
+    const player = createPlayer('thorium');
 
-    expect(player.moveSpeed).toBeCloseTo(299);
+    expect(player.moveSpeed).toBe(260);
   });
 
-  it('탄소 정령과 산소 정령의 전투 특성이 반영된다', () => {
-    const carbon = createPlayer('carbon');
-    const oxygen = createPlayer('oxygen');
+  it('란타넘 정령과 세륨 정령은 패시브 전투 특성을 받지 않는다', () => {
+    const lanthanum = createPlayer('lanthanum');
+    const cerium = createPlayer('cerium');
 
-    expect(carbon.projectileCountBonus).toBe(1);
-    expect(oxygen.attackRangeMultiplier).toBeCloseTo(1.2);
-    expect(oxygen.cooldownMultiplier).toBeCloseTo(1.1);
+    expect(lanthanum.projectileCountBonus).toBe(0);
+    expect(cerium.attackRangeMultiplier).toBe(1);
+    expect(cerium.cooldownMultiplier).toBe(1);
+  });
+
+  it('선택 원소는 패시브가 아니라 시작 공격 무기를 가리킨다', () => {
+    expect(WEAPONS[CHARACTER_PROFILES.actinium.startingWeaponId].name).toBe('악티늄 창');
+    expect(WEAPONS[CHARACTER_PROFILES.thorium.startingWeaponId].pattern).toBe('bomb');
+    expect(WEAPONS[CHARACTER_PROFILES.lanthanum.startingWeaponId].damage).toBeGreaterThan(0);
+    expect(WEAPONS[CHARACTER_PROFILES.cerium.startingWeaponId].cooldownSec).toBeGreaterThan(0);
   });
 });

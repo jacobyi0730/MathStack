@@ -9,6 +9,7 @@ import type { MathStackStorageData } from '../storage.js';
 export interface ResultScreenSummary {
   readonly result: Exclude<TimelineResultKind, 'none'>;
   readonly survivalSec: number;
+  readonly score: number;
   readonly kills: number;
   readonly level: number;
   readonly weapons: readonly HudSlotState[];
@@ -79,6 +80,7 @@ function render(
   const stats = doc.createElement('div');
   stats.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;';
   appendStat(stats, '생존', formatTime(summary.survivalSec));
+  appendStat(stats, '점수', `${summary.score}`);
   appendStat(stats, '처치', `${summary.kills}`);
   appendStat(stats, '레벨', `${summary.level}`);
   appendStat(stats, '정답률', formatPercent(summary.quiz.accuracy));
@@ -109,10 +111,13 @@ function render(
   panel.appendChild(section(doc, '다음에 볼 것', misconceptionLines));
 
   panel.appendChild(section(doc, '개인 최고', [
+    `점수 ${summary.storage.best.score}`,
     `생존 ${formatTime(summary.storage.best.survivalSec)}`,
     `처치 ${summary.storage.best.kills}`,
     `정답률 ${formatPercent(summary.storage.best.accuracy)}`,
   ]));
+
+  panel.appendChild(section(doc, '랭킹 TOP 5', formatRankings(summary)));
 
   const actions = doc.createElement('div');
   actions.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;';
@@ -123,6 +128,14 @@ function render(
   panel.appendChild(actions);
 
   root.replaceChildren(panel);
+}
+
+function formatRankings(summary: ResultScreenSummary): string[] {
+  if (summary.storage.rankings.length === 0) return ['아직 랭킹 없음'];
+  return summary.storage.rankings.map(
+    (entry, index) =>
+      `${index + 1}. ${entry.score}점 · ${entry.grade}학년 · Lv.${entry.level} · 처치 ${entry.kills} · ${formatTime(entry.survivalSec)}`,
+  );
 }
 
 function appendStat(parent: HTMLElement, label: string, value: string): void {

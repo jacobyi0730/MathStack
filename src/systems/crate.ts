@@ -3,9 +3,7 @@ import {
   CRATE_DROP_SCATTER_MAX_PX,
   CRATE_DROP_SCATTER_MIN_PX,
   CRATE_MIN_PLAYER_DISTANCE,
-  CRATE_SPAWN_INTERVAL_SEC,
   CRATE_SPAWN_SPREAD,
-  MAX_ACTIVE_CRATES,
   chooseCrateDropKind,
   chooseCrateId,
 } from '../data/crates.js';
@@ -22,18 +20,12 @@ import { spawnPickupByKind } from './pickup.js';
  * 투사체 전수 비교로도 프레임 예산 안에 들어오고, 램프가 없으면 비용이 0이다.
  */
 export function updateCrates(state: GameState, dt: number): void {
-  spawnCratesOverTime(state, dt);
+  state.crateSpawn.accumulator += dt;
   breakCrates(state);
 }
 
 export function spawnCratesOverTime(state: GameState, dt: number): void {
   state.crateSpawn.accumulator += dt;
-
-  while (state.crateSpawn.accumulator >= CRATE_SPAWN_INTERVAL_SEC) {
-    state.crateSpawn.accumulator -= CRATE_SPAWN_INTERVAL_SEC;
-    if (state.crates.activeCount >= MAX_ACTIVE_CRATES) continue;
-    spawnCrateNearPlayer(state);
-  }
 }
 
 export function spawnCrateNearPlayer(state: GameState): CrateEntity {

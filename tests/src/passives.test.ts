@@ -47,8 +47,8 @@ describe('passives', () => {
       pairedWeapons.add(passive.pairedWeapon);
     }
 
-    expect(Object.keys(PASSIVES)).toHaveLength(8);
-    expect(pairedWeapons.size).toBe(8);
+    expect(Object.keys(PASSIVES)).toHaveLength(21);
+    expect(pairedWeapons.size).toBe(21);
     expect(PASSIVE_SLOT_CAPACITY).toBe(6);
     expect(PASSIVE_MAX_LEVEL).toBe(3);
   });

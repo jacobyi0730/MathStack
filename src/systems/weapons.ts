@@ -243,9 +243,7 @@ function updateOrbitPattern(
   _dt: number,
 ): boolean {
   const player = state.player;
-  const count =
-    definition.projectileCount ??
-    resolveWeaponProjectileCount(slot.level, player.projectileCount + ORBIT_BASE_COUNT - 1);
+  const count = definition.projectileCount ?? resolveOrbitProjectileCount(slot.level, player.projectileCount);
   const rangeMultiplier = resolveWeaponRangeMultiplier(slot.level, player.attackRangeMultiplier);
   const orbitRadius = definition.range * rangeMultiplier;
   const damage = resolveWeaponDamage(definition, slot.level, player.attackPowerMultiplier);
@@ -552,6 +550,10 @@ function rotateX(x: number, y: number, angle: number): number {
 
 function rotateY(x: number, y: number, angle: number): number {
   return x * Math.sin(angle) + y * Math.cos(angle);
+}
+
+function resolveOrbitProjectileCount(level: number, playerProjectileCount: number): number {
+  return playerProjectileCount + ORBIT_BASE_COUNT - 1 + Math.floor(level / 2);
 }
 
 function findWeaponSlot(runtime: WeaponRuntime, id: WeaponId): WeaponSlotRuntime | undefined {

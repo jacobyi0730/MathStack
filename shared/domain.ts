@@ -33,7 +33,7 @@ export const DOMAIN_QUOTA: Record<Domain, number> = {
   [Domain.Data]: 0.1,
 };
 
-export const GRADES = [3, 4, 5, 6] as const;
+export const GRADES = [1, 2, 3, 4, 5, 6] as const;
 export type Grade = (typeof GRADES)[number];
 
 export const SEMESTERS = [1, 2] as const;

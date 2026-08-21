@@ -14,6 +14,7 @@ describe('result screen', () => {
     view.show({
       result: 'victory',
       survivalSec: 600,
+      score: 1234,
       kills: 42,
       level: 9,
       weapons: [{ id: 'hydrogen_arrow', label: '수소 화살', level: 3, element: 'H' }],
@@ -34,7 +35,8 @@ describe('result screen', () => {
       },
       storage: {
         ...DEFAULT_STORAGE_DATA,
-        best: { survivalSec: 600, kills: 42, accuracy: 0.75 },
+        best: { survivalSec: 600, kills: 42, accuracy: 0.75, score: 1234 },
+        rankings: [{ score: 1234, survivalSec: 600, kills: 42, level: 9, grade: 4 }],
       },
     });
 
@@ -42,6 +44,8 @@ describe('result screen', () => {
     expect(view.element.style.display).toBe('grid');
     const text = parent.textContent;
     expect(text).toContain('안정화 성공');
+    expect(text).toContain('1234');
+    expect(text).toContain('랭킹 TOP 5');
     expect(text).toContain('수와 연산: 50%');
     expect(text).toContain('자료와 가능성: 0%');
     expect(text).toContain('소수점 자리 맞추기');

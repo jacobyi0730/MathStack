@@ -31,6 +31,7 @@ describe('mathstack storage', () => {
       survivalSec: 0,
       kills: 0,
       accuracy: 0,
+      score: 0,
     });
   });
 
@@ -53,18 +54,23 @@ describe('mathstack storage', () => {
     recordSessionResult(storage, {
       survivalSec: 120,
       kills: 30,
+      score: 500,
+      level: 6,
       quiz,
-      lastChoice: { grade: 4, semester: 2, character: 'neon' },
+      lastChoice: { grade: 4, semester: 2, character: 'thorium' },
     });
     const saved = recordSessionResult(storage, {
       survivalSec: 90,
       kills: 40,
+      score: 800,
+      level: 7,
       quiz: { ...quiz, accuracy: 0.75 },
     });
 
     expect(saved.sessions).toBe(2);
-    expect(saved.best).toEqual({ survivalSec: 120, kills: 40, accuracy: 0.75 });
-    expect(saved.lastChoice).toEqual({ grade: 4, semester: 2, character: 'neon' });
+    expect(saved.best).toEqual({ survivalSec: 120, kills: 40, accuracy: 0.75, score: 800 });
+    expect(saved.lastChoice).toEqual({ grade: 4, semester: 2, character: 'thorium' });
+    expect(saved.rankings.map((entry) => entry.score)).toEqual([800, 500]);
     expect(saved.misconceptions.decimal_alignment).toEqual({ wrong: 4, converted: 2 });
   });
 });

@@ -1,5 +1,5 @@
 import './styles.css';
-import { createGameState, type GameState } from './engine/state.js';
+import { createGameState, type GameState, type SpecialRewardQuiz } from './engine/state.js';
 import { createLoop } from './engine/loop.js';
 import { setupStressMode, stressModeEnabled } from './engine/stress.js';
 import { createTimer } from './engine/timing.js';
@@ -9,11 +9,12 @@ import { createHud, type Hud, type HudSlotState, type HudState } from './ui/hud.
 import { createQuizModal, type QuizModal, type QuizModalState } from './ui/quiz-modal.js';
 import { createResultScreen, type ResultScreenSummary } from './ui/result.js';
 import { createSkillChoiceView } from './ui/skill-choice.js';
+import { createTitleFlow, type TitleSelection } from './ui/title.js';
 import { createInputController } from './engine/input.js';
 import { updateDamageNumbers } from './entities/damage-number.js';
-import { shortestDeltaX, shortestDeltaY } from './engine/world.js';
 import { createPlayer, syncPlayerIntent } from './entities/player.js';
 import { BOSSES } from './data/bosses.js';
+import { CHARACTER_PROFILES } from './data/player.js';
 import { PASSIVES } from './data/passives.js';
 import { WEAPONS, type WeaponId } from './data/weapons.js';
 import { spawnBoss, updateBosses } from './entities/boss.js';
@@ -22,7 +23,7 @@ import { movePlayer } from './systems/movement.js';
 import { updateSpawns } from './systems/spawn.js';
 import { updateCollisions } from './systems/collision.js';
 import { applyEnemyDamage, updatePlayerInvulnerability } from './systems/damage.js';
-import { isEnemyFrozen, updatePickups } from './systems/pickup.js';
+import { announcePickup, isEnemyFrozen, spawnPickupByKind, updatePickups } from './systems/pickup.js';
 import { updateCrates } from './systems/crate.js';
 import { shiftLevelEvent } from './systems/level.js';
 import {
@@ -42,15 +43,16 @@ import { gradeAnswer, type QuizGradeResult } from './quiz/grader.js';
 import { selectQuestion, type SelectedQuestion } from './quiz/selector.js';
 import { summarizeQuizStats } from './quiz/stats.js';
 import { recordSessionResult } from './storage.js';
-import type { Grade } from '../shared/domain.js';
 import type { Bank, Question } from '../shared/schema.js';
 
 type RuntimeState = GameState & RenderScene;
 
 interface ActiveQuiz {
+  kind: 'level' | 'specialReward';
   selection: SelectedQuestion;
   phase: QuizModalState['phase'];
   firstAttemptFailed: boolean;
+  specialReward?: SpecialRewardQuiz;
 }
 
 function resize(canvas: HTMLCanvasElement): { w: number; h: number } {
@@ -76,16 +78,16 @@ function readCharacterFromUrl(): CharacterId {
   }
 }
 
-function readGradeFromUrl(): Grade {
-  const selected = Number(new URLSearchParams(window.location.search).get('grade'));
-  return selected === 4 || selected === 5 || selected === 6 ? selected : 3;
+interface LaunchSelection {
+  readonly selection: TitleSelection;
+  readonly bank: Bank;
 }
 
-function createRuntimeState(bank: Bank): RuntimeState {
-  const player = createPlayer(readCharacterFromUrl());
+function createRuntimeState(bank: Bank, characterId: CharacterId = readCharacterFromUrl()): RuntimeState {
+  const player = createPlayer(characterId);
   const state = createGameState({ player });
   state.quizSession.grade = bank.grade;
-  equipWeapon(state.weapons, 'hydrogen_arrow');
+  equipWeapon(state.weapons, CHARACTER_PROFILES[player.characterId].startingWeaponId);
   applyResolvedStats(state);
   if (stressModeEnabled(window.location.search)) setupStressMode(state);
   return state;
@@ -184,19 +186,14 @@ function updateBossTimelineAndSpawns(state: RuntimeState): void {
   );
 }
 
-/** 이리듐 운석은 **화면 안**만 친다 (02-게임코어 §10.3). 필드 전체를 치면 폭탄이 아니라 리셋 버튼이 된다 */
+/** 이리듐 운석은 맵 전체의 적을 친다. 아이템 설명과 플레이어 기대가 "전체 폭탄"에 가깝기 때문이다. */
 function applyPendingMeteorDamage(state: RuntimeState): void {
   const damage = state.pickupRuntime.pendingMeteorDamage;
   if (damage <= 0) return;
   state.pickupRuntime.pendingMeteorDamage = 0;
 
-  const halfWidth = state.viewport.width * 0.5;
-  const halfHeight = state.viewport.height * 0.5;
-
   for (let i = state.enemies.activeCount - 1; i >= 0; i -= 1) {
     const enemy = state.enemies.items[i];
-    if (Math.abs(shortestDeltaX(state.player.x, enemy.x, state.world)) > halfWidth + enemy.radius) continue;
-    if (Math.abs(shortestDeltaY(state.player.y, enemy.y, state.world)) > halfHeight + enemy.radius) continue;
     applyEnemyDamage(state, enemy, damage);
   }
 }
@@ -205,17 +202,34 @@ function createHudState(state: RuntimeState, frame: number): HudState {
   return {
     frame,
     elapsedSec: state.elapsedSec,
+    chapter: resolveChapter(state.elapsedSec),
     level: state.level.level,
     xp: state.level.xp,
     xpRequired: state.level.xpForNextLevel,
     health: state.player.health,
     maxHealth: state.player.maxHealth,
+    score: calculateScore(state),
     kills: state.combat.defeatedEnemies,
     quizCorrect: state.quizSession.stats.firstTryCorrect,
     quizTotal: state.quizSession.stats.attempted,
+    noticeText: state.pickupRuntime.noticeText,
     weapons: createWeaponHudSlots(state),
     passives: createPassiveHudSlots(state),
   };
+}
+
+function calculateScore(state: RuntimeState): number {
+  return Math.floor(state.elapsedSec) +
+    state.combat.defeatedEnemies * 10 +
+    state.level.totalXp +
+    state.quizSession.stats.firstTryCorrect * 100 +
+    state.level.level * 25;
+}
+
+function resolveChapter(elapsedSec: number): number {
+  if (elapsedSec >= 360) return 3;
+  if (elapsedSec >= 180) return 2;
+  return 1;
 }
 
 function createWeaponHudSlots(state: RuntimeState): HudSlotState[] {
@@ -263,8 +277,12 @@ async function bootstrap(): Promise<void> {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2D 컨텍스트를 만들 수 없습니다.');
 
-  const bank = await loadQuestionBank(readGradeFromUrl());
-  const state = createRuntimeState(bank);
+  canvas.style.display = 'none';
+  const launch = await waitForLaunchSelection();
+  canvas.style.display = 'block';
+
+  const bank = launch.bank;
+  const state = createRuntimeState(bank, launch.selection.characterId);
   const timer = createTimer();
   const overlay = createDebugOverlay();
   const hud: Hud = createHud();
@@ -289,11 +307,7 @@ async function bootstrap(): Promise<void> {
       skillChoice.hide();
       activeQuiz = undefined;
       quizModal.hide();
-      if (state.level.queuedCount > 0) {
-        openNextQuiz();
-      } else if (!state.timeline.resultFired) {
-        loop.resume();
-      }
+      resumeAfterQuiz();
     },
   });
   const resultScreen = createResultScreen(document.body, {
@@ -313,9 +327,26 @@ async function bootstrap(): Promise<void> {
 
     const selection = selectQuestion(bank, 2, event.level, state.quizSession);
     activeQuiz = {
+      kind: 'level',
       selection,
       phase: 'first',
       firstAttemptFailed: false,
+    };
+    quizModal.show(createQuizState(selection.question, activeQuiz.phase, selection.retry));
+    return true;
+  }
+
+  function openNextSpecialRewardQuiz(): boolean {
+    const reward = state.specialRewards.pendingQuizRewards.shift();
+    if (reward === undefined) return false;
+
+    const selection = selectQuestion(bank, 2, state.level.level, state.quizSession);
+    activeQuiz = {
+      kind: 'specialReward',
+      selection,
+      phase: 'first',
+      firstAttemptFailed: false,
+      specialReward: reward,
     };
     quizModal.show(createQuizState(selection.question, activeQuiz.phase, selection.retry));
     return true;
@@ -335,6 +366,20 @@ async function bootstrap(): Promise<void> {
       return;
     }
 
+    if (activeQuiz.kind === 'specialReward') {
+      const reward = activeQuiz.specialReward;
+      if (result.kind === 'correct' && reward !== undefined) {
+        spawnPickupByKind(state.pickups, reward.pickupKind, reward.x, reward.y);
+        announcePickup(state.pickupRuntime, reward.pickupKind);
+      }
+      window.setTimeout(() => {
+        quizModal.hide();
+        activeQuiz = undefined;
+        resumeAfterQuiz();
+      }, 700);
+      return;
+    }
+
     pendingRewardChoices = createLevelRewardChoices(
       state.weapons,
       state.passives,
@@ -343,6 +388,11 @@ async function bootstrap(): Promise<void> {
     );
     window.setTimeout(() => {
       quizModal.hide();
+      if (pendingRewardChoices.length === 0) {
+        activeQuiz = undefined;
+        resumeAfterQuiz();
+        return;
+      }
       skillChoice.show(pendingRewardChoices);
     }, 700);
   }
@@ -364,7 +414,7 @@ async function bootstrap(): Promise<void> {
       updateRuntimeState(baseState as RuntimeState, dt);
       if (!resultShown && state.timeline.resultFired && state.timeline.latestResultKind !== 'none') {
         resultShown = true;
-        showResultScreen(state, state.timeline.latestResultKind, resultScreen);
+        showResultScreen(state, state.timeline.latestResultKind, resultScreen, launch.selection);
         loop.pause();
       }
       timer.end('sim');
@@ -372,7 +422,10 @@ async function bootstrap(): Promise<void> {
       updateCollisions(baseState as RuntimeState, dt);
       updateAfterCollisions(baseState as RuntimeState, dt);
       timer.end('collide');
-      if (state.level.queuedCount > 0 && activeQuiz === undefined) {
+      if (state.specialRewards.pendingQuizRewards.length > 0 && activeQuiz === undefined) {
+        loop.pause();
+        openNextSpecialRewardQuiz();
+      } else if (state.level.queuedCount > 0 && activeQuiz === undefined) {
         loop.pause();
         openNextQuiz();
       }
@@ -416,18 +469,49 @@ async function bootstrap(): Promise<void> {
 
   timer.beginFrame();
   loop.start();
+
+  function resumeAfterQuiz(): void {
+    if (state.specialRewards.pendingQuizRewards.length > 0) {
+      openNextSpecialRewardQuiz();
+    } else if (state.level.queuedCount > 0) {
+      openNextQuiz();
+    } else if (!state.timeline.resultFired) {
+      loop.resume();
+    }
+  }
+}
+
+function waitForLaunchSelection(): Promise<LaunchSelection> {
+  return new Promise((resolve) => {
+    const flow = createTitleFlow({
+      loadBank: loadQuestionBank,
+      onStart(selection, bank) {
+        flow.destroy();
+        resolve({ selection, bank });
+      },
+    });
+    document.body.appendChild(flow.element);
+  });
 }
 
 function showResultScreen(
   state: RuntimeState,
   result: Exclude<TimelineResultKind, 'none'>,
   resultScreen: ReturnType<typeof createResultScreen>,
+  selection: TitleSelection,
 ): void {
   const quiz = summarizeQuizStats(state.quizSession.stats);
   const storage = recordSessionResult(window.localStorage, {
     survivalSec: state.elapsedSec,
     kills: state.combat.defeatedEnemies,
+    score: calculateScore(state),
+    level: state.level.level,
     quiz,
+    lastChoice: {
+      grade: selection.grade,
+      semester: selection.term === 'all' ? 2 : selection.term,
+      character: selection.characterId,
+    },
   });
   resultScreen.show(createResultSummary(state, result, quiz, storage));
 }
@@ -441,6 +525,7 @@ function createResultSummary(
   return {
     result,
     survivalSec: state.elapsedSec,
+    score: calculateScore(state),
     kills: state.combat.defeatedEnemies,
     level: state.level.level,
     weapons: createWeaponHudSlots(state).filter((slot) => slot.id !== null && !isEvolutionHudSlot(slot)),

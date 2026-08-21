@@ -75,7 +75,7 @@ function createChoiceButton(
   button.addEventListener('click', () => options.onChoose?.(choice));
 
   const kind = doc.createElement('span');
-  kind.textContent = choice.kind === 'evolution' ? '각성' : choice.kind === 'weapon' ? '무기' : '패시브';
+  kind.textContent = choice.kind === 'evolution' ? '각성' : choice.kind === 'weapon' ? '무기' : '보조무기';
   kind.style.cssText = 'font-size:13px;font-weight:800;color:#ffc107;';
 
   const name = doc.createElement('strong');
@@ -86,11 +86,17 @@ function createChoiceButton(
   detail.textContent = choice.detail;
   detail.style.cssText = 'font-size:14px;color:#dbe4ff;line-height:1.35;';
 
+  const pair = doc.createElement('span');
+  pair.textContent = choice.evolutionPairDetail ?? '';
+  pair.style.cssText = 'font-size:13px;color:#b7f7d4;line-height:1.35;';
+
   const level = doc.createElement('span');
   level.textContent = choice.kind === 'evolution' ? '즉시 각성' : `Lv.${choice.levelAfter}`;
   level.style.cssText = 'font-size:15px;font-weight:800;color:#ffffff;';
 
-  button.append(kind, name, detail, level);
+  button.append(kind, name, detail);
+  if (choice.evolutionPairDetail) button.appendChild(pair);
+  button.appendChild(level);
   return button;
 }
 

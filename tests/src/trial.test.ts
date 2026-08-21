@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { Domain } from '../../shared/domain.js';
 import { BANK_VERSION, type Bank, type Question } from '../../shared/schema.js';
 import { createPlayer } from '../../src/entities/player.js';
@@ -80,7 +80,7 @@ describe('transcendence trial', () => {
     const trial = createTrialState();
     const weapons = createWeaponRuntime();
     const passives = createPassiveRuntime();
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
 
     equipWeapon(weapons, 'hydrogen_arrow');
     recordThreeCorrectAnswers(trial);
@@ -100,7 +100,7 @@ describe('transcendence trial', () => {
     const trial = createTrialState();
     const weapons = createWeaponRuntime();
     const passives = createPassiveRuntime();
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     player.health = 10;
 
     const result = claimTrialReward(trial, weapons, passives, player);
@@ -117,3 +117,4 @@ function recordThreeCorrectAnswers(trial: ReturnType<typeof createTrialState>): 
     recordTrialAnswer(trial, true, true);
   }
 }
+

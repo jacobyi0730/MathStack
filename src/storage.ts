@@ -11,6 +11,7 @@ export interface StoredBestRecord {
   survivalSec: number;
   kills: number;
   accuracy: number;
+  score: number;
 }
 
 export interface StoredLastChoice {
@@ -24,17 +25,28 @@ export interface StoredMisconception {
   converted: number;
 }
 
+export interface StoredRankingEntry {
+  score: number;
+  survivalSec: number;
+  kills: number;
+  level: number;
+  grade: Grade;
+}
+
 export interface MathStackStorageData {
   version: 1;
   best: StoredBestRecord;
   lastChoice: StoredLastChoice;
   misconceptions: Record<string, StoredMisconception>;
+  rankings: StoredRankingEntry[];
   sessions: number;
 }
 
 export interface SessionRecordInput {
   survivalSec: number;
   kills: number;
+  score: number;
+  level: number;
   quiz: QuizStatsSummary;
   lastChoice?: StoredLastChoice;
 }
@@ -47,13 +59,15 @@ export const DEFAULT_STORAGE_DATA: MathStackStorageData = {
     survivalSec: 0,
     kills: 0,
     accuracy: 0,
+    score: 0,
   },
   lastChoice: {
     grade: 3,
     semester: 1,
-    character: 'hydrogen',
+    character: 'actinium',
   },
   misconceptions: {},
+  rankings: [],
   sessions: 0,
 };
 
@@ -88,9 +102,11 @@ export function recordSessionResult(
       survivalSec: Math.max(current.best.survivalSec, Math.floor(input.survivalSec)),
       kills: Math.max(current.best.kills, Math.floor(input.kills)),
       accuracy: Math.max(current.best.accuracy, input.quiz.accuracy),
+      score: Math.max(current.best.score, Math.floor(input.score)),
     },
     lastChoice: input.lastChoice ?? current.lastChoice,
     misconceptions: mergeMisconceptions(current.misconceptions, input.quiz),
+    rankings: updateRankings(current.rankings, input),
     sessions: current.sessions + 1,
   };
   writeMathStackStorage(storage, next);
@@ -105,6 +121,7 @@ function normalizeStorageData(value: unknown): MathStackStorageData {
     best: normalizeBest(value.best),
     lastChoice: normalizeLastChoice(value.lastChoice),
     misconceptions: normalizeMisconceptions(value.misconceptions),
+    rankings: normalizeRankings(value.rankings),
     sessions: safeInteger(value.sessions),
   };
 }
@@ -115,6 +132,7 @@ function normalizeBest(value: unknown): StoredBestRecord {
     survivalSec: safeInteger(value.survivalSec),
     kills: safeInteger(value.kills),
     accuracy: safeRatio(value.accuracy),
+    score: safeInteger(value.score),
   };
 }
 
@@ -124,12 +142,12 @@ function normalizeLastChoice(value: unknown): StoredLastChoice {
   const semester = Number(value.semester);
   const character = value.character;
   return {
-    grade: grade === 3 || grade === 4 || grade === 5 || grade === 6 ? grade : 3,
+    grade: grade === 1 || grade === 2 || grade === 3 || grade === 4 || grade === 5 || grade === 6 ? grade : 3,
     semester: semester === 2 ? 2 : 1,
     character:
-      character === 'hydrogen' || character === 'neon' || character === 'carbon' || character === 'oxygen'
+      character === 'actinium' || character === 'thorium' || character === 'lanthanum' || character === 'cerium'
         ? character
-        : 'hydrogen',
+        : 'actinium',
   };
 }
 
@@ -162,12 +180,51 @@ function mergeMisconceptions(
   return next;
 }
 
+function normalizeRankings(value: unknown): StoredRankingEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(isRecord)
+    .map((item) => {
+      const rawGrade = Number(item.grade);
+      const grade: Grade =
+        rawGrade === 1 || rawGrade === 2 || rawGrade === 3 || rawGrade === 4 || rawGrade === 5 || rawGrade === 6
+          ? rawGrade
+          : 3;
+      return {
+        score: safeInteger(item.score),
+        survivalSec: safeInteger(item.survivalSec),
+        kills: safeInteger(item.kills),
+        level: safeInteger(item.level),
+        grade,
+      };
+    })
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 5);
+}
+
+function updateRankings(
+  current: readonly StoredRankingEntry[],
+  input: SessionRecordInput,
+): StoredRankingEntry[] {
+  return normalizeRankings([
+    ...current,
+    {
+      score: Math.floor(input.score),
+      survivalSec: Math.floor(input.survivalSec),
+      kills: Math.floor(input.kills),
+      level: Math.floor(input.level),
+      grade: input.lastChoice?.grade ?? DEFAULT_STORAGE_DATA.lastChoice.grade,
+    },
+  ]);
+}
+
 function cloneStorage(data: MathStackStorageData): MathStackStorageData {
   return {
     version: 1,
     best: { ...data.best },
     lastChoice: { ...data.lastChoice },
     misconceptions: normalizeMisconceptions(data.misconceptions),
+    rankings: normalizeRankings(data.rankings),
     sessions: data.sessions,
   };
 }

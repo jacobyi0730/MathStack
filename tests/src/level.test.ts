@@ -4,16 +4,16 @@ import { addExperience, createLevelState, shiftLevelEvent } from '../../src/syst
 
 describe('level system', () => {
   it('uses_the_documented_xp_curve', () => {
-    expect(getRequiredXpForLevel(1)).toBe(7);
-    expect(getRequiredXpForLevel(5)).toBe(28);
-    expect(getRequiredXpForLevel(10)).toBe(88);
-    expect(getRequiredXpForLevel(18)).toBe(262);
+    expect(getRequiredXpForLevel(1)).toBe(10);
+    expect(getRequiredXpForLevel(5)).toBe(32);
+    expect(getRequiredXpForLevel(10)).toBe(60);
+    expect(getRequiredXpForLevel(18)).toBe(104);
   });
 
   it('queues_levelup_events_with_three_pending_choices', () => {
     const level = createLevelState();
 
-    const gained = addExperience(level, 7);
+    const gained = addExperience(level, 10);
 
     expect(gained).toBe(1);
     expect(level.level).toBe(2);
@@ -25,7 +25,7 @@ describe('level system', () => {
   it('keeps_leftover_xp_after_multiple_levelups', () => {
     const level = createLevelState();
 
-    addExperience(level, 21);
+    addExperience(level, 30);
 
     expect(level.level).toBe(3);
     expect(level.xp).toBe(4);

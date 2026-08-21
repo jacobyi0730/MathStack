@@ -38,7 +38,7 @@ function multiGrade(
 export const CURRICULUM: Record<string, StandardInfo> = {
   '4수01-01': info(4, 1, Domain.Number, '큰 수', '◎'),
   '4수01-02': info(4, 1, Domain.Number, '큰 수', '◎'),
-  '4수01-03': info(3, 1, Domain.Number, '덧셈과 뺄셈', '◎'),
+  '4수01-03': multiGrade(info(3, 1, Domain.Number, '덧셈과 뺄셈', '◎'), { 1: 1, 2: 1, 3: 1 }),
   // 같은 코드가 3학년 2학기 표에도 다시 나오므로 첫 도입 학기로 고정한다.
   '4수01-04': info(3, 1, Domain.Number, '곱셈 (두 자리 × 한 자리)', '◎'),
   '4수01-05': info(3, 1, Domain.Number, '나눗셈', '◎'),
@@ -58,9 +58,9 @@ export const CURRICULUM: Record<string, StandardInfo> = {
   '4수02-01': info(4, 1, Domain.Relation, '규칙 찾기', '◎'),
   '4수02-02': info(4, 1, Domain.Relation, '규칙 찾기', '◎'),
   // 등호의 동치 관계는 두 자리 수 범위에서 다루므로 3학년 덧셈·뺄셈 이후에도 출제 가능하다.
-  '4수02-03': multiGrade(info(3, 1, Domain.Relation, '등호와 동치 관계', '◎'), { 3: 1, 4: 1 }),
+  '4수02-03': multiGrade(info(3, 1, Domain.Relation, '등호와 동치 관계', '◎'), { 1: 1, 2: 1, 3: 1, 4: 1 }),
 
-  '4수03-01': info(3, 1, Domain.Geometry, '평면도형 (선분·직선·반직선, 각, 직각)', '○'),
+  '4수03-01': multiGrade(info(3, 1, Domain.Geometry, '평면도형 (선분·직선·반직선, 각, 직각)', '○'), { 1: 1, 2: 1, 3: 1 }),
   '4수03-02': info(3, 1, Domain.Geometry, '평면도형 (선분·직선·반직선, 각, 직각)', '○'),
   '4수03-03': info(4, 2, Domain.Geometry, '사각형 (수직·평행 포함)', '○'),
   '4수03-04': info(4, 1, Domain.Geometry, '평면도형의 이동', '○'),
@@ -87,7 +87,7 @@ export const CURRICULUM: Record<string, StandardInfo> = {
   '4수03-25': info(4, 1, Domain.Geometry, '각도', '○'),
 
   // 3학년 표와 4학년 표에 모두 보이지만, 실제 학년은 기획서의 첫 명시인 3학년 2학기로 둔다.
-  '4수04-01': multiGrade(info(3, 2, Domain.Data, '그림그래프', '○'), { 3: 2, 4: 1 }),
+  '4수04-01': multiGrade(info(3, 2, Domain.Data, '그림그래프', '○'), { 1: 2, 2: 2, 3: 2, 4: 1 }),
   '4수04-02': info(4, 2, Domain.Data, '꺾은선그래프', '○'),
   '4수04-03': info(4, 2, Domain.Data, '꺾은선그래프', '✕'), // §13.5에만 따로 나온 제외 코드라서 같은 자료 단원 흐름에 묶어 보수적으로 배정했다.
 

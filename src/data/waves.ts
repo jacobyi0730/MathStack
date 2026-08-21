@@ -6,8 +6,8 @@ export interface WaveEntry {
   readonly baseSpawnPerMinute: number;
 }
 
-export const DENSITY_GROWTH_PER_MIN = 0.28;
-export const HP_GROWTH_PER_MIN = 0.12;
+export const DENSITY_GROWTH_PER_MIN = 0.22;
+export const HP_GROWTH_PER_MIN = 0.08;
 
 export const SPAWN_MIN_PLAYER_DISTANCE = 400;
 export const SPAWN_RING_MARGIN = 64;
@@ -16,37 +16,37 @@ export const WAVES = [
   {
     startSec: 0,
     enemyId: 'radon',
-    baseSpawnPerMinute: 36,
+    baseSpawnPerMinute: 12,
   },
   {
     startSec: 60,
     enemyId: 'sodium',
-    baseSpawnPerMinute: 18,
+    baseSpawnPerMinute: 12,
   },
   {
     startSec: 120,
     enemyId: 'iridium',
-    baseSpawnPerMinute: 6,
+    baseSpawnPerMinute: 9,
   },
   {
     startSec: 120,
     enemyId: 'iodine',
-    baseSpawnPerMinute: 6,
+    baseSpawnPerMinute: 9,
   },
   {
     startSec: 180,
     enemyId: 'lead',
-    baseSpawnPerMinute: 10,
+    baseSpawnPerMinute: 7,
   },
   {
     startSec: 210,
     enemyId: 'uranium',
-    baseSpawnPerMinute: 10,
+    baseSpawnPerMinute: 7,
   },
   {
     startSec: 270,
     enemyId: 'caesium',
-    baseSpawnPerMinute: 8,
+    baseSpawnPerMinute: 6,
   },
 ] as const satisfies readonly WaveEntry[];
 

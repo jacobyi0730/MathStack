@@ -8,6 +8,7 @@ import {
   PLAYER_SLOT_CAPACITY,
   type CharacterId,
 } from './characters.js';
+import type { BaseWeaponId } from './weapons.js';
 
 export { PLAYER_SLOT_CAPACITY };
 export const WORLD_BOUNDS = FIELD_BOUNDS;
@@ -30,7 +31,7 @@ export interface CharacterProfile {
   readonly accessoryKind: 0 | 1 | 2;
   readonly bodyColor: string;
   readonly accessoryColor: string;
-  readonly startingWeaponId: string;
+  readonly startingWeaponId: BaseWeaponId;
   readonly maxHealthMultiplier: number;
   readonly moveSpeedMultiplier: number;
   readonly projectileCountBonus: number;
@@ -39,10 +40,10 @@ export interface CharacterProfile {
 }
 
 export const CHARACTER_PROFILES = Object.freeze({
-  hydrogen: fromArchetype(CHARACTER_ARCHETYPES[0], 0, 0, 'hydrogen_arrow'),
-  neon: fromArchetype(CHARACTER_ARCHETYPES[1], 1, 1, 'neon_beam'),
-  carbon: fromArchetype(CHARACTER_ARCHETYPES[2], 2, 2, 'carbon_ring'),
-  oxygen: fromArchetype(CHARACTER_ARCHETYPES[3], 3, 0, 'oxygen_wave'),
+  actinium: fromArchetype(CHARACTER_ARCHETYPES[0], 0, 0, 'actinium_spear'),
+  thorium: fromArchetype(CHARACTER_ARCHETYPES[1], 1, 1, 'thorium_hammer'),
+  lanthanum: fromArchetype(CHARACTER_ARCHETYPES[2], 2, 2, 'lanthanum_lance'),
+  cerium: fromArchetype(CHARACTER_ARCHETYPES[3], 3, 0, 'cerium_spark'),
 }) satisfies Record<CharacterId, CharacterProfile>;
 
 export function isCharacterId(value: string): value is CharacterId {
@@ -53,7 +54,7 @@ function fromArchetype(
   archetype: (typeof CHARACTER_ARCHETYPES)[number],
   paletteIndex: 0 | 1 | 2 | 3,
   accessoryKind: 0 | 1 | 2,
-  startingWeaponId: string,
+  startingWeaponId: BaseWeaponId,
 ): CharacterProfile {
   return {
     id: archetype.id,

@@ -36,7 +36,7 @@ describe('CURRICULUM', () => {
     const standard = lookupStandard('4수04-01');
 
     expect(standard).toBeDefined();
-    expect(standard?.grades).toEqual([3, 4]);
+    expect(standard?.grades).toEqual([1, 2, 3, 4]);
     expect(isStandardForGrade(standard!, 3)).toBe(true);
     expect(isStandardForGrade(standard!, 4)).toBe(true);
     expect(isStandardForSemester(standard!, 3, 1)).toBe(false);
@@ -49,7 +49,7 @@ describe('CURRICULUM', () => {
     const standard = lookupStandard('4수02-03');
 
     expect(standard).toBeDefined();
-    expect(standard?.grades).toEqual([3, 4]);
+    expect(standard?.grades).toEqual([1, 2, 3, 4]);
     expect(isStandardForGrade(standard!, 3)).toBe(true);
     expect(isStandardForSemester(standard!, 3, 1)).toBe(true);
     expect(standardsFor(3, 1)).toContain('4수02-03');

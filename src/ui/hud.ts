@@ -26,14 +26,17 @@ export interface HudSlotState {
 export interface HudState {
   readonly frame: number;
   readonly elapsedSec: number;
+  readonly chapter: number;
   readonly level: number;
   readonly xp: number;
   readonly xpRequired: number;
   readonly health: number;
   readonly maxHealth: number;
+  readonly score: number;
   readonly kills: number;
   readonly quizCorrect: number;
   readonly quizTotal: number;
+  readonly noticeText: string;
   readonly weapons: readonly HudSlotState[];
   readonly passives: readonly HudSlotState[];
 }
@@ -52,13 +55,16 @@ interface HudElements {
   readonly top: HTMLElement;
   readonly bottom: HTMLElement;
   readonly timeValue: HTMLElement;
+  readonly chapterValue: HTMLElement;
   readonly levelValue: HTMLElement;
   readonly xpValue: HTMLElement;
   readonly xpFill: HTMLElement;
   readonly healthValue: HTMLElement;
   readonly healthFill: HTMLElement;
+  readonly scoreValue: HTMLElement;
   readonly killsValue: HTMLElement;
   readonly quizValue: HTMLElement;
+  readonly notice: HTMLElement;
   readonly weaponSlots: HTMLElement[];
   readonly passiveSlots: HTMLElement[];
 }
@@ -142,27 +148,38 @@ function createHudElements(doc: Document): HudElements {
   root.appendChild(bottom);
 
   const timeValue = appendStat(top, 'Time');
+  const chapterValue = appendStat(top, 'Chapter');
   const levelValue = appendStat(top, 'Lv');
   const xp = appendMeter(top, 'XP');
   const health = appendMeter(top, 'HP');
+  const scoreValue = appendStat(top, 'Score');
   const killsValue = appendStat(top, 'Kills');
   const quizValue = appendStat(top, 'Quiz');
 
-  const weaponSlots = appendSlotGroup(bottom, 'Active', HUD_WEAPON_SLOT_COUNT);
-  const passiveSlots = appendSlotGroup(bottom, 'Passive', HUD_PASSIVE_SLOT_COUNT);
+  const notice = doc.createElement('div');
+  notice.className = 'mathstack-hud__notice';
+  notice.style.cssText = noticeStyle();
+  notice.hidden = true;
+  root.appendChild(notice);
+
+  const weaponSlots = appendSlotGroup(bottom, '무기', HUD_WEAPON_SLOT_COUNT);
+  const passiveSlots = appendSlotGroup(bottom, '보조무기', HUD_PASSIVE_SLOT_COUNT);
 
   return {
     root,
     top,
     bottom,
     timeValue,
+    chapterValue,
     levelValue,
     xpValue: xp.value,
     xpFill: xp.fill,
     healthValue: health.value,
     healthFill: health.fill,
+    scoreValue,
     killsValue,
     quizValue,
+    notice,
     weaponSlots,
     passiveSlots,
   };
@@ -252,13 +269,18 @@ function updateValues(elements: HudElements, state: HudState): void {
   const xpRequired = Math.max(1, state.xpRequired);
   const maxHealth = Math.max(1, state.maxHealth);
   elements.timeValue.textContent = formatTime(state.elapsedSec);
+  elements.chapterValue.textContent = `${state.chapter}`;
   elements.levelValue.textContent = `${state.level}`;
   elements.xpValue.textContent = `${Math.max(0, Math.floor(state.xp))}/${Math.floor(xpRequired)}`;
   elements.xpFill.style.width = `${formatPercent(state.xp / xpRequired)}%`;
   elements.healthValue.textContent = `${Math.max(0, Math.ceil(state.health))}/${Math.ceil(maxHealth)}`;
   elements.healthFill.style.width = `${formatPercent(state.health / maxHealth)}%`;
+  elements.scoreValue.textContent = `${Math.max(0, Math.floor(state.score))}`;
   elements.killsValue.textContent = `${state.kills}`;
   elements.quizValue.textContent = `${state.quizCorrect}/${state.quizTotal}`;
+  elements.notice.textContent = state.noticeText;
+  elements.notice.hidden = state.noticeText.length === 0;
+  elements.notice.style.opacity = state.noticeText.length > 0 ? '1' : '0';
 }
 
 function updateSlots(
@@ -277,8 +299,8 @@ function updateSlots(
       continue;
     }
 
-    const levelText = state.level > 1 ? ` x${state.level}` : '';
-    el.textContent = `${state.element}${levelText}`;
+    const levelText = state.level > 1 ? ` Lv.${state.level}` : '';
+    el.textContent = `${state.label}${levelText}`;
     el.className = state.evolutionReady
       ? `${HUD_CLASS_NAMES.slot} ${HUD_CLASS_NAMES.slotReady}`
       : HUD_CLASS_NAMES.slot;
@@ -289,14 +311,17 @@ function updateSlots(
 function getValuesSignature(state: HudState): string {
   return [
     Math.floor(state.elapsedSec),
+    state.chapter,
     state.level,
     Math.floor(state.xp),
     state.xpRequired,
     Math.ceil(state.health),
     state.maxHealth,
+    Math.floor(state.score),
     state.kills,
     state.quizCorrect,
     state.quizTotal,
+    state.noticeText,
   ].join('|');
 }
 
@@ -396,12 +421,34 @@ function setMeterFillStyle(el: HTMLElement): void {
 }
 
 function setSlotStyle(el: HTMLElement): void {
-  el.style.width = '38px';
+  el.style.width = '94px';
   el.style.height = '34px';
   el.style.display = 'grid';
   el.style.placeItems = 'center';
   el.style.border = '1px solid rgba(248, 250, 252, 0.35)';
   el.style.background = 'rgba(15, 23, 42, 0.68)';
-  el.style.fontSize = '12px';
+  el.style.fontSize = '11px';
   el.style.fontWeight = '800';
+  el.style.overflow = 'hidden';
+  el.style.textOverflow = 'ellipsis';
+  el.style.whiteSpace = 'nowrap';
+}
+
+function noticeStyle(): string {
+  return [
+    'position:absolute',
+    'top:64px',
+    'left:50%',
+    'transform:translateX(-50%)',
+    'max-width:min(720px,calc(100vw - 32px))',
+    'padding:12px 18px',
+    'box-sizing:border-box',
+    'border-radius:8px',
+    'background:rgba(255,193,7,0.94)',
+    'color:#111827',
+    'font-size:26px',
+    'font-weight:900',
+    'text-align:center',
+    'box-shadow:0 12px 32px rgba(0,0,0,0.35)',
+  ].join(';');
 }

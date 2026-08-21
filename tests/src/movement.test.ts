@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { createPlayer } from '../../src/entities/player.js';
 import { movePlayer } from '../../src/systems/movement.js';
 
 describe('플레이어 이동', () => {
   it('입력 방향에 따라 이동한다', () => {
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     player.movementIntent.x = 1;
     player.movementIntent.y = 0;
 
@@ -17,7 +17,7 @@ describe('플레이어 이동', () => {
   });
 
   it('맵 경계에 닿으면 반대쪽으로 이어진다', () => {
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     player.x = 940;
     player.prevX = 940;
     player.movementIntent.x = 1;
@@ -28,7 +28,7 @@ describe('플레이어 이동', () => {
   });
 
   it('경계를 넘어도 동공용 방향 값은 유지한다', () => {
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     player.x = 958;
     player.prevX = 958;
     player.movementIntent.x = 1;
@@ -39,3 +39,4 @@ describe('플레이어 이동', () => {
     expect(player.dx).toBeGreaterThan(0);
   });
 });
+

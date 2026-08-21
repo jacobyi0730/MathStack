@@ -111,7 +111,7 @@ describe('hud', () => {
 
     const readySlot = findByClass(asFake(hud.bottom), HUD_CLASS_NAMES.slotReady)[0] as FakeElement;
     expect(changed).toBe(true);
-    expect(readySlot.textContent).toBe('H x5');
+    expect(readySlot.textContent).toBe('Hydrogen Arrow Lv.5');
     expect(readySlot.getAttribute('aria-label')).toBe(
       'Weapon slot 1: Hydrogen Arrow, level 5, evolution ready',
     );
@@ -131,14 +131,17 @@ function makeState(overrides: Partial<HudState>): HudState {
   return {
     frame: 0,
     elapsedSec: 0,
+    chapter: 1,
     level: 1,
     xp: 0,
     xpRequired: 10,
     health: 70,
     maxHealth: 100,
+    score: 0,
     kills: 3,
     quizCorrect: 2,
     quizTotal: 4,
+    noticeText: '',
     weapons: [],
     passives: [],
     ...overrides,

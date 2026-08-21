@@ -25,7 +25,7 @@ describe('title flow storage', () => {
     const selection: TitleSelection = {
       grade: 5,
       term: 'all',
-      characterId: 'oxygen',
+      characterId: 'cerium',
       heroName: 'Nova',
     };
     writeTitleSelection(storage, selection);
@@ -40,7 +40,7 @@ describe('title flow storage', () => {
     expect(readTitleSelection(storage)).toMatchObject({
       grade: 3,
       term: 2,
-      characterId: 'hydrogen',
+      characterId: 'actinium',
     });
   });
 
@@ -57,9 +57,9 @@ describe('title flow storage', () => {
     );
 
     expect(readTitleSelection(storage)).toEqual({
-      grade: 3,
+      grade: 2,
       term: 2,
-      characterId: 'hydrogen',
+      characterId: 'actinium',
       heroName: '원소 용사',
     });
   });

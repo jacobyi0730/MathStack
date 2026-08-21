@@ -9,7 +9,7 @@ import {
 } from '../data/waves.js';
 import { resolveEnemyReward, spawnEnemy, type EnemyEntity } from '../entities/enemy.js';
 import type { GameState } from '../engine/state.js';
-import { spawnPickupByKind, spawnXpGem } from './pickup.js';
+import { announcePickup, spawnPickupByKind, spawnXpGem } from './pickup.js';
 
 const MIN_DISTANCE_SQ = SPAWN_MIN_PLAYER_DISTANCE * SPAWN_MIN_PLAYER_DISTANCE;
 
@@ -60,9 +60,14 @@ export function defeatEnemy(state: GameState, enemy: EnemyEntity): void {
   state.enemies.release(enemy);
 
   spawnXpGem(state.pickups, xp, dropX, dropY);
-  if (reward === 'heal') spawnPickupByKind(state.pickups, 'heal', dropX, dropY);
-  else if (reward === 'magnet') spawnPickupByKind(state.pickups, 'magnet', dropX, dropY);
-  else if (reward === 'bomb') spawnPickupByKind(state.pickups, 'meteor', dropX, dropY);
+  if (reward === 'heal') {
+    spawnPickupByKind(state.pickups, 'heal', dropX, dropY);
+    announcePickup(state.pickupRuntime, 'heal');
+  } else if (reward === 'magnet') {
+    state.specialRewards.pendingQuizRewards.push({ pickupKind: 'magnet', x: dropX, y: dropY });
+  } else if (reward === 'bomb') {
+    state.specialRewards.pendingQuizRewards.push({ pickupKind: 'meteor', x: dropX, y: dropY });
+  }
 }
 
 function splitEnemy(state: GameState, enemy: EnemyEntity): void {

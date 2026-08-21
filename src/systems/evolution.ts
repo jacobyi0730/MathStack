@@ -4,7 +4,7 @@ import {
   type EvolutionDefinition,
   type EvolutionSignalKind,
 } from '../data/evolutions.js';
-import { PASSIVE_MAX_LEVEL, type PassiveId } from '../data/passives.js';
+import { PASSIVES, type PassiveId } from '../data/passives.js';
 import {
   WEAPON_EVOLUTION_LEVEL,
   WEAPONS,
@@ -14,6 +14,8 @@ import {
 } from '../data/weapons.js';
 import type { PassiveRuntime } from './stats.js';
 import type { WeaponRuntime, WeaponSlotRuntime } from './weapons.js';
+
+export const PASSIVE_EVOLUTION_LEVEL = 1;
 
 export interface EvolutionStatus {
   readonly baseWeapon: BaseWeaponId;
@@ -66,7 +68,7 @@ export function getEvolutionStatus(
     ready:
       !alreadyEvolved &&
       weaponLevel >= WEAPON_EVOLUTION_LEVEL &&
-      passiveLevel >= PASSIVE_MAX_LEVEL,
+      passiveLevel >= PASSIVE_EVOLUTION_LEVEL,
     alreadyEvolved,
     signal: evolution.signal,
   };
@@ -86,8 +88,11 @@ export function getReadyEvolutionForBaseWeapon(
   baseWeapon: BaseWeaponId,
 ): EvolutionDefinition | undefined {
   const definition = WEAPONS[baseWeapon];
+  if (!('evolvesTo' in definition)) {
+    return undefined;
+  }
   const evolutionId = definition.evolvesTo;
-  if (evolutionId === undefined || !isEvolutionReady(weapons, passives, evolutionId)) {
+  if (!isEvolutionReady(weapons, passives, evolutionId)) {
     return undefined;
   }
   return EVOLUTIONS[evolutionId];
@@ -129,6 +134,27 @@ export function applyEvolution(
 
 export function isEvolutionWeaponId(id: WeaponId): id is EvolutionWeaponId {
   return 'evolutionOf' in WEAPONS[id];
+}
+
+export function describeEvolutionPairForWeapon(id: BaseWeaponId): string | null {
+  const definition = WEAPONS[id];
+  if (!('evolvesTo' in definition) || definition.evolvesTo === undefined) return null;
+
+  const evolution = EVOLUTIONS[definition.evolvesTo];
+  const passive = PASSIVES[evolution.passive];
+  return `각성 짝꿍: ${passive.name} 보유 + 무기 Lv.${WEAPON_EVOLUTION_LEVEL} → ${evolution.name}`;
+}
+
+export function describeEvolutionPairsForPassive(id: PassiveId): string | null {
+  let text = '';
+  for (let i = 0; i < EVOLUTION_IDS.length; i += 1) {
+    const evolution = EVOLUTIONS[EVOLUTION_IDS[i] as EvolutionWeaponId];
+    if (evolution.passive !== id) continue;
+    const weapon = WEAPONS[evolution.baseWeapon];
+    const item = `${weapon.name} Lv.${WEAPON_EVOLUTION_LEVEL} → ${evolution.name}`;
+    text = text.length === 0 ? item : `${text} / ${item}`;
+  }
+  return text.length === 0 ? null : `각성 짝꿍: ${text}`;
 }
 
 function firstAvailableEvolution(

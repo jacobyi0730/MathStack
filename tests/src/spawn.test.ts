@@ -109,9 +109,10 @@ describe('enemy spawning', () => {
     expect(state.pickups.items[0].pickupKind).toBe('heal');
     expect(state.pickups.items[0].x).toBe(deathX);
     expect(state.pickups.items[0].y).toBe(deathY);
+    expect(state.pickupRuntime.noticeText).toBe('아이오딘 방울이 나왔습니다');
   });
 
-  it('drops either a magnet or a bomb from iridium', () => {
+  it('queues_a_quiz_reward_for_iridium_instead_of_dropping_the_item_immediately', () => {
     const state = createGameState();
     const seen = new Set<string>();
 
@@ -119,12 +120,13 @@ describe('enemy spawning', () => {
       defeatEnemy(state, spawnWaveEnemy(state, 'iridium', 0));
     }
 
-    for (let i = 0; i < state.pickups.activeCount; i += 1) {
-      seen.add(state.pickups.items[i].pickupKind);
+    for (const reward of state.specialRewards.pendingQuizRewards) {
+      seen.add(reward.pickupKind);
     }
 
     expect(seen.has('magnet')).toBe(true);
     expect(seen.has('meteor')).toBe(true);
-    expect(seen.has('proton-medium')).toBe(true);
+    expect(state.pickups.activeCount).toBeGreaterThan(0);
+    expect(state.pickups.items[0].pickupKind).toBe('proton-medium');
   });
 });

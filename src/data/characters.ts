@@ -1,4 +1,4 @@
-export type CharacterId = 'hydrogen' | 'neon' | 'carbon' | 'oxygen';
+export type CharacterId = 'actinium' | 'thorium' | 'lanthanum' | 'cerium';
 
 export interface CharacterArchetype {
   readonly id: CharacterId;
@@ -37,64 +37,64 @@ export const FIELD_BOUNDS: MovementBounds = Object.freeze({
 
 export const CHARACTER_ARCHETYPES = [
   {
-    id: 'hydrogen',
-    name: '수소 동글이',
-    element: 'H',
-    atomicNumber: 1,
+    id: 'actinium',
+    name: '악티늄 동글이',
+    element: 'Ac',
+    atomicNumber: 89,
     bodyColor: '#4CAF50',
     accessoryColor: '#B8F08A',
     moveSpeedMultiplier: 1,
-    maxHealthMultiplier: 1.1,
+    maxHealthMultiplier: 1,
     projectileBonus: 0,
     attackPowerMultiplier: 1,
     rangeMultiplier: 1,
     cooldownMultiplier: 1,
   },
   {
-    id: 'neon',
-    name: '네온 동글이',
-    element: 'Ne',
-    atomicNumber: 10,
+    id: 'thorium',
+    name: '토륨 동글이',
+    element: 'Th',
+    atomicNumber: 90,
     bodyColor: '#2196F3',
     accessoryColor: '#8ED5FF',
-    moveSpeedMultiplier: 1.15,
-    maxHealthMultiplier: 0.9,
+    moveSpeedMultiplier: 1,
+    maxHealthMultiplier: 1,
     projectileBonus: 0,
     attackPowerMultiplier: 1,
     rangeMultiplier: 1,
     cooldownMultiplier: 1,
   },
   {
-    id: 'carbon',
-    name: '탄소 동글이',
-    element: 'C',
-    atomicNumber: 6,
+    id: 'lanthanum',
+    name: '란타넘 동글이',
+    element: 'La',
+    atomicNumber: 57,
     bodyColor: '#FF9800',
     accessoryColor: '#FFD08A',
     moveSpeedMultiplier: 1,
     maxHealthMultiplier: 1,
-    projectileBonus: 1,
-    attackPowerMultiplier: 0.9,
+    projectileBonus: 0,
+    attackPowerMultiplier: 1,
     rangeMultiplier: 1,
     cooldownMultiplier: 1,
   },
   {
-    id: 'oxygen',
-    name: '산소 동글이',
-    element: 'O',
-    atomicNumber: 8,
+    id: 'cerium',
+    name: '세륨 동글이',
+    element: 'Ce',
+    atomicNumber: 58,
     bodyColor: '#9C27B0',
     accessoryColor: '#E4A5FF',
     moveSpeedMultiplier: 1,
     maxHealthMultiplier: 1,
     projectileBonus: 0,
     attackPowerMultiplier: 1,
-    rangeMultiplier: 1.2,
-    cooldownMultiplier: 1.1,
+    rangeMultiplier: 1,
+    cooldownMultiplier: 1,
   },
 ] as const satisfies readonly CharacterArchetype[];
 
-export const DEFAULT_CHARACTER_ID: CharacterId = 'hydrogen';
+export const DEFAULT_CHARACTER_ID: CharacterId = 'actinium';
 
 export function getCharacterArchetype(id: CharacterId): CharacterArchetype {
   const archetype = CHARACTER_ARCHETYPES.find((candidate) => candidate.id === id);

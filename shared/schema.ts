@@ -13,7 +13,14 @@ import { lookupStandard } from './curriculum.js';
  *              curriculum.ts 대조 검증을 여기에 붙인다.
  */
 
-export const GradeSchema = z.union([z.literal(3), z.literal(4), z.literal(5), z.literal(6)]);
+export const GradeSchema = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(4),
+  z.literal(5),
+  z.literal(6),
+]);
 export const SemesterSchema = z.union([z.literal(1), z.literal(2)]);
 export const DifficultySchema = z.union([
   z.literal(1),

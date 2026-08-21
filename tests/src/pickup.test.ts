@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import {
   createPickupPool,
   isInstantPickup,
@@ -66,7 +66,7 @@ describe('pickup system', () => {
 
   it('pulls_pickups_inside_magnet_range_and_collects_xp', () => {
     const pool = createPickupPool(4);
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     const level = createLevelState();
     const runtime = createPickupRuntime();
     spawnPickupByKind(pool, 'proton-medium', 80, 0);
@@ -81,7 +81,7 @@ describe('pickup system', () => {
 
   it('applies_heal_magnet_and_meteor_rewards_on_collection', () => {
     const pool = createPickupPool(4);
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     const level = createLevelState();
     const runtime = createPickupRuntime();
     player.health = 20;
@@ -98,7 +98,7 @@ describe('pickup system', () => {
 
   it('applies_clock_flare_and_shield_rewards_on_collection', () => {
     const pool = createPickupPool(4);
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     const level = createLevelState();
     const runtime = createPickupRuntime();
 
@@ -115,7 +115,7 @@ describe('pickup system', () => {
 
   it('lets_effect_timers_expire', () => {
     const pool = createPickupPool(4);
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     const level = createLevelState();
     const runtime = createPickupRuntime();
     runtime.freezeSec = 0.2;
@@ -130,7 +130,7 @@ describe('pickup system', () => {
 
   it('magnet_sweeps_every_shard_left_on_the_field', () => {
     const pool = createPickupPool(8);
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     const level = createLevelState();
     const runtime = createPickupRuntime();
 
@@ -145,7 +145,7 @@ describe('pickup system', () => {
 
   it('uses_boosted_magnet_range_after_magnet_collection', () => {
     const pool = createPickupPool(4);
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
     const level = createLevelState();
     const runtime = createPickupRuntime();
     runtime.magnetBoostSec = 1;
@@ -156,3 +156,4 @@ describe('pickup system', () => {
     expect(pool.items[0].x).toBeLessThan(BOOSTED_PICKUP_MAGNET_RADIUS - 20);
   });
 });
+

@@ -24,26 +24,39 @@ describe('evolution', () => {
       'magnesium_chain_flash',
       'golden_ratio_cycle',
       'boron_infinite_barrage',
+      'doomsday_nuclear_bomb',
+      'permanent_reactor_fuel',
+      'night_vision_scope',
+      'deep_sea_sonar',
+      'ignition_flint_lighter',
+      'precision_cancer_sensor',
+      'industrial_cutting_laser',
+      'infinite_atomic_battery',
+      'cryogenic_mri_magnet',
+      'cautery_laser',
+      'anticancer_annihilator',
+      'fire_alarm_guard',
+      'synthetic_element_target',
+      'neutron_probe',
+      'particle_collider',
+      'ultimate_quantum_sensor',
     ]);
 
     for (const evolution of Object.values(EVOLUTIONS)) {
       expect(WEAPONS[evolution.baseWeapon].evolvesTo).toBe(evolution.id);
       expect(WEAPONS[evolution.baseWeapon].evolvesWith).toBe(evolution.passive);
-      expect(PASSIVES[evolution.passive].pairedWeapon).toBe(evolution.baseWeapon);
+      expect(PASSIVES[evolution.passive]).toBeDefined();
       expect(WEAPONS[evolution.id].evolutionOf).toBe(evolution.baseWeapon);
       expect(isEvolutionWeaponId(evolution.id)).toBe(true);
     }
   });
 
-  it('requires_weapon_level_five_and_paired_passive_level_three', () => {
+  it('requires_weapon_level_five_and_paired_passive_owned', () => {
     const weapons = createWeaponRuntime();
     const passives = createPassiveRuntime();
 
     for (let i = 0; i < WEAPON_EVOLUTION_LEVEL; i += 1) {
       expect(equipWeapon(weapons, 'hydrogen_arrow')).toBe(true);
-    }
-    for (let i = 0; i < 2; i += 1) {
-      expect(equipPassive(passives, 'silicon')).toBe(true);
     }
 
     expect(isEvolutionReady(weapons, passives, 'heavy_hydrogen_storm')).toBe(false);
@@ -55,10 +68,10 @@ describe('evolution', () => {
   it('collects_ready_evolutions_without_including_unmet_pairs', () => {
     const weapons = createWeaponRuntime();
     const passives = createPassiveRuntime();
-    const available = new Array<(typeof EVOLUTIONS)[keyof typeof EVOLUTIONS]>(8);
+    const available = new Array<(typeof EVOLUTIONS)[keyof typeof EVOLUTIONS]>(24);
 
     levelWeaponToFive(weapons, 'hydrogen_arrow');
-    levelPassiveToThree(passives, 'silicon');
+    equipPassive(passives, 'silicon');
     levelWeaponToFive(weapons, 'neon_beam');
 
     const count = collectAvailableEvolutions(weapons, passives, available);
@@ -73,7 +86,7 @@ describe('evolution', () => {
     const choices: Array<WeaponId | null> = ['boron_shot', 'neon_beam', null];
 
     levelWeaponToFive(weapons, 'hydrogen_arrow');
-    levelPassiveToThree(passives, 'silicon');
+    equipPassive(passives, 'silicon');
 
     const count = insertGuaranteedEvolutionChoice(weapons, passives, choices, 2);
 
@@ -86,7 +99,7 @@ describe('evolution', () => {
     const passives = createPassiveRuntime();
 
     levelWeaponToFive(weapons, 'hydrogen_arrow');
-    levelPassiveToThree(passives, 'silicon');
+    equipPassive(passives, 'silicon');
 
     const result = applyEvolution(weapons, 'heavy_hydrogen_storm');
     const status = getEvolutionStatus(weapons, passives, 'heavy_hydrogen_storm');
@@ -102,7 +115,7 @@ describe('evolution', () => {
       level: WEAPON_EVOLUTION_LEVEL,
       cooldownRemainingSec: 0,
     });
-    expect(passives.slots[0]).toMatchObject({ id: 'silicon', level: 3 });
+    expect(passives.slots[0]).toMatchObject({ id: 'silicon', level: 1 });
     expect(status.ready).toBe(false);
     expect(status.alreadyEvolved).toBe(true);
   });
@@ -111,11 +124,5 @@ describe('evolution', () => {
 function levelWeaponToFive(weapons: ReturnType<typeof createWeaponRuntime>, id: WeaponId): void {
   for (let i = 0; i < WEAPON_EVOLUTION_LEVEL; i += 1) {
     equipWeapon(weapons, id);
-  }
-}
-
-function levelPassiveToThree(passives: ReturnType<typeof createPassiveRuntime>, id: keyof typeof PASSIVES): void {
-  for (let i = 0; i < 3; i += 1) {
-    equipPassive(passives, id);
   }
 }

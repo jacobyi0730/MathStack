@@ -5,6 +5,7 @@ import { createCratePool, type CratePool } from '../entities/crate.js';
 import { createDamageNumberPool, type DamageNumberPool } from '../entities/damage-number.js';
 import { createEnemyPool, type EnemyPool } from '../entities/enemy.js';
 import { createPickupPool, type PickupPool } from '../entities/pickup.js';
+import type { PickupKind } from '../entities/pickup.js';
 import { createPlayer, type Player } from '../entities/player.js';
 import { createLevelState, type LevelState } from '../systems/level.js';
 import { createCollisionState, type CollisionState } from '../systems/collision.js';
@@ -70,7 +71,16 @@ export interface GameState {
     /** 처치 보상 굴림용 씨앗. 스폰 씨앗과 분리해 둔다 */
     dropSeed: number;
   };
+  specialRewards: {
+    pendingQuizRewards: SpecialRewardQuiz[];
+  };
   entities: RenderableEntity[];
+}
+
+export interface SpecialRewardQuiz {
+  readonly pickupKind: Extract<PickupKind, 'magnet' | 'meteor'>;
+  readonly x: number;
+  readonly y: number;
 }
 
 export interface GameStateOptions {
@@ -79,7 +89,7 @@ export interface GameStateOptions {
 }
 
 export function createGameState(options?: GameStateOptions): GameState & RenderScene {
-  const player = options?.player ?? createPlayer('hydrogen');
+  const player = options?.player ?? createPlayer('actinium');
   const enemies = createEnemyPool(MAX_ACTIVE_ENEMIES);
   const crates = createCratePool();
   const pickups = createPickupPool();
@@ -129,6 +139,9 @@ export function createGameState(options?: GameStateOptions): GameState & RenderS
     combat: {
       defeatedEnemies: 0,
       dropSeed: 0xc0ffee,
+    },
+    specialRewards: {
+      pendingQuizRewards: [],
     },
     entities,
   };

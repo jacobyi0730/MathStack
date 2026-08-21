@@ -91,6 +91,10 @@ export const ENEMY_PALETTES = [
   { body: '#E8574A', symbol: 'Rn', accessory: '#FFD700' },
   { body: '#D34235', symbol: 'Og', accessory: '#FFE082' },
   { body: '#8B0000', symbol: 'Po', accessory: '#FFC107' },
+  { body: '#C026D3', symbol: 'Na', accessory: '#F0ABFC' },
+  { body: '#64748B', symbol: 'Pb', accessory: '#CBD5E1' },
+  { body: '#16A34A', symbol: 'U', accessory: '#BBF7D0' },
+  { body: '#F97316', symbol: 'Cs', accessory: '#FED7AA' },
 ] as const satisfies readonly CharacterPalette[];
 
 /**

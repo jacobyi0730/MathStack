@@ -6,7 +6,20 @@ export type PassiveId =
   | 'krypton'
   | 'calcium'
   | 'nickel'
-  | 'silver';
+  | 'silver'
+  | 'praseodymium'
+  | 'europium'
+  | 'gadolinium'
+  | 'holmium'
+  | 'erbium'
+  | 'lutetium'
+  | 'protactinium'
+  | 'uranium'
+  | 'americium'
+  | 'curium'
+  | 'einsteinium'
+  | 'fermium'
+  | 'lawrencium';
 
 export type PairedWeaponId =
   | 'oxygen_wave'
@@ -16,7 +29,23 @@ export type PairedWeaponId =
   | 'iron_barrier'
   | 'magnesium_bomb'
   | 'carbon_ring'
-  | 'boron_shot';
+  | 'boron_shot'
+  | 'lanthanum_lance'
+  | 'cerium_spark'
+  | 'promethium_burst'
+  | 'samarium_fan'
+  | 'terbium_pulse'
+  | 'dysprosium_guard'
+  | 'thulium_thread'
+  | 'ytterbium_star'
+  | 'actinium_spear'
+  | 'thorium_hammer'
+  | 'neptunium_tide'
+  | 'plutonium_core'
+  | 'berkelium_arc'
+  | 'californium_ray'
+  | 'mendelevium_mine'
+  | 'nobelium_nova';
 
 export type PassiveEffectKind =
   | 'magnetRadius'
@@ -130,6 +159,149 @@ export const PASSIVES = {
     effect: 'luck',
     pairedWeapon: 'boron_shot',
     valuePerLevel: 0.15,
+    secondaryValuePerLevel: 0,
+  },
+  praseodymium: {
+    id: 'praseodymium',
+    name: '프라세오디뮴 증폭기',
+    element: 'Pr',
+    atomicNumber: 59,
+    mathReason: '소수 59, 한 방향 힘을 또렷하게 모음',
+    effect: 'attackPower',
+    pairedWeapon: 'cerium_spark',
+    valuePerLevel: 0.1,
+    secondaryValuePerLevel: 0,
+  },
+  europium: {
+    id: 'europium',
+    name: '유로퓸 형광체',
+    element: 'Eu',
+    atomicNumber: 63,
+    mathReason: '7×9, 격자처럼 빛을 나눔',
+    effect: 'attackRange',
+    pairedWeapon: 'samarium_fan',
+    valuePerLevel: 0.12,
+    secondaryValuePerLevel: 0,
+  },
+  gadolinium: {
+    id: 'gadolinium',
+    name: '가돌리늄 공명판',
+    element: 'Gd',
+    atomicNumber: 64,
+    mathReason: '8² 제곱수, 넓이와 공명의 수',
+    effect: 'projectileCount',
+    pairedWeapon: 'terbium_pulse',
+    valuePerLevel: 1,
+    secondaryValuePerLevel: 0,
+  },
+  holmium: {
+    id: 'holmium',
+    name: '홀뮴 렌즈',
+    element: 'Ho',
+    atomicNumber: 67,
+    mathReason: '소수 67, 빛을 한 점에 모음',
+    effect: 'cooldown',
+    pairedWeapon: 'dysprosium_guard',
+    valuePerLevel: 0.06,
+    secondaryValuePerLevel: 0,
+  },
+  erbium: {
+    id: 'erbium',
+    name: '어븀 섬유',
+    element: 'Er',
+    atomicNumber: 68,
+    mathReason: '광섬유 증폭 원소',
+    effect: 'moveSpeed',
+    pairedWeapon: 'thulium_thread',
+    valuePerLevel: 0.08,
+    secondaryValuePerLevel: 0,
+  },
+  lutetium: {
+    id: 'lutetium',
+    name: '루테튬 종결석',
+    element: 'Lu',
+    atomicNumber: 71,
+    mathReason: '란타넘족의 끝, 마무리 보정',
+    effect: 'luck',
+    pairedWeapon: 'lanthanum_lance',
+    valuePerLevel: 0.12,
+    secondaryValuePerLevel: 0,
+  },
+  protactinium: {
+    id: 'protactinium',
+    name: '프로트악티늄 방패',
+    element: 'Pa',
+    atomicNumber: 91,
+    mathReason: '7×13, 두 소수가 겹친 보호',
+    effect: 'maxHealthAndRegen',
+    pairedWeapon: 'neptunium_tide',
+    valuePerLevel: 16,
+    secondaryValuePerLevel: 0.2,
+  },
+  uranium: {
+    id: 'uranium',
+    name: '우라늄 분열핵',
+    element: 'U',
+    atomicNumber: 92,
+    mathReason: '핵분열, 하나가 여럿으로 갈라짐',
+    effect: 'projectileCount',
+    pairedWeapon: 'plutonium_core',
+    valuePerLevel: 1,
+    secondaryValuePerLevel: 0,
+  },
+  americium: {
+    id: 'americium',
+    name: '아메리슘 감지기',
+    element: 'Am',
+    atomicNumber: 95,
+    mathReason: '5×19, 탐지와 확률의 보조',
+    effect: 'magnetRadius',
+    pairedWeapon: 'actinium_spear',
+    valuePerLevel: 0.18,
+    secondaryValuePerLevel: 0,
+  },
+  curium: {
+    id: 'curium',
+    name: '퀴륨 연구노트',
+    element: 'Cm',
+    atomicNumber: 96,
+    mathReason: '12×8, 실험 반복의 수',
+    effect: 'attackPower',
+    pairedWeapon: 'berkelium_arc',
+    valuePerLevel: 0.1,
+    secondaryValuePerLevel: 0,
+  },
+  einsteinium: {
+    id: 'einsteinium',
+    name: '아인슈타이늄 시계',
+    element: 'Es',
+    atomicNumber: 99,
+    mathReason: '9×11, 시간과 규칙의 보정',
+    effect: 'cooldown',
+    pairedWeapon: 'californium_ray',
+    valuePerLevel: 0.06,
+    secondaryValuePerLevel: 0,
+  },
+  fermium: {
+    id: 'fermium',
+    name: '페르뮴 가속기',
+    element: 'Fm',
+    atomicNumber: 100,
+    mathReason: '10², 십진법의 큰 제곱',
+    effect: 'attackRange',
+    pairedWeapon: 'mendelevium_mine',
+    valuePerLevel: 0.12,
+    secondaryValuePerLevel: 0,
+  },
+  lawrencium: {
+    id: 'lawrencium',
+    name: '로렌슘 마침표',
+    element: 'Lr',
+    atomicNumber: 103,
+    mathReason: '악티늄족의 끝, 완성 보정',
+    effect: 'luck',
+    pairedWeapon: 'nobelium_nova',
+    valuePerLevel: 0.12,
     secondaryValuePerLevel: 0,
   },
 } as const satisfies Record<PassiveId, PassiveDefinition>;

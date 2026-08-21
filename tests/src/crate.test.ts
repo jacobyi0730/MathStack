@@ -5,7 +5,6 @@ import {
   CRATE_DROP_SCATTER_MIN_PX,
   CRATE_HP,
   CRATE_SPAWN_INTERVAL_SEC,
-  MAX_ACTIVE_CRATES,
   chooseCrateDropKind,
   chooseCrateId,
 } from '../../src/data/crates.js';
@@ -24,20 +23,22 @@ describe('crate system', () => {
     }
   });
 
-  it('spawns_lamps_on_a_timer_and_stops_at_the_cap', () => {
+  it('does_not_spawn_lamps_automatically_over_time', () => {
     const state = createGameState();
 
     spawnCratesOverTime(state, CRATE_SPAWN_INTERVAL_SEC);
-    expect(state.crates.activeCount).toBe(1);
+    expect(state.crates.activeCount).toBe(0);
 
     spawnCratesOverTime(state, CRATE_SPAWN_INTERVAL_SEC * 20);
-    expect(state.crates.activeCount).toBe(MAX_ACTIVE_CRATES);
+    expect(state.crates.activeCount).toBe(0);
   });
 
-  it('keeps_spawned_lamps_away_from_the_player', () => {
+  it('keeps_manually_spawned_lamps_away_from_the_player', () => {
     const state = createGameState();
 
-    spawnCratesOverTime(state, CRATE_SPAWN_INTERVAL_SEC * 6);
+    for (let i = 0; i < 6; i += 1) {
+      spawnCrate(state.crates.acquire(), CRATES.neon, state.player.x + 500 + i * 8, state.player.y);
+    }
 
     for (let i = 0; i < state.crates.activeCount; i += 1) {
       const crate = state.crates.items[i];

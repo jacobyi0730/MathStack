@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../../src/data/enemies.js';
 import { createGameState } from '../../src/engine/state.js';
 import { spawnEnemy } from '../../src/entities/enemy.js';
@@ -12,7 +12,7 @@ import {
 
 describe('damage', () => {
   it('contact_damage_applies_a_visible_hit_once_per_invulnerability_window', () => {
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
 
     const dealt = applyContactDamage(player, 10);
 
@@ -22,7 +22,7 @@ describe('damage', () => {
   });
 
   it('player_invulnerability_blocks_repeated_contact_hits', () => {
-    const player = createPlayer('hydrogen');
+    const player = createPlayer('actinium');
 
     applyContactDamage(player, 10);
     applyContactDamage(player, 10);
@@ -76,3 +76,4 @@ describe('damage', () => {
     expect(state.combat.defeatedEnemies).toBe(1);
   });
 });
+

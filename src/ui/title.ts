@@ -38,7 +38,7 @@ export const TITLE_SELECTION_STORAGE_KEY = 'mathstack.titleSelection.v1';
 
 const FALLBACK_SELECTION: TitleSelection = Object.freeze({
   ...DEFAULT_GRADE_SELECTION,
-  characterId: 'hydrogen',
+  characterId: 'actinium',
   heroName: DEFAULT_HERO_NAME,
 });
 
@@ -170,7 +170,7 @@ function parseTerm(value: unknown): GradeTerm | undefined {
 }
 
 function parseCharacterId(value: unknown): CharacterId {
-  if (value === 'hydrogen' || value === 'neon' || value === 'carbon' || value === 'oxygen') {
+  if (value === 'actinium' || value === 'thorium' || value === 'lanthanum' || value === 'cerium') {
     return value;
   }
   return FALLBACK_SELECTION.characterId;

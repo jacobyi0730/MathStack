@@ -14,5 +14,5 @@ export function getRequiredXpForLevel(level: number): number {
     throw new Error(`Level must be at least ${LEVEL_START}: ${level}`);
   }
 
-  return Math.round(5 + (1.5 * level * (level + 1)) / 2);
+  return Math.round(6 + level * 4 + Math.max(0, level - 1) * 1.5);
 }

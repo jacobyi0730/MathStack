@@ -31,6 +31,8 @@ export interface PickupRuntime {
   /** 인 점화. 남은 동안 무기 쿨다운이 줄어든다 */
   hasteSec: number;
   baseMagnetRadius: number;
+  noticeText: string;
+  noticeSec: number;
 }
 
 export function createPickupRuntime(): PickupRuntime {
@@ -41,6 +43,8 @@ export function createPickupRuntime(): PickupRuntime {
     freezeSec: 0,
     hasteSec: 0,
     baseMagnetRadius: BASE_PICKUP_MAGNET_RADIUS,
+    noticeText: '',
+    noticeSec: 0,
   };
 }
 
@@ -103,6 +107,11 @@ export function spawnPickupByKind(pool: PickupPool, kind: PickupKind, x: number,
   return pickup;
 }
 
+export function announcePickup(runtime: PickupRuntime, kind: PickupKind): void {
+  runtime.noticeText = `${PICKUPS[kind].name}이 나왔습니다`;
+  runtime.noticeSec = 2.2;
+}
+
 /**
  * 적이 죽은 자리에 양성자 조각 하나를 떨군다.
  *
@@ -135,6 +144,13 @@ function tickPickupTimers(runtime: PickupRuntime, dt: number): void {
   if (runtime.hasteSec > 0) {
     runtime.hasteSec -= dt;
     if (runtime.hasteSec < 0) runtime.hasteSec = 0;
+  }
+  if (runtime.noticeSec > 0) {
+    runtime.noticeSec -= dt;
+    if (runtime.noticeSec <= 0) {
+      runtime.noticeSec = 0;
+      runtime.noticeText = '';
+    }
   }
 }
 
