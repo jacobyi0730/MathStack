@@ -94,14 +94,37 @@ describe('enemy spawning', () => {
     expect(state.enemies.activeCount).toBe(1);
   });
 
-  it('applies flee enemy rewards without touching health penalties', () => {
+  it('drops flee enemy rewards on the ground instead of granting them', () => {
     const state = createGameState();
     state.player.health = 40;
     const iodine = spawnWaveEnemy(state, 'iodine', 0);
+    const deathX = iodine.x;
+    const deathY = iodine.y;
 
     defeatEnemy(state, iodine);
 
-    expect(state.player.health).toBe(90);
+    expect(state.player.health).toBe(40);
     expect(state.enemies.activeCount).toBe(0);
+    expect(state.pickups.activeCount).toBe(1);
+    expect(state.pickups.items[0].pickupKind).toBe('heal');
+    expect(state.pickups.items[0].x).toBe(deathX);
+    expect(state.pickups.items[0].y).toBe(deathY);
+  });
+
+  it('drops either a magnet or a bomb from iridium', () => {
+    const state = createGameState();
+    const seen = new Set<string>();
+
+    for (let i = 0; i < 24; i += 1) {
+      defeatEnemy(state, spawnWaveEnemy(state, 'iridium', 0));
+    }
+
+    for (let i = 0; i < state.pickups.activeCount; i += 1) {
+      seen.add(state.pickups.items[i].pickupKind);
+    }
+
+    expect(seen.has('magnet')).toBe(true);
+    expect(seen.has('meteor')).toBe(true);
+    expect(seen.has('proton-medium')).toBe(true);
   });
 });

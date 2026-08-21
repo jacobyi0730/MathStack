@@ -1,6 +1,7 @@
 import type { EnemyEntity } from '../entities/enemy.js';
 import type { GameState } from '../engine/state.js';
 import { shortestDeltaX, shortestDeltaY, wrapX, wrapY } from '../engine/world.js';
+import { isEnemyFrozen } from './pickup.js';
 
 type EnemyAiHandler = (enemy: EnemyEntity, state: GameState, dt: number) => void;
 
@@ -22,6 +23,10 @@ const RANGED_FIRE_DISTANCE = 340;
 const RANGED_COOLDOWN_SEC = 2;
 
 export function updateEnemies(state: GameState, dt: number): void {
+  // 세슘 시계가 켜져 있으면 AI 자체를 돌리지 않는다. 속도만 0으로 만들면
+  // 원거리 적의 쿨다운과 돌격 준비가 계속 흘러 "멈췄다"는 느낌이 깨진다
+  if (isEnemyFrozen(state.pickupRuntime)) return;
+
   const pool = state.enemies;
   for (let i = 0; i < pool.activeCount; i += 1) {
     const enemy = pool.items[i] as EnemyEntity;

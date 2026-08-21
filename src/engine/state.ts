@@ -1,6 +1,7 @@
 import { FIELD_BOUNDS } from '../data/characters.js';
 import { MAX_ACTIVE_ENEMIES } from '../data/enemies.js';
 import { createBossPool, type BossPool } from '../entities/boss.js';
+import { createCratePool, type CratePool } from '../entities/crate.js';
 import { createDamageNumberPool, type DamageNumberPool } from '../entities/damage-number.js';
 import { createEnemyPool, type EnemyPool } from '../entities/enemy.js';
 import { createPickupPool, type PickupPool } from '../entities/pickup.js';
@@ -35,6 +36,7 @@ export interface GameState {
   input: InputState;
   player: Player;
   enemies: EnemyPool;
+  crates: CratePool;
   pickups: PickupPool;
   weapons: WeaponRuntime;
   passives: PassiveRuntime;
@@ -58,11 +60,15 @@ export interface GameState {
     nextX: number;
     nextY: number;
   };
+  crateSpawn: {
+    accumulator: number;
+    seed: number;
+  };
   collision: CollisionState;
   combat: {
-    pendingXp: number;
-    pendingShards: number;
     defeatedEnemies: number;
+    /** 처치 보상 굴림용 씨앗. 스폰 씨앗과 분리해 둔다 */
+    dropSeed: number;
   };
   entities: RenderableEntity[];
 }
@@ -75,13 +81,14 @@ export interface GameStateOptions {
 export function createGameState(options?: GameStateOptions): GameState & RenderScene {
   const player = options?.player ?? createPlayer('hydrogen');
   const enemies = createEnemyPool(MAX_ACTIVE_ENEMIES);
+  const crates = createCratePool();
   const pickups = createPickupPool();
   const weapons = createWeaponRuntime();
   const passives = createPassiveRuntime();
   const baseStats = createBasePlayerStats(player);
   const stats = recalcStats(baseStats, passives);
   const bosses = createBossPool();
-  const entities = options?.entities ?? createEntityList(player, enemies, pickups, weapons, bosses);
+  const entities = options?.entities ?? createEntityList(player, enemies, crates, pickups, weapons, bosses);
   return {
     elapsedSec: 0,
     ticks: 0,
@@ -90,6 +97,7 @@ export function createGameState(options?: GameStateOptions): GameState & RenderS
     input: createInputState(),
     player,
     enemies,
+    crates,
     pickups,
     weapons,
     passives,
@@ -113,11 +121,14 @@ export function createGameState(options?: GameStateOptions): GameState & RenderS
       nextX: 0,
       nextY: 0,
     },
+    crateSpawn: {
+      accumulator: 0,
+      seed: 0x1a3b5c7,
+    },
     collision: createCollisionState(),
     combat: {
-      pendingXp: 0,
-      pendingShards: 0,
       defeatedEnemies: 0,
+      dropSeed: 0xc0ffee,
     },
     entities,
   };
@@ -140,17 +151,27 @@ function createBasePlayerStats(player: Player): BasePlayerStats {
 function createEntityList(
   player: Player,
   enemies: EnemyPool,
+  crates: CratePool,
   pickups: PickupPool,
   weapons: WeaponRuntime,
   bosses: BossPool,
 ): RenderableEntity[] {
   const entities = new Array<RenderableEntity>(
-    enemies.capacity + pickups.capacity + weapons.projectiles.capacity + bosses.capacity + 1,
+    enemies.capacity +
+      crates.capacity +
+      pickups.capacity +
+      weapons.projectiles.capacity +
+      bosses.capacity +
+      1,
   );
   entities[0] = player;
   let cursor = 1;
   for (let i = 0; i < enemies.capacity; i += 1) {
     entities[cursor] = enemies.items[i] as RenderableEntity;
+    cursor += 1;
+  }
+  for (let i = 0; i < crates.capacity; i += 1) {
+    entities[cursor] = crates.items[i] as RenderableEntity;
     cursor += 1;
   }
   for (let i = 0; i < weapons.projectiles.capacity; i += 1) {

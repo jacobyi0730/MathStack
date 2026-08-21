@@ -51,3 +51,26 @@ export const ENEMY_PALETTES = [
   { body: '#D34235', symbol: 'Og', accessory: '#FFE082' },
   { body: '#8B0000', symbol: 'Po', accessory: '#FFC107' },
 ] as const satisfies readonly CharacterPalette[];
+
+/**
+ * 아이템·상자 팔레트 (paletteGroup 2).
+ *
+ * 양성자 조각과 즉시 발동 아이템, 원소 램프 상자가 한 그룹을 쓴다.
+ * 적(붉은 계열)·플레이어(캐릭터색)와 색으로 먼저 구분되어야 하므로
+ * 여기 색은 둘 다와 겹치지 않게 고른다. 인덱스는 아이템 정의가 참조한다.
+ */
+export const ITEM_PALETTES = [
+  { body: '#4FC3F7', symbol: 'p', accessory: '#B3E5FC' },
+  { body: '#66BB6A', symbol: 'P', accessory: '#C8E6C9' },
+  { body: '#FFB74D', symbol: 'P', accessory: '#FFE0B2' },
+  { body: '#EC407A', symbol: 'I', accessory: '#F8BBD0' },
+  { body: '#7E57C2', symbol: 'Nd', accessory: '#D1C4E9' },
+  { body: '#EF5350', symbol: 'Ir', accessory: '#FFCDD2' },
+  { body: '#26C6DA', symbol: 'Cs', accessory: '#B2EBF2' },
+  { body: '#FF7043', symbol: 'P', accessory: '#FFCCBC' },
+  { body: '#FFCA28', symbol: 'Au', accessory: '#FFF59D' },
+  { body: '#FF6E40', symbol: 'Ne', accessory: '#FFD180' },
+  { body: '#5C6BC0', symbol: 'Ar', accessory: '#C5CAE9' },
+  { body: '#26A69A', symbol: 'Kr', accessory: '#B2DFDB' },
+  { body: '#AB47BC', symbol: 'Xe', accessory: '#E1BEE7' },
+] as const satisfies readonly CharacterPalette[];

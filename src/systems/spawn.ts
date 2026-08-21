@@ -9,6 +9,7 @@ import {
 } from '../data/waves.js';
 import { resolveEnemyReward, spawnEnemy, type EnemyEntity } from '../entities/enemy.js';
 import type { GameState } from '../engine/state.js';
+import { spawnPickupByKind, spawnXpGem } from './pickup.js';
 
 const MIN_DISTANCE_SQ = SPAWN_MIN_PLAYER_DISTANCE * SPAWN_MIN_PLAYER_DISTANCE;
 
@@ -38,21 +39,30 @@ export function spawnWaveEnemy(state: GameState, enemyId: keyof typeof ENEMIES, 
   return enemy;
 }
 
+/**
+ * 적을 처치한다. **보상은 즉시 주지 않는다** — 죽은 자리에 떨어뜨린다.
+ *
+ * 경험치도 회복도 픽업으로 나가므로, 플레이어가 위험 지역까지 주우러 가는 판단이 생긴다.
+ * 이게 없으면 "죽이면 곧 성장"이라 이동에 의미가 사라진다.
+ */
 export function defeatEnemy(state: GameState, enemy: EnemyEntity): void {
   if (enemy.ai === 'split' && !enemy.hasSplit) {
     splitEnemy(state, enemy);
     return;
   }
 
-  state.combat.pendingXp += enemy.xp;
+  const dropX = enemy.x;
+  const dropY = enemy.y;
+  const xp = enemy.xp;
+  const reward = resolveEnemyReward(enemy, nextDropSeed(state));
+
   state.combat.defeatedEnemies += 1;
-
-  const reward = resolveEnemyReward(enemy, state.spawn.seed);
-  if (reward === 'heal') {
-    state.player.health = Math.min(state.player.maxHealth, state.player.health + enemy.rewardAmount);
-  }
-
   state.enemies.release(enemy);
+
+  spawnXpGem(state.pickups, xp, dropX, dropY);
+  if (reward === 'heal') spawnPickupByKind(state.pickups, 'heal', dropX, dropY);
+  else if (reward === 'magnet') spawnPickupByKind(state.pickups, 'magnet', dropX, dropY);
+  else if (reward === 'bomb') spawnPickupByKind(state.pickups, 'meteor', dropX, dropY);
 }
 
 function splitEnemy(state: GameState, enemy: EnemyEntity): void {
@@ -145,6 +155,12 @@ function writeSpawnPosition(state: GameState): void {
 
   state.spawn.nextX = state.player.x + SPAWN_MIN_PLAYER_DISTANCE + SPAWN_RING_MARGIN;
   state.spawn.nextY = state.player.y;
+}
+
+/** 드롭 굴림은 스폰 위치와 다른 씨앗을 쓴다. 처치 수가 스폰 패턴을 흔들면 안 된다 */
+function nextDropSeed(state: GameState): number {
+  state.combat.dropSeed = (state.combat.dropSeed * 1664525 + 1013904223) >>> 0;
+  return state.combat.dropSeed;
 }
 
 function nextRandom(state: GameState): number {

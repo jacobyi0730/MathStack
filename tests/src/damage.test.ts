@@ -35,10 +35,10 @@ describe('damage', () => {
     expect(player.health).toBe(player.maxHealth - 20);
   });
 
-  it('dead_enemy_returns_to_pool_and_queues_future_rewards', () => {
+  it('dead_enemy_drops_its_xp_gem_where_it_died', () => {
     const state = createGameState();
     const enemy = state.enemies.acquire();
-    spawnEnemy(enemy, ENEMIES.radon, 0, 0, 3);
+    spawnEnemy(enemy, ENEMIES.radon, 120, -80, 3);
 
     const killed = applyEnemyDamage(state, enemy, 3);
 
@@ -47,7 +47,10 @@ describe('damage', () => {
     expect(state.damageNumbers.items[0].value).toBe(3);
     expect(state.enemies.activeCount).toBe(0);
     expect(enemy.active).toBe(false);
-    expect(state.combat.pendingXp).toBe(ENEMIES.radon.xp);
+    expect(state.pickups.activeCount).toBe(1);
+    expect(state.pickups.items[0].xp).toBe(ENEMIES.radon.xp);
+    expect(state.pickups.items[0].x).toBe(120);
+    expect(state.pickups.items[0].y).toBe(-80);
     expect(state.combat.defeatedEnemies).toBe(1);
   });
 
@@ -59,13 +62,17 @@ describe('damage', () => {
 
     expect(applyEnemyDamage(state, uranium, 3)).toBe(true);
     expect(state.enemies.activeCount).toBe(2);
-    expect(state.combat.pendingXp).toBe(0);
+    expect(state.pickups.activeCount).toBe(0);
 
     const iodine = state.enemies.acquire();
-    spawnEnemy(iodine, ENEMIES.iodine, 0, 0, 1);
+    spawnEnemy(iodine, ENEMIES.iodine, 30, 40, 1);
 
     expect(applyEnemyDamage(state, iodine, 1)).toBe(true);
-    expect(state.player.health).toBe(90);
+    // 회복은 즉시 들어오지 않는다. 죽은 자리에 아이오딘 방울이 떨어질 뿐이다
+    expect(state.player.health).toBe(40);
+    expect(state.pickups.activeCount).toBe(1);
+    expect(state.pickups.items[0].pickupKind).toBe('heal');
+    expect(state.pickups.items[0].x).toBe(30);
     expect(state.combat.defeatedEnemies).toBe(1);
   });
 });

@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LEVEL_EVENT_QUEUE_CAPACITY, getRequiredXpForLevel } from '../../src/data/level.js';
-import {
-  addExperience,
-  consumeCombatPendingXp,
-  createLevelState,
-  shiftLevelEvent,
-} from '../../src/systems/level.js';
+import { addExperience, createLevelState, shiftLevelEvent } from '../../src/systems/level.js';
 
 describe('level system', () => {
   it('uses_the_documented_xp_curve', () => {
@@ -36,15 +31,6 @@ describe('level system', () => {
     expect(level.xp).toBe(4);
     expect(level.xpForNextLevel).toBe(getRequiredXpForLevel(3));
     expect(level.queuedCount).toBe(2);
-  });
-
-  it('consumes_pending_combat_xp_as_a_future_state_bridge', () => {
-    const level = createLevelState();
-    const combat = { pendingXp: 7 };
-
-    expect(consumeCombatPendingXp(level, combat)).toBe(7);
-    expect(combat.pendingXp).toBe(0);
-    expect(level.level).toBe(2);
   });
 
   it('uses_a_fixed_level_event_queue', () => {

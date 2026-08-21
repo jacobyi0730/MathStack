@@ -11,6 +11,7 @@ import { createResultScreen, type ResultScreenSummary } from './ui/result.js';
 import { createSkillChoiceView } from './ui/skill-choice.js';
 import { createInputController } from './engine/input.js';
 import { updateDamageNumbers } from './entities/damage-number.js';
+import { shortestDeltaX, shortestDeltaY } from './engine/world.js';
 import { createPlayer, syncPlayerIntent } from './entities/player.js';
 import { BOSSES } from './data/bosses.js';
 import { PASSIVES } from './data/passives.js';
@@ -21,7 +22,8 @@ import { movePlayer } from './systems/movement.js';
 import { updateSpawns } from './systems/spawn.js';
 import { updateCollisions } from './systems/collision.js';
 import { applyEnemyDamage, updatePlayerInvulnerability } from './systems/damage.js';
-import { consumeCombatRewardsAsPickups, updatePickups } from './systems/pickup.js';
+import { isEnemyFrozen, updatePickups } from './systems/pickup.js';
+import { updateCrates } from './systems/crate.js';
 import { shiftLevelEvent } from './systems/level.js';
 import {
   applyLevelReward,
@@ -98,7 +100,9 @@ function updateRuntimeState(state: RuntimeState, dt: number): void {
   updateSpawns(state, dt);
   updateEnemies(state, dt);
   updateBossTimelineAndSpawns(state);
-  updateBosses(state.bosses, state.player.x, state.player.y, dt);
+  if (!isEnemyFrozen(state.pickupRuntime)) {
+    updateBosses(state.bosses, state.player.x, state.player.y, dt);
+  }
   updatePlayerInvulnerability(state.player, dt);
   applyHealthRegen(state, dt);
   updateDamageNumbers(state.damageNumbers, dt);
@@ -111,11 +115,12 @@ function updateAfterCollisions(state: RuntimeState, dt: number): void {
   }
 
   updateWeapons(state, state.weapons, dt);
-  consumeCombatRewardsAsPickups(state.combat, state.pickups, state.player.x, state.player.y);
+  updateCrates(state, dt);
   updatePickups(state.pickups, state.player, state.level, state.pickupRuntime, dt);
   applyPendingMeteorDamage(state);
   state.entityCount =
     state.enemies.activeCount +
+    state.crates.activeCount +
     state.weapons.projectiles.activeCount +
     state.pickups.activeCount +
     state.bosses.activeCount +
@@ -130,7 +135,9 @@ function updateTrialRuntime(state: RuntimeState): void {
     state.bosses.releaseAll();
     state.weapons.projectiles.releaseAll();
     state.pickups.releaseAll();
+    state.crates.releaseAll();
     state.spawn.accumulator = 0;
+    state.crateSpawn.accumulator = 0;
   } else if (event === 'completed') {
     claimTrialReward(state.trial, state.weapons, state.passives, state.player);
     applyResolvedStats(state);
@@ -177,13 +184,20 @@ function updateBossTimelineAndSpawns(state: RuntimeState): void {
   );
 }
 
+/** 이리듐 운석은 **화면 안**만 친다 (02-게임코어 §10.3). 필드 전체를 치면 폭탄이 아니라 리셋 버튼이 된다 */
 function applyPendingMeteorDamage(state: RuntimeState): void {
   const damage = state.pickupRuntime.pendingMeteorDamage;
   if (damage <= 0) return;
   state.pickupRuntime.pendingMeteorDamage = 0;
 
+  const halfWidth = state.viewport.width * 0.5;
+  const halfHeight = state.viewport.height * 0.5;
+
   for (let i = state.enemies.activeCount - 1; i >= 0; i -= 1) {
-    applyEnemyDamage(state, state.enemies.items[i], damage);
+    const enemy = state.enemies.items[i];
+    if (Math.abs(shortestDeltaX(state.player.x, enemy.x, state.world)) > halfWidth + enemy.radius) continue;
+    if (Math.abs(shortestDeltaY(state.player.y, enemy.y, state.world)) > halfHeight + enemy.radius) continue;
+    applyEnemyDamage(state, enemy, damage);
   }
 }
 

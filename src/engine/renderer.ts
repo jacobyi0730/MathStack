@@ -1,4 +1,12 @@
-import { ENEMY_PALETTES, FIELD_COLORS, PLAYER_PALETTES, SPRITE_SPEC, WORLD_CELL_SIZE } from '../data/palette.js';
+import {
+  ENEMY_PALETTES,
+  FIELD_COLORS,
+  ITEM_PALETTES,
+  PLAYER_PALETTES,
+  SPRITE_SPEC,
+  WORLD_CELL_SIZE,
+  type CharacterPalette,
+} from '../data/palette.js';
 import {
   createSpriteFrameScratch,
   writeSpriteFrame,
@@ -10,7 +18,7 @@ import { shortestDeltaX, shortestDeltaY, type WorldBounds } from './world.js';
 
 export interface RenderableEntity extends CameraTarget, DirectionLike {
   radius: number;
-  paletteGroup: 0 | 1;
+  paletteGroup: 0 | 1 | 2;
   paletteIndex: number;
   symbol: string;
   accessoryKind: number;
@@ -33,7 +41,7 @@ interface BatchBucket {
   paletteIndex: number;
   radius: number;
   count: number;
-  paletteGroup: 0 | 1;
+  paletteGroup: 0 | 1 | 2;
 }
 
 const MAX_BATCHES = 64;
@@ -94,14 +102,16 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
     }
   }
 
-  function resolvePalette(group: 0 | 1, index: number): (typeof PLAYER_PALETTES)[number] | (typeof ENEMY_PALETTES)[number] {
-    return group === 0 ? PLAYER_PALETTES[index] ?? PLAYER_PALETTES[0] : ENEMY_PALETTES[index] ?? ENEMY_PALETTES[0];
+  function resolvePalette(group: 0 | 1 | 2, index: number): CharacterPalette {
+    if (group === 0) return PLAYER_PALETTES[index] ?? PLAYER_PALETTES[0];
+    if (group === 2) return ITEM_PALETTES[index] ?? ITEM_PALETTES[0];
+    return ENEMY_PALETTES[index] ?? ENEMY_PALETTES[0];
   }
 
   function findBatch(
     batches: BatchBucket[],
     batchCount: number,
-    group: 0 | 1,
+    group: 0 | 1 | 2,
     paletteIndex: number,
     radius: number,
   ): number {
@@ -206,7 +216,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
     ctx.lineWidth = SPRITE_SPEC.accessoryStrokeWidthPx;
     for (let i = 0; i < count; i += 1) {
       const palette = resolvePalette(
-        paletteGroupByVisible[i] as 0 | 1,
+        paletteGroupByVisible[i] as 0 | 1 | 2,
         paletteIndexByVisible[i] as number,
       );
       ctx.strokeStyle = palette.accessory;
@@ -229,7 +239,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
     ctx.textBaseline = 'middle';
     for (let i = 0; i < count; i += 1) {
       const palette = resolvePalette(
-        paletteGroupByVisible[i] as 0 | 1,
+        paletteGroupByVisible[i] as 0 | 1 | 2,
         paletteIndexByVisible[i] as number,
       );
       ctx.fillStyle = palette.accessory || FIELD_COLORS.symbol;

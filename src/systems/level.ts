@@ -15,10 +15,6 @@ export interface LevelState {
   events: LevelEvent[];
 }
 
-export interface CombatXpSource {
-  pendingXp: number;
-}
-
 export function createLevelState(): LevelState {
   return {
     level: LEVEL_START,
@@ -47,15 +43,6 @@ export function addExperience(level: LevelState, xp: number): number {
   }
 
   return gainedLevels;
-}
-
-export function consumeCombatPendingXp(level: LevelState, combat: CombatXpSource): number {
-  const xp = combat.pendingXp;
-  if (xp <= 0) return 0;
-
-  combat.pendingXp = 0;
-  addExperience(level, xp);
-  return xp;
 }
 
 export function shiftLevelEvent(level: LevelState): LevelEvent | undefined {

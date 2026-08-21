@@ -39,6 +39,7 @@ export interface StressPoolSnapshot {
   enemies: number;
   projectiles: number;
   pickups: number;
+  crates: number;
   bosses: number;
   total: number;
 }
@@ -86,8 +87,7 @@ export function stressModeEnabled(search: string): boolean {
 export function setupStressMode(state: GameState): StressSetupResult {
   state.elapsedSec = 540;
   state.spawn.accumulator = 0;
-  state.combat.pendingXp = 0;
-  state.combat.pendingShards = 0;
+  state.crateSpawn.accumulator = 0;
   state.combat.defeatedEnemies = 0;
   state.player.x = 0;
   state.player.y = 0;
@@ -101,6 +101,7 @@ export function setupStressMode(state: GameState): StressSetupResult {
   state.enemies.releaseAll();
   state.weapons.projectiles.releaseAll();
   state.pickups.releaseAll();
+  state.crates.releaseAll();
   state.bosses.releaseAll();
 
   fillStressEnemies(state);
@@ -114,6 +115,7 @@ export function setupStressMode(state: GameState): StressSetupResult {
     state.enemies.activeCount +
     state.weapons.projectiles.activeCount +
     state.pickups.activeCount +
+    state.crates.activeCount +
     state.bosses.activeCount +
     1;
 
@@ -161,6 +163,7 @@ export function createEmptyStressSnapshot(): StressSnapshot {
       enemies: 0,
       projectiles: 0,
       pickups: 0,
+      crates: 0,
       bosses: 0,
       total: 0,
     },
@@ -171,8 +174,9 @@ export function writeStressPoolSnapshot(out: StressPoolSnapshot, state: GameStat
   out.enemies = state.enemies.recycles;
   out.projectiles = state.weapons.projectiles.recycles;
   out.pickups = state.pickups.recycles;
+  out.crates = state.crates.recycles;
   out.bosses = state.bosses.recycles;
-  out.total = out.enemies + out.projectiles + out.pickups + out.bosses;
+  out.total = out.enemies + out.projectiles + out.pickups + out.crates + out.bosses;
   return out;
 }
 
@@ -180,6 +184,7 @@ export function resetStressPoolFrameStats(state: GameState): void {
   state.enemies.resetFrameStats();
   state.weapons.projectiles.resetFrameStats();
   state.pickups.resetFrameStats();
+  state.crates.resetFrameStats();
   state.bosses.resetFrameStats();
 }
 

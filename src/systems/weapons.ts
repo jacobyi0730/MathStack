@@ -25,6 +25,7 @@ import type { GameState } from '../engine/state.js';
 import { shortestDeltaX, shortestDeltaY, wrappedDistanceSq, type WorldBounds } from '../engine/world.js';
 import { findEnemyHit, queryNearbyEnemies } from './collision.js';
 import { applyEnemyDamage } from './damage.js';
+import { resolveHasteCooldownMultiplier } from './pickup.js';
 
 export interface WeaponSlotRuntime {
   id: WeaponId | null;
@@ -121,7 +122,10 @@ export function updateWeapons(state: GameState, runtime: WeaponRuntime, dt: numb
 
     const definition = WEAPONS[slot.id];
     if (PATTERNS[definition.pattern](state, runtime, slot, definition, dt)) {
-      slot.cooldownRemainingSec += definition.cooldownSec * state.player.cooldownMultiplier;
+      slot.cooldownRemainingSec +=
+        definition.cooldownSec *
+        state.player.cooldownMultiplier *
+        resolveHasteCooldownMultiplier(state.pickupRuntime);
     }
   }
 }
