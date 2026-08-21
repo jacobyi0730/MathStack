@@ -167,14 +167,15 @@ describe('renderer icon assignments', () => {
   });
 
   it('gives_every_instant_item_a_unique_icon_and_leaves_shards_bare', () => {
-    const items = Object.values(PICKUPS).filter((pickup) => pickup.shape === ENTITY_SHAPES.icon);
-    const shards = Object.values(PICKUPS).filter((pickup) => pickup.shape === ENTITY_SHAPES.circle);
+    const pickups = Object.values(PICKUPS);
+    const items = pickups.filter((pickup) => pickup.icon !== '');
+    const shards = pickups.filter((pickup) => pickup.icon === '');
 
     expect(items).toHaveLength(6);
     expect(shards).toHaveLength(3);
-    for (const item of items) expect(item.icon.length).toBeGreaterThan(0);
-    for (const shard of shards) expect(shard.icon).toBe('');
     expect(new Set(items.map((item) => item.icon)).size).toBe(items.length);
+    // 조각도 아이템도 눈이 없다. 살아 있는 것만 눈을 가진다
+    for (const pickup of pickups) expect(pickup.shape).toBe(ENTITY_SHAPES.icon);
   });
 
   it('never_reuses_a_weapon_icon_for_an_item', () => {

@@ -1,6 +1,7 @@
 import {
   CRATES,
-  CRATE_DROP_SPREAD_PX,
+  CRATE_DROP_SCATTER_MAX_PX,
+  CRATE_DROP_SCATTER_MIN_PX,
   CRATE_MIN_PLAYER_DISTANCE,
   CRATE_SPAWN_INTERVAL_SEC,
   CRATE_SPAWN_SPREAD,
@@ -72,18 +73,28 @@ export function breakCrates(state: GameState): number {
   return broken;
 }
 
+/**
+ * 램프가 깨진 자리 **주변에** 아이템을 흩뿌린다.
+ *
+ * 램프 자리에 그대로 놓으면 깬 순간 플레이어가 이미 그 위에 있어 즉시 발동된다.
+ * 흩어진 아이템을 보고 어느 것부터 주울지 고르는 순간이 이 게임의 재미다.
+ */
 export function dropCrateItems(state: GameState, crate: CrateEntity): void {
   const luck = state.stats.luck;
+  const scatterSpan = CRATE_DROP_SCATTER_MAX_PX - CRATE_DROP_SCATTER_MIN_PX;
+  // 같은 방향으로 몰리지 않게 원을 등분하고, 그 안에서만 흔든다
+  const baseAngle = nextCrateRandom(state) * Math.PI * 2;
+  const step = (Math.PI * 2) / Math.max(1, crate.dropCount);
 
   for (let i = 0; i < crate.dropCount; i += 1) {
     const kind = chooseCrateDropKind(nextCrateRandom(state), luck);
-    const angle = crate.dropCount > 1 ? (i / crate.dropCount) * Math.PI * 2 : 0;
-    const offset = crate.dropCount > 1 ? CRATE_DROP_SPREAD_PX : 0;
+    const angle = baseAngle + step * i + (nextCrateRandom(state) - 0.5) * step * 0.6;
+    const distance = CRATE_DROP_SCATTER_MIN_PX + nextCrateRandom(state) * scatterSpan;
     spawnPickupByKind(
       state.pickups,
       kind,
-      wrapX(crate.x + Math.cos(angle) * offset, state.world),
-      wrapY(crate.y + Math.sin(angle) * offset, state.world),
+      wrapX(crate.x + Math.cos(angle) * distance, state.world),
+      wrapY(crate.y + Math.sin(angle) * distance, state.world),
     );
   }
 }

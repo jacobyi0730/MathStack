@@ -82,7 +82,8 @@ export function spawnProjectile(
   projectile.radiusGrowthPerSec = 0;
   projectile.areaRadius = projectile.radius;
   projectile.boomerangTurned = false;
-  projectile.symbol = definition.element;
+  // 투사체는 원소 기호를 달지 않는다. 아이콘이 이미 무기를 말하고, 작은 글자는 노이즈다
+  projectile.symbol = '';
 }
 
 export function configureProjectileHit(
@@ -203,7 +204,7 @@ function createProjectile(): ProjectileEntity {
     shape: ENTITY_SHAPES.icon,
     icon: WEAPONS.hydrogen_arrow.icon,
     paletteIndex: 0,
-    symbol: 'H',
+    symbol: '',
     accessoryKind: 1,
     damage: 0,
     damageIntervalSec: 0,

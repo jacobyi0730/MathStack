@@ -24,9 +24,13 @@ export const FIELD_COLORS = {
  * 적 무리 속에서 "쫓아오는 것 / 주울 것 / 내가 쏜 것"이 한눈에 갈려야 한다.
  */
 export const ENTITY_SHAPES = {
+  /** 원 + 눈. **살아 있는 것만** 여기 든다 */
   circle: 0,
+  /** 둥근 사각 + 뚜껑선. 상자 */
   box: 1,
+  /** 눈 없는 원 배지. 이모지는 얹어도 되고(아이템·투사체) 비워도 된다(양성자 조각) */
   icon: 2,
+  /** 반투명 장판. 오라·파동 */
   field: 3,
 } as const;
 
@@ -58,9 +62,12 @@ export const SPRITE_SPEC = {
   boxLidOffsetRatio: 0.34,
   boxStrapWidthPx: 3,
   /** 아이콘 글자 크기. 반지름 대비 비율 */
-  iconFontSizeRatio: 1.6,
-  /** 반지름 5짜리 투사체도 이모지가 읽혀야 한다. 배지 밖으로 넘쳐도 그게 낫다 */
-  iconMinFontSizePx: 14,
+  iconFontSizeRatio: 1.9,
+  /**
+   * 반지름 5짜리 수소 화살도 읽혀야 한다. 배지 밖으로 넘쳐도 그게 낫다 —
+   * 헤드리스 스크린샷으로 확인한 결과 14px 는 형체를 알 수 없었고, 22px 도 적(지름 32)보다 작아 묻혔다.
+   */
+  iconMinFontSizePx: 26,
   /** 마그네슘 폭탄처럼 큰 투사체에서 이모지가 화면을 덮지 않게 막는다 */
   iconMaxFontSizePx: 40,
   /** 장판(오라·파동) 채우기 투명도. 아래 적이 비쳐야 한다 */
@@ -103,8 +110,10 @@ export const ITEM_PALETTES = [
   { body: '#26C6DA', symbol: 'Cs', accessory: '#B2EBF2' },
   { body: '#FF7043', symbol: 'P', accessory: '#FFCCBC' },
   { body: '#FFCA28', symbol: 'Au', accessory: '#FFF59D' },
-  { body: '#FF6E40', symbol: 'Ne', accessory: '#FFD180' },
-  { body: '#5C6BC0', symbol: 'Ar', accessory: '#C5CAE9' },
-  { body: '#26A69A', symbol: 'Kr', accessory: '#B2DFDB' },
-  { body: '#AB47BC', symbol: 'Xe', accessory: '#E1BEE7' },
+  // 9번은 원소 램프 공용색. 램프는 종류가 달라도 **한 가지 색**으로 통일한다 —
+  // 색이 갈리면 "저건 다른 종류의 적인가?" 를 먼저 묻게 된다. 램프는 그냥 램프다
+  { body: '#C98A3C', symbol: 'Ne', accessory: '#FFE0A3' },
 ] as const satisfies readonly CharacterPalette[];
+
+/** 원소 램프가 공유하는 팔레트 인덱스 */
+export const CRATE_PALETTE_INDEX = 9;

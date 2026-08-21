@@ -1,3 +1,4 @@
+import { CRATE_PALETTE_INDEX } from './palette.js';
 import type { PickupKind } from '../entities/pickup.js';
 
 /**
@@ -36,8 +37,15 @@ export const CRATE_HP = 1;
 export const CRATE_MIN_PLAYER_DISTANCE = 180;
 /** 최소 거리에 더해지는 산포 폭. 최소~최소+산포 안에 뜬다 */
 export const CRATE_SPAWN_SPREAD = 260;
-/** 아이템이 2개 이상 떨어질 때 서로 겹치지 않게 벌리는 간격 */
-export const CRATE_DROP_SPREAD_PX = 18;
+/**
+ * 램프가 깨지면 아이템이 **램프에서 떨어진 자리에** 흩어진다.
+ *
+ * 램프 자리에 그대로 두면 램프를 깬 순간 플레이어가 이미 그 위에 서 있어 즉시 발동된다.
+ * 최소 거리는 기본 자력 반경(96)보다 커야 한다 — 안 그러면 흩어져도 곧바로 빨려 온다.
+ * 자석 패시브를 올린 플레이어가 그냥 주워 가는 것은 의도된 보상이다.
+ */
+export const CRATE_DROP_SCATTER_MIN_PX = 120;
+export const CRATE_DROP_SCATTER_MAX_PX = 200;
 
 export const CRATES = {
   neon: {
@@ -47,7 +55,7 @@ export const CRATES = {
     atomicNumber: 10,
     hp: CRATE_HP,
     radius: 16,
-    paletteIndex: 9,
+    paletteIndex: CRATE_PALETTE_INDEX,
     accessoryKind: 1,
     dropCount: 1,
     weight: 45,
@@ -59,7 +67,7 @@ export const CRATES = {
     atomicNumber: 18,
     hp: CRATE_HP,
     radius: 17,
-    paletteIndex: 10,
+    paletteIndex: CRATE_PALETTE_INDEX,
     accessoryKind: 1,
     dropCount: 1,
     weight: 30,
@@ -71,7 +79,7 @@ export const CRATES = {
     atomicNumber: 36,
     hp: CRATE_HP,
     radius: 18,
-    paletteIndex: 11,
+    paletteIndex: CRATE_PALETTE_INDEX,
     accessoryKind: 2,
     dropCount: 2,
     weight: 17,
@@ -83,7 +91,7 @@ export const CRATES = {
     atomicNumber: 54,
     hp: CRATE_HP,
     radius: 20,
-    paletteIndex: 12,
+    paletteIndex: CRATE_PALETTE_INDEX,
     accessoryKind: 2,
     dropCount: 3,
     weight: 8,

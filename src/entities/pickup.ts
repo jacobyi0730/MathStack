@@ -71,9 +71,11 @@ export type PickupPool = Pool<PickupEntity>;
 /** 조각이 필드에 남아 있게 되면서 동시 활성 수가 늘었다. 적 상한(300)보다 넉넉해야 한다 */
 export const MAX_ACTIVE_PICKUPS = 512;
 
-/** 양성자 조각은 원소 몸체 그대로 굴러다닌다. 이모지를 붙이면 아이템과 헷갈린다 */
-const SHARD_SHAPE = { shape: ENTITY_SHAPES.circle, icon: '' } as const;
-/** 즉시 발동 아이템은 원 배지 위에 이모지 하나. 눈이 없어 적과 즉시 갈린다 */
+/**
+ * 조각도 아이템도 **배지**(눈 없는 원)다. 살아 있지 않으니 눈이 없다 (05-세션-운영 §14.5).
+ * 다른 점은 이모지뿐 — 조각은 색과 크기로만 말하고, 아이템은 기능을 이모지로 말한다.
+ */
+const SHARD_SHAPE = { shape: ENTITY_SHAPES.icon, icon: '' } as const;
 const ITEM_SHAPE = { shape: ENTITY_SHAPES.icon } as const;
 
 const EMPTY_EFFECTS = {

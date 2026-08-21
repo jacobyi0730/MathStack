@@ -8,7 +8,7 @@ related: [MathStack기획서]
 
 # 작업 보드
 
-기획서([docs/MathStack기획서.md](../docs/MathStack기획서.md))를 **기능 단위 37개 태스크**로 분해한 것이다.
+기획서([docs/MathStack기획서.md](../docs/MathStack기획서.md))를 **기능 단위 38개 태스크**로 분해한 것이다.
 이 문서는 **구조**를 담는다 — 무엇이 무엇에 걸려 있고, 누가 맡고, 어떤 스킬을 쓰는지.
 
 > **완료 상태는 여기 없다.** 끝났는지·누가 잡고 있는지는 [TodoList.md](../TodoList.md)가 유일한 정본이다.
@@ -88,6 +88,7 @@ related: [MathStack기획서]
 | [T-035](T-035-경험치드롭-원소램프-즉시아이템.md) | 경험치 드롭·원소 램프·즉시 발동 아이템 | game-engine-dev | perf-check | T-034 |
 | [T-036](T-036-퀴즈-보기-가독성.md) | 퀴즈 보기 가독성 | ui-builder | — | T-035 |
 | [T-037](T-037-엔티티-모양-아이콘.md) | 엔티티 모양 체계와 아이콘 | game-engine-dev | perf-check | T-036 |
+| [T-038](T-038-드롭산포-램프색-아이콘가독성.md) | 드롭 산포·램프 단일색·아이콘 가독성 | game-engine-dev | — | T-037 |
 
 ## 병렬 트랙
 

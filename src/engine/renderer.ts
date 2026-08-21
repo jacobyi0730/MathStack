@@ -362,13 +362,15 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
     ctx.textBaseline = 'middle';
     for (let i = 0; i < count; i += 1) {
       if (shapeByVisible[i] === ENTITY_SHAPES.field) continue;
+      const label = symbolText[i];
+      if (!label) continue;
       const palette = resolvePalette(
         paletteGroupByVisible[i] as 0 | 1 | 2,
         paletteIndexByVisible[i] as number,
       );
       ctx.fillStyle = palette.accessory || FIELD_COLORS.symbol;
       ctx.font = `700 ${symbolFont[i]}px "Pretendard", "Segoe UI", sans-serif`;
-      ctx.fillText(symbolText[i] ?? '', symbolX[i], symbolY[i]);
+      ctx.fillText(label, symbolX[i], symbolY[i]);
     }
   }
 

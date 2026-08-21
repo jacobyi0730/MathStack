@@ -50,7 +50,9 @@ export const WEAPON_EVOLUTION_LEVEL = 5;
 export const WEAPONS = {
   hydrogen_arrow: {
     id: 'hydrogen_arrow',
-    icon: '🏹',
+    // 🏹 는 26px 에서 형체가 뭉갠다 (헤드리스 확인). 물방울은 작아도 윤곽이 또렷하고
+    // 수소가 물의 원소라 의미도 맞는다
+    icon: '💧',
     name: '수소 화살',
     element: 'H',
     atomicNumber: 1,

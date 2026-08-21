@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   CRATES,
+  CRATE_DROP_SCATTER_MAX_PX,
+  CRATE_DROP_SCATTER_MIN_PX,
   CRATE_HP,
   CRATE_SPAWN_INTERVAL_SEC,
   MAX_ACTIVE_CRATES,
@@ -12,6 +14,7 @@ import { spawnCrate } from '../../src/entities/crate.js';
 import { isInstantPickup } from '../../src/entities/pickup.js';
 import { spawnProjectile } from '../../src/entities/projectile.js';
 import { breakCrates, spawnCratesOverTime, updateCrates } from '../../src/systems/crate.js';
+import { BASE_PICKUP_MAGNET_RADIUS } from '../../src/systems/pickup.js';
 
 describe('crate system', () => {
   it('gives_every_lamp_one_hp_so_a_single_touch_breaks_it', () => {
@@ -75,17 +78,37 @@ describe('crate system', () => {
     expect(state.pickups.activeCount).toBe(CRATES.xenon.dropCount);
   });
 
-  it('spreads_multi_item_drops_so_they_do_not_stack', () => {
+  it('scatters_drops_away_from_the_lamp_so_they_do_not_fire_on_contact', () => {
     const state = createGameState();
     const crate = state.crates.acquire();
-    spawnCrate(crate, CRATES.krypton, state.player.x + 10, state.player.y);
+    const crateX = state.player.x + 10;
+    const crateY = state.player.y;
+    spawnCrate(crate, CRATES.krypton, crateX, crateY);
 
     breakCrates(state);
 
     expect(state.pickups.activeCount).toBe(2);
+    for (let i = 0; i < state.pickups.activeCount; i += 1) {
+      const pickup = state.pickups.items[i];
+      const distance = Math.hypot(pickup.x - crateX, pickup.y - crateY);
+      expect(distance).toBeGreaterThanOrEqual(CRATE_DROP_SCATTER_MIN_PX);
+      expect(distance).toBeLessThanOrEqual(CRATE_DROP_SCATTER_MAX_PX);
+    }
+
     const first = state.pickups.items[0];
     const second = state.pickups.items[1];
     expect(first.x === second.x && first.y === second.y).toBe(false);
+  });
+
+  it('drops_land_outside_the_base_magnet_radius', () => {
+    // 기본 자력(96) 안에 떨어지면 흩뿌린 의미가 없다 — 그냥 빨려 온다
+    expect(CRATE_DROP_SCATTER_MIN_PX).toBeGreaterThan(BASE_PICKUP_MAGNET_RADIUS);
+  });
+
+  it('keeps_every_lamp_the_same_colour', () => {
+    const indices = new Set(Object.values(CRATES).map((crate) => crate.paletteIndex));
+
+    expect(indices.size).toBe(1);
   });
 
   it('picks_common_lamps_first_and_rare_lamps_last', () => {
