@@ -10,6 +10,7 @@ import {
   type CharacterArchetype,
   type CharacterId,
 } from '../data/characters.js';
+import { ENTITY_SHAPES } from '../data/palette.js';
 import type { InputState } from '../engine/input.js';
 import type { RenderableEntity } from '../engine/renderer.js';
 
@@ -70,6 +71,8 @@ function createPlayerFromArchetype(archetype: CharacterArchetype, paletteIndex: 
     dy: 0,
     radius: PLAYER_RADIUS,
     paletteGroup: 0,
+    shape: ENTITY_SHAPES.circle,
+    icon: '',
     paletteIndex,
     symbol: archetype.element,
     accessoryKind: paletteIndex % 3,

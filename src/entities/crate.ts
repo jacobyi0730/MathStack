@@ -1,4 +1,5 @@
 import { CRATES, MAX_ACTIVE_CRATES, type CrateDefinition, type CrateId } from '../data/crates.js';
+import { ENTITY_SHAPES } from '../data/palette.js';
 import { createPool, type Pool, type Poolable } from '../engine/pool.js';
 import type { RenderableEntity } from '../engine/renderer.js';
 
@@ -33,6 +34,7 @@ export function spawnCrate(crate: CrateEntity, definition: CrateDefinition, x: n
   crate.dy = 0;
   crate.radius = definition.radius;
   crate.paletteGroup = 2;
+  crate.shape = ENTITY_SHAPES.box;
   crate.paletteIndex = definition.paletteIndex;
   crate.symbol = definition.element;
   crate.accessoryKind = definition.accessoryKind;
@@ -63,6 +65,8 @@ function createCrate(): CrateEntity {
     dy: 0,
     radius: 0,
     paletteGroup: 2,
+    shape: ENTITY_SHAPES.box,
+    icon: '',
     paletteIndex: CRATES.neon.paletteIndex,
     symbol: CRATES.neon.element,
     accessoryKind: CRATES.neon.accessoryKind,

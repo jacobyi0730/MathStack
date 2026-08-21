@@ -1,3 +1,4 @@
+import { ENTITY_SHAPES, type EntityShape } from '../data/palette.js';
 import { createPool, type Pool, type Poolable } from '../engine/pool.js';
 import type { RenderableEntity } from '../engine/renderer.js';
 
@@ -46,6 +47,9 @@ export interface PickupDefinition {
   readonly symbol: string;
   readonly paletteIndex: number;
   readonly accessoryKind: number;
+  readonly shape: EntityShape;
+  /** 즉시 발동 아이템은 효과가 한눈에 읽히는 이모지를 쓴다. 조각은 빈 문자열 */
+  readonly icon: string;
 }
 
 export interface PickupEntity extends RenderableEntity, Poolable {
@@ -67,6 +71,11 @@ export type PickupPool = Pool<PickupEntity>;
 /** 조각이 필드에 남아 있게 되면서 동시 활성 수가 늘었다. 적 상한(300)보다 넉넉해야 한다 */
 export const MAX_ACTIVE_PICKUPS = 512;
 
+/** 양성자 조각은 원소 몸체 그대로 굴러다닌다. 이모지를 붙이면 아이템과 헷갈린다 */
+const SHARD_SHAPE = { shape: ENTITY_SHAPES.circle, icon: '' } as const;
+/** 즉시 발동 아이템은 원 배지 위에 이모지 하나. 눈이 없어 적과 즉시 갈린다 */
+const ITEM_SHAPE = { shape: ENTITY_SHAPES.icon } as const;
+
 const EMPTY_EFFECTS = {
   xp: 0,
   heal: 0,
@@ -81,6 +90,7 @@ const EMPTY_EFFECTS = {
 export const PICKUPS = {
   'proton-small': {
     ...EMPTY_EFFECTS,
+    ...SHARD_SHAPE,
     kind: 'proton-small',
     name: '양성자 조각',
     element: 'p',
@@ -93,6 +103,7 @@ export const PICKUPS = {
   },
   'proton-medium': {
     ...EMPTY_EFFECTS,
+    ...SHARD_SHAPE,
     kind: 'proton-medium',
     name: '양성자 덩이',
     element: 'p',
@@ -105,6 +116,7 @@ export const PICKUPS = {
   },
   'proton-large': {
     ...EMPTY_EFFECTS,
+    ...SHARD_SHAPE,
     kind: 'proton-large',
     name: '양성자 결정',
     element: 'p',
@@ -117,6 +129,8 @@ export const PICKUPS = {
   },
   heal: {
     ...EMPTY_EFFECTS,
+    ...ITEM_SHAPE,
+    icon: '❤️',
     kind: 'heal',
     name: '아이오딘 방울',
     element: 'I',
@@ -129,6 +143,8 @@ export const PICKUPS = {
   },
   magnet: {
     ...EMPTY_EFFECTS,
+    ...ITEM_SHAPE,
+    icon: '🧲',
     kind: 'magnet',
     name: '네오디뮴 자석',
     element: 'Nd',
@@ -142,6 +158,8 @@ export const PICKUPS = {
   },
   meteor: {
     ...EMPTY_EFFECTS,
+    ...ITEM_SHAPE,
+    icon: '💣',
     kind: 'meteor',
     name: '이리듐 운석',
     element: 'Ir',
@@ -154,6 +172,8 @@ export const PICKUPS = {
   },
   clock: {
     ...EMPTY_EFFECTS,
+    ...ITEM_SHAPE,
+    icon: '⏱️',
     kind: 'clock',
     name: '세슘 시계',
     element: 'Cs',
@@ -166,6 +186,8 @@ export const PICKUPS = {
   },
   flare: {
     ...EMPTY_EFFECTS,
+    ...ITEM_SHAPE,
+    icon: '🔥',
     kind: 'flare',
     name: '인 점화',
     element: 'P',
@@ -178,6 +200,8 @@ export const PICKUPS = {
   },
   shield: {
     ...EMPTY_EFFECTS,
+    ...ITEM_SHAPE,
+    icon: '🛡️',
     kind: 'shield',
     name: '금 보호막',
     element: 'Au',
@@ -215,6 +239,8 @@ export function spawnPickup(
   pickup.dy = 0;
   pickup.radius = definition.radius;
   pickup.paletteGroup = 2;
+  pickup.shape = definition.shape;
+  pickup.icon = definition.icon;
   pickup.paletteIndex = definition.paletteIndex;
   pickup.symbol = definition.symbol;
   pickup.accessoryKind = definition.accessoryKind;
@@ -241,6 +267,8 @@ function createPickup(): PickupEntity {
     dy: 0,
     radius: 0,
     paletteGroup: 2,
+    shape: ENTITY_SHAPES.circle,
+    icon: '',
     paletteIndex: 0,
     symbol: 'p',
     accessoryKind: 0,

@@ -1,4 +1,5 @@
 import { WEAPONS, type WeaponId } from '../data/weapons.js';
+import { ENTITY_SHAPES } from '../data/palette.js';
 import { createPool, type Pool, type Poolable } from '../engine/pool.js';
 import type { RenderableEntity } from '../engine/renderer.js';
 import { wrapX, wrapY } from '../engine/world.js';
@@ -64,6 +65,9 @@ export function spawnProjectile(
   projectile.dx = dirX * speed;
   projectile.dy = dirY * speed;
   projectile.radius = definition.projectileRadius * rangeMultiplier;
+  // 투사체는 기본이 아이콘이다. 넓게 퍼지는 파동·오라만 장판으로 바꾼다
+  projectile.shape = ENTITY_SHAPES.icon;
+  projectile.icon = definition.icon;
   projectile.damage = damage;
   projectile.damageIntervalSec = 0;
   projectile.damageTimerSec = 0;
@@ -120,6 +124,8 @@ export function configureWaveProjectile(
   lifetimeSec: number,
 ): void {
   projectile.hitMode = 'area';
+  projectile.shape = ENTITY_SHAPES.field;
+  projectile.icon = '';
   projectile.maxLifeSec = lifetimeSec;
   projectile.lifeSec = lifetimeSec;
   projectile.radiusGrowthPerSec = (maxRadius - projectile.radius) / lifetimeSec;
@@ -194,6 +200,8 @@ function createProjectile(): ProjectileEntity {
     dy: 0,
     radius: 0,
     paletteGroup: 0,
+    shape: ENTITY_SHAPES.icon,
+    icon: WEAPONS.hydrogen_arrow.icon,
     paletteIndex: 0,
     symbol: 'H',
     accessoryKind: 1,

@@ -16,6 +16,26 @@ export const FIELD_COLORS = {
   shadow: 'rgba(0, 0, 0, 0.2)',
 } as const;
 
+/**
+ * 엔티티가 어떤 모양으로 그려지는지 (05-세션-운영 §14.5).
+ *
+ * 살아 있는 것만 **원 + 눈**이다. 상자는 네모, 주우면 발동하는 아이템과 투사체는 이모지 아이콘,
+ * 오라·파동처럼 넓게 퍼지는 것은 반투명 장판 —
+ * 적 무리 속에서 "쫓아오는 것 / 주울 것 / 내가 쏜 것"이 한눈에 갈려야 한다.
+ */
+export const ENTITY_SHAPES = {
+  circle: 0,
+  box: 1,
+  icon: 2,
+  field: 3,
+} as const;
+
+export type EntityShape = (typeof ENTITY_SHAPES)[keyof typeof ENTITY_SHAPES];
+
+/** 이모지는 본문 글꼴이 아니라 컬러 이모지 글꼴로 그려야 색이 나온다 */
+export const ICON_FONT_STACK =
+  '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", sans-serif';
+
 export const SPRITE_SPEC = {
   minRadiusPx: 10,
   maxRadiusPx: 28,
@@ -32,6 +52,20 @@ export const SPRITE_SPEC = {
   symbolOffsetYRatio: 1.35,
   symbolFontSizeRatio: 0.7,
   accessoryStrokeWidthPx: 3,
+  /** 상자 모서리 둥글기. 반지름 대비 비율 */
+  boxCornerRadiusRatio: 0.24,
+  /** 상자 뚜껑 선 위치. 중심에서 위로 반지름 × 이 값 */
+  boxLidOffsetRatio: 0.34,
+  boxStrapWidthPx: 3,
+  /** 아이콘 글자 크기. 반지름 대비 비율 */
+  iconFontSizeRatio: 1.6,
+  /** 반지름 5짜리 투사체도 이모지가 읽혀야 한다. 배지 밖으로 넘쳐도 그게 낫다 */
+  iconMinFontSizePx: 14,
+  /** 마그네슘 폭탄처럼 큰 투사체에서 이모지가 화면을 덮지 않게 막는다 */
+  iconMaxFontSizePx: 40,
+  /** 장판(오라·파동) 채우기 투명도. 아래 적이 비쳐야 한다 */
+  fieldFillAlpha: 0.18,
+  fieldRingWidthPx: 3,
 } as const;
 
 export interface CharacterPalette {

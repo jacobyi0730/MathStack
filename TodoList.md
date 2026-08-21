@@ -112,6 +112,7 @@
 | 08-20 21:59 | **T-034** 근접 무기 범위·접촉 피해·퀴즈 시간 제한 | **오케스트레이터 구현** | `src/data/weapons.ts`, `src/systems/damage.ts`, `src/systems/collision.ts`, `src/ui/quiz-modal.ts`, `src/main.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 근접 무기 반경 확대, 접촉 피해 체감화, 퀴즈 시간 제한 UI 제거 |
 | 08-21 10:20 | **T-035** 경험치 드롭·원소 램프·즉시 발동 아이템 | **오케스트레이터 구현** | `src/data/crates.ts`, `src/data/palette.ts`, `src/entities/crate.ts`, `src/entities/pickup.ts`, `src/systems/crate.ts`, `src/systems/pickup.ts`, `src/systems/spawn.ts`, `src/systems/enemy-ai.ts`, `src/systems/weapons.ts`, `src/engine/state.ts`, `src/engine/renderer.ts`, `src/engine/stress.ts`, `src/main.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 241→244). 경험치를 드롭·회수 방식으로 전환, 램프 4종·즉시 아이템 6종. 헤드리스 avg 0.0593ms, recycle 0 |
 | 08-21 10:25 | **T-036** 퀴즈 보기 가독성 | **오케스트레이터 구현** | `src/ui/quiz-modal.ts`, `docs/05-세션-운영.md`, `docs/06-개선기록.md`, `Tasks/`, `tests/src/quiz-modal.test.ts` | ✅ 게이트 통과 (test 244→251, skip 5→0). 보기 번호를 원형 배지로 분리, 큰 글자 모드에서 보기·입력칸도 확대 |
+| 08-21 10:35 | **T-037** 엔티티 모양 체계와 아이콘 | **오케스트레이터 구현** | `src/engine/renderer.ts`, `src/data/palette.ts`, `src/data/weapons.ts`, `src/entities/*`, `src/systems/weapons.ts`, `docs/05-세션-운영.md`, `docs/30-기술/34-성능예산.md`, `Tasks/`, `tests/src/renderer.test.ts` | ✅ 게이트 통과 (test 251→260). 상자=네모, 아이템·투사체=이모지, 오라·파동=장판. 렌더 JS 구간 avg 0.2158ms |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

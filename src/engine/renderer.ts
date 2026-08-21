@@ -1,11 +1,14 @@
 import {
   ENEMY_PALETTES,
+  ENTITY_SHAPES,
   FIELD_COLORS,
+  ICON_FONT_STACK,
   ITEM_PALETTES,
   PLAYER_PALETTES,
   SPRITE_SPEC,
   WORLD_CELL_SIZE,
   type CharacterPalette,
+  type EntityShape,
 } from '../data/palette.js';
 import {
   createSpriteFrameScratch,
@@ -22,6 +25,10 @@ export interface RenderableEntity extends CameraTarget, DirectionLike {
   paletteIndex: number;
   symbol: string;
   accessoryKind: number;
+  /** 원(생물) / 네모(상자) / 아이콘(아이템·투사체) / 장판(오라·파동) */
+  shape: EntityShape;
+  /** `shape` 가 icon 일 때 몸통 한가운데 얹을 이모지. 그 외에는 빈 문자열 */
+  icon: string;
 }
 
 export interface RenderScene {
@@ -42,6 +49,11 @@ interface BatchBucket {
   radius: number;
   count: number;
   paletteGroup: 0 | 1 | 2;
+}
+
+/** 아이콘도 몸통은 원이다. 배지를 배치에서 빼면 투사체 200개에서 드로우콜이 터진다 */
+function hasCircleBody(shape: number): boolean {
+  return shape === ENTITY_SHAPES.circle || shape === ENTITY_SHAPES.icon;
 }
 
 const MAX_BATCHES = 64;
@@ -82,6 +94,8 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
   const accessoryR = new Float32Array(MAX_VISIBLE);
   const accessoryKind = new Int8Array(MAX_VISIBLE);
   const symbolText = new Array<string>(MAX_VISIBLE);
+  const iconText = new Array<string>(MAX_VISIBLE);
+  const shapeByVisible = new Int8Array(MAX_VISIBLE);
   const paletteGroupByVisible = new Int8Array(MAX_VISIBLE);
   const paletteIndexByVisible = new Int8Array(MAX_VISIBLE);
   const bodyRadiusByVisible = new Float32Array(MAX_VISIBLE);
@@ -170,6 +184,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
       ctx.fillStyle = outline ? darkenHex(palette.body) : palette.body;
       ctx.beginPath();
       for (let j = 0; j < visibleCountRef.value; j += 1) {
+        if (!hasCircleBody(shapeByVisible[j] as number)) continue;
         if (paletteGroupByVisible[j] !== batch.paletteGroup) continue;
         if (paletteIndexByVisible[j] !== batch.paletteIndex) continue;
         const radius = outline ? outlineRadiusByVisible[j] : bodyRadiusByVisible[j];
@@ -184,16 +199,19 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
   function drawShadows(count: number): void {
     ctx.fillStyle = FIELD_COLORS.shadow;
     for (let i = 0; i < count; i += 1) {
+      if (shapeByVisible[i] === ENTITY_SHAPES.field) continue;
       ctx.beginPath();
       ctx.ellipse(shadowX[i], shadowY[i], shadowRadiusX[i], shadowRadiusY[i], 0, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
+  /** 눈은 **살아 있는 것에만** 붙인다. 상자와 아이템에 눈이 붙으면 적으로 읽힌다 */
   function drawEyes(count: number): void {
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();
     for (let i = 0; i < count; i += 1) {
+      if (shapeByVisible[i] !== ENTITY_SHAPES.circle) continue;
       ctx.moveTo(eyeLeftX[i] + eyeRadius[i], eyeY[i]);
       ctx.arc(eyeLeftX[i], eyeY[i], eyeRadius[i], 0, Math.PI * 2);
       ctx.moveTo(eyeRightX[i] + eyeRadius[i], eyeY[i]);
@@ -204,6 +222,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
     ctx.fillStyle = '#111111';
     ctx.beginPath();
     for (let i = 0; i < count; i += 1) {
+      if (shapeByVisible[i] !== ENTITY_SHAPES.circle) continue;
       ctx.moveTo(pupilLeftX[i] + pupilRadius[i], pupilY[i]);
       ctx.arc(pupilLeftX[i], pupilY[i], pupilRadius[i], 0, Math.PI * 2);
       ctx.moveTo(pupilRightX[i] + pupilRadius[i], pupilY[i]);
@@ -215,6 +234,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
   function drawAccessories(count: number): void {
     ctx.lineWidth = SPRITE_SPEC.accessoryStrokeWidthPx;
     for (let i = 0; i < count; i += 1) {
+      if (shapeByVisible[i] !== ENTITY_SHAPES.circle) continue;
       const palette = resolvePalette(
         paletteGroupByVisible[i] as 0 | 1 | 2,
         paletteIndexByVisible[i] as number,
@@ -234,10 +254,114 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
     }
   }
 
+  /** 상자: 둥근 네모 + 뚜껑선 + 세로 끈. 눈이 없어 "살아 있지 않은 것"으로 읽힌다 */
+  function drawBoxes(count: number): void {
+    for (let i = 0; i < count; i += 1) {
+      if (shapeByVisible[i] !== ENTITY_SHAPES.box) continue;
+      const palette = resolvePalette(
+        paletteGroupByVisible[i] as 0 | 1 | 2,
+        paletteIndexByVisible[i] as number,
+      );
+      const radius = bodyRadiusByVisible[i] as number;
+      const outline = SPRITE_SPEC.outlineWidthPx;
+      const corner = radius * SPRITE_SPEC.boxCornerRadiusRatio;
+
+      ctx.fillStyle = darkenHex(palette.body);
+      traceRoundedSquare(centersX[i], centersY[i], radius + outline, corner + outline);
+      ctx.fill();
+
+      ctx.fillStyle = palette.body;
+      traceRoundedSquare(centersX[i], centersY[i], radius, corner);
+      ctx.fill();
+
+      const lidY = centersY[i] - radius * SPRITE_SPEC.boxLidOffsetRatio;
+      ctx.strokeStyle = palette.accessory;
+      ctx.lineWidth = SPRITE_SPEC.boxStrapWidthPx;
+      ctx.beginPath();
+      ctx.moveTo(centersX[i] - radius, lidY);
+      ctx.lineTo(centersX[i] + radius, lidY);
+      ctx.moveTo(centersX[i], lidY);
+      ctx.lineTo(centersX[i], centersY[i] + radius);
+      ctx.stroke();
+    }
+  }
+
+  /** 장판: 반투명 채우기 + 밝은 테두리. 아래 적이 비쳐야 조준이 된다 */
+  function drawFields(count: number): void {
+    for (let i = 0; i < count; i += 1) {
+      if (shapeByVisible[i] !== ENTITY_SHAPES.field) continue;
+      const palette = resolvePalette(
+        paletteGroupByVisible[i] as 0 | 1 | 2,
+        paletteIndexByVisible[i] as number,
+      );
+      const radius = bodyRadiusByVisible[i] as number;
+
+      ctx.globalAlpha = SPRITE_SPEC.fieldFillAlpha;
+      ctx.fillStyle = palette.body;
+      ctx.beginPath();
+      ctx.arc(centersX[i], centersY[i], radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      ctx.strokeStyle = palette.accessory;
+      ctx.lineWidth = SPRITE_SPEC.fieldRingWidthPx;
+      ctx.beginPath();
+      ctx.arc(centersX[i], centersY[i], radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  /**
+   * 아이콘 위에 얹는 이모지.
+   *
+   * 배지(원)는 일반 원과 같은 배치 경로에서 이미 그려졌다 — 투사체가 200개까지 가므로
+   * 여기서 개별로 원을 그리면 배치가 통째로 무너진다. 이 패스는 글자만 얹는다.
+   */
+  function drawIcons(count: number): void {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // 캔버스에서 `font` 대입은 비싸다. 크기를 정수로 맞추고 바뀔 때만 갈아 끼운다
+    let lastFontSize = -1;
+    for (let i = 0; i < count; i += 1) {
+      if (shapeByVisible[i] !== ENTITY_SHAPES.icon) continue;
+      const icon = iconText[i];
+      if (!icon) continue;
+      const size = clampIconFontSize((bodyRadiusByVisible[i] as number) * SPRITE_SPEC.iconFontSizeRatio);
+      if (size !== lastFontSize) {
+        ctx.font = String(size) + 'px ' + ICON_FONT_STACK;
+        lastFontSize = size;
+      }
+      ctx.fillText(icon, centersX[i], centersY[i]);
+    }
+  }
+
+  function clampIconFontSize(size: number): number {
+    if (size < SPRITE_SPEC.iconMinFontSizePx) return SPRITE_SPEC.iconMinFontSizePx;
+    if (size > SPRITE_SPEC.iconMaxFontSizePx) return SPRITE_SPEC.iconMaxFontSizePx;
+    return Math.round(size);
+  }
+
+  /** `roundRect` 가 없는 환경에서도 그려지도록 경로를 직접 만든다 */
+  function traceRoundedSquare(centerX: number, centerY: number, half: number, corner: number): void {
+    const clamped = Math.min(corner, half);
+    ctx.beginPath();
+    ctx.moveTo(centerX - half + clamped, centerY - half);
+    ctx.lineTo(centerX + half - clamped, centerY - half);
+    ctx.quadraticCurveTo(centerX + half, centerY - half, centerX + half, centerY - half + clamped);
+    ctx.lineTo(centerX + half, centerY + half - clamped);
+    ctx.quadraticCurveTo(centerX + half, centerY + half, centerX + half - clamped, centerY + half);
+    ctx.lineTo(centerX - half + clamped, centerY + half);
+    ctx.quadraticCurveTo(centerX - half, centerY + half, centerX - half, centerY + half - clamped);
+    ctx.lineTo(centerX - half, centerY - half + clamped);
+    ctx.quadraticCurveTo(centerX - half, centerY - half, centerX - half + clamped, centerY - half);
+    ctx.closePath();
+  }
+
   function drawSymbols(count: number): void {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (let i = 0; i < count; i += 1) {
+      if (shapeByVisible[i] === ENTITY_SHAPES.field) continue;
       const palette = resolvePalette(
         paletteGroupByVisible[i] as 0 | 1 | 2,
         paletteIndexByVisible[i] as number,
@@ -325,6 +449,8 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
         symbolY[visibleCount] = screen.y - sprite.symbolOffsetY;
         symbolFont[visibleCount] = sprite.symbolFontSize;
         symbolText[visibleCount] = entity.symbol;
+        iconText[visibleCount] = entity.icon;
+        shapeByVisible[visibleCount] = entity.shape;
         accessoryX[visibleCount] = screen.x;
         accessoryY[visibleCount] = screen.y - entity.radius * 0.12;
         accessoryR[visibleCount] = entity.radius * 0.8;
@@ -336,33 +462,39 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
         bodyRadiusByVisible[visibleCount] = entity.radius;
         outlineRadiusByVisible[visibleCount] = entity.radius + sprite.outlineWidth;
 
-        const bodyBucket = findBatch(
-          bodyBatches,
-          bodyBatchCount,
-          paletteGroup,
-          entity.paletteIndex,
-          entity.radius,
-        );
-        if (bodyBucket === bodyBatchCount) bodyBatchCount += 1;
-        bodyBatches[bodyBucket].count += 1;
+        // 상자와 장판만 배치에서 뺀다. 둘 다 동시에 몇 개 안 뜬다
+        if (hasCircleBody(entity.shape)) {
+          const bodyBucket = findBatch(
+            bodyBatches,
+            bodyBatchCount,
+            paletteGroup,
+            entity.paletteIndex,
+            entity.radius,
+          );
+          if (bodyBucket === bodyBatchCount) bodyBatchCount += 1;
+          bodyBatches[bodyBucket].count += 1;
 
-        const outlineBucket = findBatch(
-          outlineBatches,
-          outlineBatchCount,
-          paletteGroup,
-          entity.paletteIndex,
-          entity.radius + sprite.outlineWidth,
-        );
-        if (outlineBucket === outlineBatchCount) outlineBatchCount += 1;
-        outlineBatches[outlineBucket].count += 1;
+          const outlineBucket = findBatch(
+            outlineBatches,
+            outlineBatchCount,
+            paletteGroup,
+            entity.paletteIndex,
+            entity.radius + sprite.outlineWidth,
+          );
+          if (outlineBucket === outlineBatchCount) outlineBatchCount += 1;
+          outlineBatches[outlineBucket].count += 1;
+        }
 
         visibleCount += 1;
       }
 
       visibleCountRef.value = visibleCount;
       drawShadows(visibleCount);
+      drawFields(visibleCount);
       drawBodies(outlineBatches, outlineBatchCount, true);
       drawBodies(bodyBatches, bodyBatchCount, false);
+      drawBoxes(visibleCount);
+      drawIcons(visibleCount);
       drawAccessories(visibleCount);
       drawEyes(visibleCount);
       drawSymbols(visibleCount);

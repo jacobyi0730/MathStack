@@ -6,6 +6,7 @@ import {
   type EnemyId,
   type EnemyRewardKind,
 } from '../data/enemies.js';
+import { ENTITY_SHAPES } from '../data/palette.js';
 import { createPool, type Pool, type Poolable } from '../engine/pool.js';
 import type { RenderableEntity } from '../engine/renderer.js';
 
@@ -122,6 +123,8 @@ function createEnemy(): EnemyEntity {
     dy: 0,
     radius: 0,
     paletteGroup: 1,
+    shape: ENTITY_SHAPES.circle,
+    icon: '',
     paletteIndex: ENEMIES.radon.paletteIndex,
     symbol: ENEMIES.radon.element,
     accessoryKind: ENEMIES.radon.accessoryKind,

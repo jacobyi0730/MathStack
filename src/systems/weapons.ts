@@ -9,6 +9,7 @@ import {
   type WeaponId,
   type WeaponPattern,
 } from '../data/weapons.js';
+import { ENTITY_SHAPES } from '../data/palette.js';
 import { applyBossDamage, defeatBoss, type BossEntity } from '../entities/boss.js';
 import type { EnemyEntity } from '../entities/enemy.js';
 import {
@@ -318,6 +319,9 @@ function updateAuraPattern(
     aura = runtime.projectiles.acquire();
     spawnProjectile(aura, definition.id, player.x, player.y, 0, 0, damage, rangeMultiplier);
     configureProjectileHit(aura, 'tick', radius, DAMAGE_TICK_SEC);
+    // 오라는 플레이어를 감싸는 넓은 장판이다. 아이콘으로 그리면 화면을 가린다
+    aura.shape = ENTITY_SHAPES.field;
+    aura.icon = '';
     aura.lifeSec = Number.POSITIVE_INFINITY;
     aura.maxLifeSec = Number.POSITIVE_INFINITY;
   }

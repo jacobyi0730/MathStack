@@ -1,4 +1,5 @@
 import { BOSSES, MAX_ACTIVE_BOSSES, type BossDefinition, type BossId } from '../data/bosses.js';
+import { ENTITY_SHAPES } from '../data/palette.js';
 import { createPool, type Pool, type Poolable } from '../engine/pool.js';
 import type { RenderableEntity } from '../engine/renderer.js';
 
@@ -60,6 +61,7 @@ export function spawnBoss(boss: BossEntity, definition: BossDefinition, x: numbe
   boss.dy = 0;
   boss.radius = definition.radius;
   boss.paletteGroup = 1;
+  boss.shape = ENTITY_SHAPES.circle;
   boss.paletteIndex = definition.paletteIndex;
   boss.symbol = definition.element;
   boss.accessoryKind = definition.accessoryKind;
@@ -224,6 +226,8 @@ function createBoss(): BossEntity {
     dy: 0,
     radius: 0,
     paletteGroup: 1,
+    shape: ENTITY_SHAPES.circle,
+    icon: '',
     paletteIndex: BOSSES.technetium.paletteIndex,
     symbol: BOSSES.technetium.element,
     accessoryKind: BOSSES.technetium.accessoryKind,
