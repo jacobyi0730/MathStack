@@ -58,6 +58,9 @@ type QuizModalElements = {
 };
 
 const TIMER_CIRCUMFERENCE = 100;
+/** 보기 글자 크기. 번호 배지(18px)보다 크게 둬서 눈이 답에 먼저 닿게 한다 */
+const CHOICE_FONT_SIZE_PX = 22;
+const CHOICE_FONT_SIZE_LARGE_PX = 28;
 
 export function createQuizModal(
   parent: HTMLElement = document.body,
@@ -345,14 +348,24 @@ function renderQuestion(elements: QuizModalElements, state: QuizModalState): voi
   });
 }
 
+/**
+ * 보기 버튼 하나.
+ *
+ * 번호는 **답과 같은 줄의 글자가 아니라 원형 배지**로 분리한다. `1. ` 을 답 앞에 이어 붙이면
+ * 답이 소수일 때 `2. 2.5` 가 되어 어디까지가 번호인지 읽히지 않는다. 번호 자체는 지우지 않는다 —
+ * 숫자 키 1~4 로 고르는 키보드 조작(접근성)이 이 번호를 가리키기 때문이다.
+ */
 function createChoiceButton(doc: Document, choice: string, index: number): HTMLButtonElement {
   const button = doc.createElement('button');
   button.className = 'mathstack-quiz__choice';
   button.type = 'button';
   button.dataset.answer = choice;
+  button.style.display = 'flex';
+  button.style.alignItems = 'center';
+  button.style.gap = '14px';
   button.style.minHeight = '56px';
-  button.style.padding = '10px 12px';
-  button.style.fontSize = '20px';
+  button.style.padding = '10px 14px';
+  button.style.textAlign = 'left';
   button.style.borderRadius = '8px';
   button.style.border = '2px solid #45617f';
   button.style.background = '#ffffff';
@@ -360,10 +373,27 @@ function createChoiceButton(doc: Document, choice: string, index: number): HTMLB
 
   const shortcut = doc.createElement('span');
   shortcut.className = 'mathstack-quiz__shortcut';
-  shortcut.textContent = `${index + 1}. `;
+  shortcut.textContent = `${index + 1}`;
   shortcut.setAttribute('aria-hidden', 'true');
+  shortcut.style.flex = '0 0 34px';
+  shortcut.style.width = '34px';
+  shortcut.style.height = '34px';
+  shortcut.style.display = 'grid';
+  shortcut.style.placeItems = 'center';
+  shortcut.style.borderRadius = '50%';
+  shortcut.style.background = '#45617f';
+  shortcut.style.color = '#ffffff';
+  shortcut.style.fontSize = '18px';
+  shortcut.style.fontWeight = '700';
 
-  button.append(shortcut, renderMathText(choice, doc));
+  const value = doc.createElement('span');
+  value.className = 'mathstack-quiz__choice-value';
+  value.style.flex = '1';
+  value.style.fontSize = `${CHOICE_FONT_SIZE_PX}px`;
+  value.style.fontWeight = '700';
+  value.appendChild(renderMathText(choice, doc));
+
+  button.append(shortcut, value);
   return button;
 }
 
@@ -408,7 +438,10 @@ function applyQuizSettings(
   elements: QuizModalElements,
   settings: AccessibilitySettings,
 ): void {
-  elements.prompt.style.fontSize = settings.textSize === 'large' ? '32px' : '24px';
+  const large = settings.textSize === 'large';
+  elements.prompt.style.fontSize = large ? '32px' : '24px';
+  elements.input.style.fontSize = large ? '30px' : '24px';
+  applyChoiceFontSize(elements, large ? CHOICE_FONT_SIZE_LARGE_PX : CHOICE_FONT_SIZE_PX);
   elements.timer.hidden = true;
   elements.timer.setAttribute('aria-hidden', 'true');
   elements.root.classList.toggle('mathstack-quiz--slow-mode', settings.slowMode);
@@ -417,4 +450,11 @@ function applyQuizSettings(
     'mathstack-quiz--no-effects',
     effectiveEffectIntensity(settings) === 0,
   );
+}
+
+function applyChoiceFontSize(elements: QuizModalElements, sizePx: number): void {
+  const values = elements.choices.querySelectorAll<HTMLElement>('.mathstack-quiz__choice-value');
+  for (let i = 0; i < values.length; i += 1) {
+    values[i].style.fontSize = `${sizePx}px`;
+  }
 }
