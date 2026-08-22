@@ -1,6 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { CHARACTER_ARCHETYPES } from '../../src/data/characters.js';
-import { DEFAULT_HERO_NAME, formatCharacterTraits, normalizeHeroName } from '../../src/ui/character-select.js';
+import {
+  DEFAULT_HERO_NAME,
+  createCharacterSelectView,
+  formatCharacterTraits,
+  normalizeHeroName,
+} from '../../src/ui/character-select.js';
+
+const originalDocument = globalThis.document;
+
+afterEach(() => {
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: originalDocument,
+  });
+});
 
 describe('character select', () => {
   it('normalizes_empty_hero_name_to_default', () => {
@@ -49,4 +63,77 @@ describe('character select', () => {
       ],
     ]);
   });
+
+  it('uses_a_scroll_safe_compact_mobile_layout', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument(),
+    });
+
+    const view = createCharacterSelectView();
+    const root = view.element as unknown as FakeElement;
+    const buttons = findByTag(root, 'button');
+
+    expect(root.style.cssText).toContain('max-height:calc(100dvh - 24px)');
+    expect(root.style.cssText).toContain('overflow:auto');
+    expect(buttons[0].style.cssText).toContain('padding:12px');
+
+    view.destroy();
+  });
 });
+
+class FakeElement {
+  readonly style = { cssText: '', borderColor: '' } as CSSStyleDeclaration;
+  readonly children: FakeElement[] = [];
+  readonly attributes = new Map<string, string>();
+  value = '';
+  maxLength = 0;
+  textContent = '';
+  type = '';
+  parent: FakeElement | null = null;
+
+  constructor(readonly tagName: string) {}
+
+  append(...children: FakeElement[]): void {
+    for (const child of children) this.appendChild(child);
+  }
+
+  appendChild(child: FakeElement): FakeElement {
+    child.parent = this;
+    this.children.push(child);
+    return child;
+  }
+
+  setAttribute(name: string, value: string): void {
+    this.attributes.set(name, value);
+  }
+
+  addEventListener(): void {}
+
+  remove(): void {
+    if (!this.parent) return;
+    const index = this.parent.children.indexOf(this);
+    if (index >= 0) this.parent.children.splice(index, 1);
+  }
+}
+
+class FakeDocument {
+  createElement(tagName: string): FakeElement {
+    return new FakeElement(tagName);
+  }
+}
+
+function findByTag(root: FakeElement, tagName: string): FakeElement[] {
+  const matches: FakeElement[] = [];
+  visit(root, (element) => {
+    if (element.tagName === tagName) matches.push(element);
+  });
+  return matches;
+}
+
+function visit(root: FakeElement, visitor: (element: FakeElement) => void): void {
+  visitor(root);
+  for (let i = 0; i < root.children.length; i += 1) {
+    visit(root.children[i], visitor);
+  }
+}

@@ -319,10 +319,14 @@ function getWindow(): (Window & typeof globalThis) | undefined {
 function screenStyle(): string {
   return [
     'display:grid',
-    'gap:18px',
+    'gap:12px',
     'max-width:760px',
+    'width:100%',
+    'max-height:calc(100dvh - 24px)',
+    'overflow:auto',
     'margin:0 auto',
-    'padding:28px',
+    'padding:18px',
+    'box-sizing:border-box',
     'color:#ffffff',
     'background:#151827',
     'border:1px solid #2d334a',

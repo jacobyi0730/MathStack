@@ -57,7 +57,7 @@ export function createCharacterSelectView(
   root.appendChild(title);
 
   const grid = document.createElement('div');
-  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;';
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(142px,1fr));gap:10px;';
   root.appendChild(grid);
 
   const cards = CHARACTER_ARCHETYPES.map((character) => {
@@ -127,9 +127,9 @@ function createCharacterCard(character: CharacterArchetype): HTMLButtonElement {
   const card = document.createElement('button');
   card.type = 'button';
   card.style.cssText = [
-    'padding:14px',
+    'padding:12px',
     'display:grid',
-    'gap:10px',
+    'gap:8px',
     'text-align:left',
     'border:2px solid #3c435f',
     'border-radius:8px',
@@ -141,8 +141,8 @@ function createCharacterCard(character: CharacterArchetype): HTMLButtonElement {
   const swatch = document.createElement('span');
   swatch.textContent = character.element;
   swatch.style.cssText = [
-    'width:48px',
-    'height:48px',
+    'width:40px',
+    'height:40px',
     'display:grid',
     'place-items:center',
     'border-radius:50%',
@@ -194,10 +194,14 @@ function formatWeaponPattern(pattern: WeaponPattern): string {
 function screenStyle(): string {
   return [
     'display:grid',
-    'gap:18px',
+    'gap:12px',
     'max-width:860px',
+    'width:100%',
+    'max-height:calc(100dvh - 24px)',
+    'overflow:auto',
     'margin:0 auto',
-    'padding:28px',
+    'padding:18px',
+    'box-sizing:border-box',
     'color:#ffffff',
     'background:#151827',
     'border:1px solid #2d334a',

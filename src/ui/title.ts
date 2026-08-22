@@ -77,11 +77,14 @@ export function createTitleFlow(options: TitleFlowOptions = {}): TitleFlow {
   const root = document.createElement('div');
   root.className = 'mathstack-title-flow';
   root.style.cssText = [
-    'min-height:100vh',
+    'height:100dvh',
     'box-sizing:border-box',
-    'padding:32px 18px',
+    'padding:12px',
     'display:grid',
-    'place-items:center',
+    'place-items:start center',
+    'align-content:start',
+    'overflow:auto',
+    'overscroll-behavior:contain',
     'background:#1a1a2e',
     'color:#ffffff',
   ].join(';');
@@ -246,9 +249,11 @@ function parseCharacterId(value: unknown): CharacterId {
 function titleScreenStyle(): string {
   return [
     'display:grid',
-    'gap:18px',
+    'gap:14px',
     'width:min(640px,100%)',
-    'padding:32px',
+    'max-height:calc(100dvh - 24px)',
+    'overflow:auto',
+    'padding:20px',
     'box-sizing:border-box',
     'background:#151827',
     'border:1px solid #2d334a',

@@ -102,6 +102,7 @@ related: [MathStack기획서]
 | [T-049](T-049-모바일-모달-잘림-보정.md) | 모바일 퀴즈·스킬 선택 잘림 보정 | ui-builder | task-close | T-048 |
 | [T-050](T-050-보상몬스터-자석-밸런스.md) | 보상 몬스터·자석 밸런스 | balance-tuner | task-close | T-049 |
 | [T-051](T-051-퀴즈-출제-랜덤성.md) | 퀴즈 출제 랜덤성 보정 | game-engine-dev | task-close | T-050 |
+| [T-052](T-052-모바일-메뉴-잘림-보정.md) | 모바일 메뉴 잘림 보정 | ui-builder | task-close | T-051 |
 
 ## 병렬 트랙
 

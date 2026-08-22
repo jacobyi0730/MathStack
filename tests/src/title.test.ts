@@ -1,11 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
+  createTitleFlow,
   readTitleSelection,
   TITLE_SELECTION_STORAGE_KEY,
   writeTitleSelection,
   type StorageLike,
   type TitleSelection,
 } from '../../src/ui/title.js';
+
+const originalDocument = globalThis.document;
+
+afterEach(() => {
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: originalDocument,
+  });
+});
 
 class MemoryStorage implements StorageLike {
   private readonly items = new Map<string, string>();
@@ -63,4 +73,70 @@ describe('title flow storage', () => {
       heroName: '원소 용사',
     });
   });
+
+  it('uses_a_scrollable_mobile_safe_title_flow', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument(),
+    });
+    const storage = new MemoryStorage();
+
+    const flow = createTitleFlow({ storage });
+    const root = flow.element as unknown as FakeElement;
+    const section = root.children[0];
+
+    expect(root.style.cssText).toContain('height:100dvh');
+    expect(root.style.cssText).toContain('overflow:auto');
+    expect(root.style.cssText).toContain('place-items:start center');
+    expect(section.style.cssText).toContain('max-height:calc(100dvh - 24px)');
+
+    flow.destroy();
+  });
 });
+
+class FakeElement {
+  readonly style = { cssText: '', display: '' } as CSSStyleDeclaration;
+  readonly children: FakeElement[] = [];
+  readonly attributes = new Map<string, string>();
+  textContent = '';
+  type = '';
+  disabled = false;
+  hidden = false;
+  className = '';
+  parent: FakeElement | null = null;
+
+  constructor(readonly tagName: string) {}
+
+  append(...children: FakeElement[]): void {
+    for (const child of children) this.appendChild(child);
+  }
+
+  appendChild(child: FakeElement): FakeElement {
+    child.parent = this;
+    this.children.push(child);
+    return child;
+  }
+
+  replaceChildren(...children: FakeElement[]): void {
+    this.children.length = 0;
+    for (const child of children) this.appendChild(child);
+  }
+
+  setAttribute(name: string, value: string): void {
+    this.attributes.set(name, value);
+  }
+
+  addEventListener(): void {}
+
+  remove(): void {
+    if (!this.parent) return;
+    const index = this.parent.children.indexOf(this);
+    if (index >= 0) this.parent.children.splice(index, 1);
+  }
+}
+
+class FakeDocument {
+  createElement(tagName: string): FakeElement {
+    return new FakeElement(tagName);
+  }
+}

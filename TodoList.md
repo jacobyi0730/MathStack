@@ -82,12 +82,13 @@
 - [x] **T-049** 모바일 퀴즈·스킬 선택 잘림 보정 — `ui-builder` ✅ 2026-08-22
 - [x] **T-050** 보상 몬스터·자석 밸런스 — `balance-tuner` ✅ 2026-08-22
 - [x] **T-051** 퀴즈 출제 랜덤성 보정 — `game-engine-dev` ✅ 2026-08-22
+- [x] **T-052** 모바일 메뉴 잘림 보정 — `ui-builder` ✅ 2026-08-22
 
 ---
 
 ## 현황
 
-**51 / 51 완료** · 진행 중 0 · 착수 가능 0
+**52 / 52 완료** · 진행 중 0 · 착수 가능 0
 
 ## 병렬 배정 이력
 
@@ -133,6 +134,7 @@
 | 08-22 12:31 | **T-049** 모바일 퀴즈·스킬 선택 잘림 보정 | **오케스트레이터 구현** | `src/ui/quiz-modal.ts`, `src/ui/skill-choice.ts`, `tests/src/`, `docs/`, `Tasks/` | ✅ 게이트 통과. 세로 FHD 기준 패널 최대 높이와 내부 스크롤 적용 |
 | 08-22 12:23 | **T-050** 보상 몬스터·자석 밸런스 | **오케스트레이터 구현** | `src/data/waves.ts`, `src/systems/spawn.ts`, `src/systems/pickup.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 보상 몬스터 비중 1/min씩, 동시 상한 1→5, 자석 조각 전용 적용 |
 | 08-22 12:26 | **T-051** 퀴즈 출제 랜덤성 보정 | **오케스트레이터 구현** | `src/quiz/session.ts`, `src/main.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 새 플레이마다 런타임 시드 생성 |
+| 08-22 12:32 | **T-052** 모바일 메뉴 잘림 보정 | **오케스트레이터 구현** | `src/ui/title.ts`, `src/ui/grade-select.ts`, `src/ui/character-select.ts`, `src/ui/settings.ts`, `src/ui/result.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 시작 전 메뉴와 결과/설정 화면 자체 스크롤 적용 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

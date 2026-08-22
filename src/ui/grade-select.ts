@@ -200,10 +200,14 @@ function applyPressed(button: HTMLButtonElement, pressed: boolean): void {
 function screenStyle(): string {
   return [
     'display:grid',
-    'gap:18px',
+    'gap:12px',
     'max-width:720px',
+    'width:100%',
+    'max-height:calc(100dvh - 24px)',
+    'overflow:auto',
     'margin:0 auto',
-    'padding:28px',
+    'padding:18px',
+    'box-sizing:border-box',
     'color:#ffffff',
     'background:#151827',
     'border:1px solid #2d334a',
@@ -212,15 +216,15 @@ function screenStyle(): string {
 }
 
 function gridStyle(): string {
-  return 'display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;';
+  return 'display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;';
 }
 
 function choiceButtonStyle(pressed: boolean): string {
   const border = pressed ? '#ffc107' : '#3c435f';
   const background = pressed ? '#273047' : '#1d2234';
   return [
-    'min-height:76px',
-    'padding:12px',
+    'min-height:58px',
+    'padding:10px',
     'display:grid',
     'gap:4px',
     'text-align:left',
