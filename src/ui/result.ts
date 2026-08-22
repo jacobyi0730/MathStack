@@ -180,6 +180,8 @@ function button(doc: Document, label: string, onClick: () => void): HTMLButtonEl
 function resultTitle(result: Exclude<TimelineResultKind, 'none'>): string {
   if (result === 'victory') return '안정화 성공';
   if (result === 'defeat') return '붕괴 저지 실패';
+  // 스스로 그만둔 것은 실패가 아니다. 제목이 나무라면 다음에 안 켠다
+  if (result === 'quit') return '여기까지 하기';
   return '시간 종료';
 }
 

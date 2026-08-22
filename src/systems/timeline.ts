@@ -1,7 +1,14 @@
 import { BOSSES, FINAL_BOSS_ID, type BossId } from '../data/bosses.js';
 
 export type TimelineEventKind = 'none' | 'spawn_boss' | 'result';
-export type TimelineResultKind = 'none' | 'victory' | 'defeat' | 'timeout';
+/**
+ * 판이 끝난 이유.
+ *
+ * `quit` 만 시간이 아니라 **플레이어의 선택**으로 발생한다 — 일시정지 메뉴의
+ * `그만하기` 다. 다른 셋과 나란히 두는 이유는 뒤처리가 같기 때문이다.
+ * 점수 기록도, 결과 화면도, 이어하기 저장 중단도 똑같이 일어나야 한다.
+ */
+export type TimelineResultKind = 'none' | 'victory' | 'defeat' | 'timeout' | 'quit';
 
 export interface BossTimelineState {
   firedBossMask: number;
@@ -55,6 +62,16 @@ export function updateBossTimeline(
   }
 
   return 'none';
+}
+
+/**
+ * 플레이어가 스스로 판을 끝냈다.
+ *
+ * 이미 결과가 나온 뒤라면 아무 일도 하지 않는다 — 죽는 순간과 그만하기가 겹쳐
+ * 결과 화면이 두 번 뜨는 것을 막는다.
+ */
+export function publishQuit(timeline: BossTimelineState): boolean {
+  return publishResult(timeline, 'quit') === 'result';
 }
 
 export function hasBossSpawned(timeline: BossTimelineState, bossId: BossId): boolean {

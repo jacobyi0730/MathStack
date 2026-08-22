@@ -5,6 +5,7 @@ import {
   isDefeat,
   isFinalBoss,
   isVictory,
+  publishQuit,
   updateBossTimeline,
 } from '../../src/systems/timeline.js';
 
@@ -59,5 +60,23 @@ describe('boss timeline', () => {
     expect(isVictory(600, 100, false)).toBe(false);
     expect(isDefeat(0)).toBe(true);
     expect(isFinalBoss('oganesson')).toBe(true);
+  });
+
+  it('publishes quit exactly once when the player ends the run', () => {
+    const timeline = createBossTimelineState();
+
+    expect(publishQuit(timeline)).toBe(true);
+    expect(timeline.latestResultKind).toBe('quit');
+    // 죽는 순간과 그만하기가 겹쳐 결과 화면이 두 번 뜨면 안 된다
+    expect(publishQuit(timeline)).toBe(false);
+  });
+
+  it('ignores quit after the run already ended', () => {
+    const timeline = createBossTimelineState();
+
+    expect(updateBossTimeline(timeline, 20, 0, false)).toBe('result');
+    expect(timeline.latestResultKind).toBe('defeat');
+    expect(publishQuit(timeline)).toBe(false);
+    expect(timeline.latestResultKind).toBe('defeat');
   });
 });

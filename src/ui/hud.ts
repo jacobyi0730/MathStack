@@ -4,6 +4,7 @@ export const HUD_PASSIVE_SLOT_COUNT = 6;
 
 export const HUD_CLASS_NAMES = {
   root: 'mathstack-hud',
+  settingsButton: 'mathstack-hud__settings',
   top: 'mathstack-hud__top',
   bottom: 'mathstack-hud__bottom',
   group: 'mathstack-hud__group',
@@ -45,6 +46,13 @@ export interface Hud {
   readonly root: HTMLElement;
   readonly top: HTMLElement;
   readonly bottom: HTMLElement;
+  /**
+   * 일시정지 메뉴를 여는 버튼.
+   *
+   * HUD 는 통째로 `pointer-events:none` 이라 캔버스 조작을 가로막지 않는다.
+   * 이 버튼만 예외로 되살린다 — HUD 안에서 유일하게 누를 수 있는 것이다.
+   */
+  readonly settingsButton: HTMLButtonElement;
   update(state: HudState): boolean;
   forceUpdate(state: HudState): void;
   destroy(): void;
@@ -65,6 +73,7 @@ interface HudElements {
   readonly killsValue: HTMLElement;
   readonly quizValue: HTMLElement;
   readonly notice: HTMLElement;
+  readonly settingsButton: HTMLButtonElement;
   readonly weaponSlots: HTMLElement[];
   readonly passiveSlots: HTMLElement[];
 }
@@ -116,6 +125,7 @@ export function createHud(parent: HTMLElement = document.body): Hud {
     root: elements.root,
     top: elements.top,
     bottom: elements.bottom,
+    settingsButton: elements.settingsButton,
 
     update(state: HudState): boolean {
       return applyState(state, false);
@@ -162,6 +172,14 @@ function createHudElements(doc: Document): HudElements {
   notice.hidden = true;
   root.appendChild(notice);
 
+  const settingsButton = doc.createElement('button');
+  settingsButton.type = 'button';
+  settingsButton.className = HUD_CLASS_NAMES.settingsButton;
+  settingsButton.textContent = '⚙';
+  settingsButton.setAttribute('aria-label', '환경설정 (일시정지)');
+  settingsButton.style.cssText = settingsButtonStyle();
+  root.appendChild(settingsButton);
+
   const weaponSlots = appendSlotGroup(bottom, '무기', HUD_WEAPON_SLOT_COUNT);
   const passiveSlots = appendSlotGroup(bottom, '보조무기', HUD_PASSIVE_SLOT_COUNT);
 
@@ -180,6 +198,7 @@ function createHudElements(doc: Document): HudElements {
     killsValue,
     quizValue,
     notice,
+    settingsButton,
     weaponSlots,
     passiveSlots,
   };
@@ -432,6 +451,36 @@ function setSlotStyle(el: HTMLElement): void {
   el.style.overflow = 'hidden';
   el.style.textOverflow = 'ellipsis';
   el.style.whiteSpace = 'nowrap';
+}
+
+/**
+ * HUD 오른쪽 위 톱니 버튼.
+ *
+ * 상단 바 **안**에 두지 않는다 — 통계가 늘어나면 버튼이 줄바꿈에 밀려 사라진다.
+ * 화면 모서리에 고정해 언제나 같은 자리에 있게 한다.
+ */
+function settingsButtonStyle(): string {
+  return [
+    'position:absolute',
+    // 상단 바 아래. 노치가 있는 기기에서도 겹치지 않는다
+    'top:calc(env(safe-area-inset-top, 0px) + 48px)',
+    'right:calc(env(safe-area-inset-right, 0px) + 10px)',
+    // 터치 타깃 44px 이상 (05-세션-운영 §14.4)
+    'width:48px',
+    'height:48px',
+    'display:grid',
+    'place-items:center',
+    'padding:0',
+    'border:none',
+    'border-radius:12px',
+    'background:rgba(15, 23, 42, 0.78)',
+    'color:#f8fafc',
+    'font-size:24px',
+    'line-height:1',
+    'cursor:pointer',
+    // HUD 는 pointer-events:none 이다. 이 버튼만 되살린다
+    'pointer-events:auto',
+  ].join(';');
 }
 
 function noticeStyle(): string {

@@ -1,13 +1,35 @@
-# 효과음 출처와 라이선스
+# 소리 출처와 라이선스
 
-이 폴더의 모든 `.m4a` 파일은 **Kenney**(https://kenney.nl)가 배포하는 CC0 1.0
-(퍼블릭 도메인) 사운드 팩에서 골라, 길이를 자르고 모노 AAC 64 kbps 로 다시 인코딩한 것이다.
+이 폴더의 모든 소리는 **CC0 1.0**(퍼블릭 도메인)이다.
 
 - 라이선스: [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)
 - **저작자 표시 의무 없음.** 이 문서는 의무가 아니라 재현을 위해 남긴다.
 - 상업적 이용·수정·재배포 모두 허용된다.
 
-## 원본 대응표
+| | 출처 | 원본 형식 | 재인코딩 |
+| --- | --- | --- | --- |
+| 효과음 24개 | **Kenney** (https://kenney.nl) | Ogg Vorbis | 모노 AAC 64 kbps |
+| 배경음 4개 | **Juhani Junkala** (https://juhanijunkala.com) via [OpenGameArt](https://opengameart.org) | WAV / Ogg Vorbis | 스테레오 AAC 56 kbps |
+
+## 배경음 대응표
+
+| 파일 | 원본 팩 | 원본 트랙 | 쓰이는 곳 |
+| --- | --- | --- | --- |
+| `bgm-chapter1.m4a` | [5 Action Chiptunes](https://opengameart.org/content/5-chiptunes-action) | `Level 1.wav` | 0:00 ~ 3:00 |
+| `bgm-chapter2.m4a` | 위와 같음 | `Level 2.wav` | 3:00 ~ 6:00 |
+| `bgm-chapter3.m4a` | 위와 같음 | `Level 3.wav` | 6:00 ~ |
+| `bgm-boss.m4a` | [Chiptune Adventures](https://opengameart.org/content/4-chiptunes-adventure) | `3. Boss Fight.ogg` | 보스가 살아 있는 동안 |
+
+> 원저자 Juhani Junkala 가 팩에 넣은 `INFO.txt` 원문: *"These music tracks have been released
+> under CC0 creative commons license. You can do anything you want with these tunes."*
+
+배경음은 재인코딩할 때 **자르지 않는다.** 루프 지점이 원곡에 맞춰져 있어 잘라내면 이음매가 생긴다.
+
+```bash
+ffmpeg -i <원본> -ac 2 -ar 44100 -c:a aac -b:a 56k -movflags +faststart public/audio/bgm-<트랙>.m4a
+```
+
+## 효과음 원본 대응표
 
 | 파일 | 원본 팩 | 원본 파일 |
 | --- | --- | --- |
@@ -52,4 +74,5 @@ ffmpeg -i <원본>.ogg -t <초> -ac 1 -ar 44100 \
   -c:a aac -b:a 64k -movflags +faststart public/audio/<큐>.m4a
 ```
 
-큐 이름과 볼륨 정본은 [`src/audio/cues.ts`](../../src/audio/cues.ts).
+큐 이름과 볼륨 정본은 [`src/audio/cues.ts`](../../src/audio/cues.ts), 배경음 트랙 선택은
+[`src/audio/bgm.ts`](../../src/audio/bgm.ts).

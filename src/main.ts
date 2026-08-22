@@ -1,4 +1,5 @@
 import './styles.css';
+import { createBgmPlayer, resolveBgmTrack } from './audio/bgm.js';
 import { createSfxPlayer } from './audio/sfx.js';
 import { flushSfxQueue, requestSfx } from './audio/queue.js';
 import { createGameState, type GameState, type SpecialRewardQuiz } from './engine/state.js';
@@ -11,6 +12,7 @@ import { createDebugOverlay } from './ui/debug-overlay.js';
 import { createHud, type Hud, type HudSlotState, type HudState } from './ui/hud.js';
 import { createQuizModal, type QuizModal, type QuizModalState } from './ui/quiz-modal.js';
 import { createResultScreen, type ResultScreenSummary } from './ui/result.js';
+import { createPauseMenu } from './ui/pause-menu.js';
 import { createSkillChoiceView } from './ui/skill-choice.js';
 import { createTitleFlow, type TitleSelection } from './ui/title.js';
 import { createInputController } from './engine/input.js';
@@ -42,7 +44,7 @@ import {
   createLevelRewardChoices,
   type LevelRewardChoice,
 } from './systems/level-reward.js';
-import { updateBossTimeline } from './systems/timeline.js';
+import { publishQuit, updateBossTimeline } from './systems/timeline.js';
 import {
   claimTrialReward,
   recordTrialAnswer,
@@ -68,7 +70,9 @@ import {
 import {
   effectiveEffectIntensity,
   readAccessibilitySettings,
+  resolveBgmVolume,
   resolveSfxVolume,
+  writeAccessibilitySettings,
   type AccessibilitySettings,
 } from './ui/settings.js';
 import type { Bank, Question } from '../shared/schema.js';
@@ -378,12 +382,14 @@ async function bootstrap(): Promise<void> {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2D 컨텍스트를 만들 수 없습니다.');
 
-  const settings = readAccessibilitySettings(window.localStorage);
+  let settings = readAccessibilitySettings(window.localStorage);
   // 타이틀 화면이 떠 있는 동안 음원을 미리 받아 둔다. 전투가 시작된 뒤 받으면
   // 첫 타격음이 안 난다 — 24개 합쳐 200KB 남짓이라 선택 화면 시간이면 충분하다
   const sfx = createSfxPlayer(resolveAudioOptions(settings));
+  // 배경음은 반대다. 트랙 하나가 500KB 라 **필요해질 때** 받는다
+  const bgm = createBgmPlayer({ volume: resolveBgmVolume(settings) });
   // 브라우저는 사용자 조작 전에는 소리를 못 내게 막는다. 어떤 입력이든 첫 번째에 푼다
-  unlockAudioOnFirstInput(sfx);
+  unlockAudioOnFirstInput(sfx, bgm);
 
   canvas.style.display = 'none';
   const launch = await waitForLaunchSelection();
@@ -391,6 +397,11 @@ async function bootstrap(): Promise<void> {
 
   const bank = launch.bank;
   const state = createRuntimeState(bank, launch.selection.characterId, launch.continueRun);
+  // 타이틀의 설정 화면에서 바꿨을 수 있다. 시작 직전에 한 번 더 읽는다
+  settings = readAccessibilitySettings(window.localStorage);
+  sfx.setVolume(resolveSfxVolume(settings));
+  sfx.setMuted(settings.sfxVolume <= 0);
+  bgm.setVolume(resolveBgmVolume(settings));
   state.effects.intensity = effectiveEffectIntensity(settings) / 100;
   const timer = createTimer();
   const overlay = createDebugOverlay();
@@ -429,6 +440,50 @@ async function bootstrap(): Promise<void> {
   });
   const input = createInputController(canvas, state.input);
   let resultShown = false;
+
+  /**
+   * 일시정지 메뉴.
+   *
+   * **`loop.pause()` 를 직접 부르지 않는다.** 문제 모달·스킬 선택도 같은 루프를 멈추므로,
+   * 메뉴를 닫을 때 그것들이 열려 있으면 재개하면 안 된다. `resumeAfterQuiz()` 가
+   * 그 판단을 이미 하고 있으니 그대로 쓴다.
+   */
+  const pauseMenu = createPauseMenu(document.body, {
+    onResume(): void {
+      pauseMenu.hide();
+      resumeAfterQuiz();
+    },
+    onQuit(): void {
+      pauseMenu.hide();
+      if (!publishQuit(state.timeline)) return;
+      resultShown = true;
+      flushSfxQueue(state.sfx, sfx);
+      bgm.setTrack(null);
+      showResultScreen(state, 'quit', resultScreen, launch.selection);
+    },
+    onSettingsChange(next): void {
+      applySettings(next);
+    },
+  });
+
+  function applySettings(next: AccessibilitySettings): void {
+    settings = next;
+    writeAccessibilitySettings(window.localStorage, next);
+    sfx.setVolume(resolveSfxVolume(next));
+    sfx.setMuted(next.sfxVolume <= 0);
+    bgm.setVolume(resolveBgmVolume(next));
+    state.effects.intensity = effectiveEffectIntensity(next) / 100;
+  }
+
+  function openPauseMenu(): void {
+    if (pauseMenu.open || resultShown) return;
+    // 문제 모달이 떠 있는 동안에는 열지 않는다. 화면 두 장이 겹치면 아이가 길을 잃는다
+    if (activeQuiz !== undefined || pendingRewardChoices.length > 0) return;
+    loop.pause();
+    pauseMenu.show(settings);
+  }
+
+  hud.settingsButton.addEventListener('click', openPauseMenu);
 
   function openNextQuiz(): boolean {
     const event = shiftLevelEvent(state.level);
@@ -571,6 +626,7 @@ async function bootstrap(): Promise<void> {
         if (state.timeline.latestResultKind === 'defeat') feedbackPlayerDown(state);
         else requestSfx(state.sfx, 'victory');
         flushSfxQueue(state.sfx, sfx);
+        bgm.setTrack(null);
         showResultScreen(state, state.timeline.latestResultKind, resultScreen, launch.selection);
         loop.pause();
       }
@@ -600,6 +656,8 @@ async function bootstrap(): Promise<void> {
     onFrame(steps) {
       // 소리는 프레임이 끝날 때 한 번만 낸다. 시뮬레이션 안에서는 요청만 쌓였다
       flushSfxQueue(state.sfx, sfx);
+      // 트랙이 그대로면 아무 일도 하지 않는다. 챕터가 넘어가거나 보스가 뜰 때만 바뀐다
+      if (!resultShown) bgm.setTrack(resolveBgmTrack(state.elapsedSec, state.bosses.activeCount > 0));
       timer.endFrame(steps, state.entityCount, state.enemies.recycles);
       state.enemies.resetFrameStats();
       hud.update(createHudState(state, state.ticks));
@@ -609,7 +667,18 @@ async function bootstrap(): Promise<void> {
   });
 
   window.addEventListener('keydown', (event) => {
-    if (event.code === 'Space') {
+    if (event.code === 'Escape') {
+      event.preventDefault();
+      if (pauseMenu.open) {
+        pauseMenu.hide();
+        resumeAfterQuiz();
+      } else {
+        openPauseMenu();
+      }
+      return;
+    }
+    // 메뉴가 떠 있는 동안 스페이스로 몰래 재개할 수 있으면 멈춘 게 아니다
+    if (event.code === 'Space' && !pauseMenu.open) {
       event.preventDefault();
       if (loop.paused) loop.resume();
       else loop.pause();
@@ -625,6 +694,8 @@ async function bootstrap(): Promise<void> {
     saveContinueIfAlive(state, launch.selection, resultShown);
     input.destroy();
     sfx.destroy();
+    bgm.destroy();
+    pauseMenu.destroy();
     hud.destroy();
     quizModal.destroy();
     skillChoice.destroy();
@@ -635,6 +706,8 @@ async function bootstrap(): Promise<void> {
   loop.start();
 
   function resumeAfterQuiz(): void {
+    // 메뉴가 떠 있으면 재개하지 않는다. 문제를 푼 직후 메뉴를 연 경우가 여기다
+    if (pauseMenu.open) return;
     if (state.specialRewards.pendingQuizRewards.length > 0) {
       openNextSpecialRewardQuiz();
     } else if (state.trial.phase === 'active') {
@@ -664,9 +737,9 @@ function resolveAudioOptions(settings: AccessibilitySettings): { volume: number;
  * 세 종류를 다 듣는 이유는 입력 방식이 셋이기 때문이다 — 키보드, 마우스, 터치.
  * 한 번 성공하면 스스로 떨어져 나간다.
  */
-function unlockAudioOnFirstInput(sfx: { unlock(): void }): void {
+function unlockAudioOnFirstInput(...players: readonly { unlock(): void }[]): void {
   const unlock = (): void => {
-    sfx.unlock();
+    for (const player of players) player.unlock();
     window.removeEventListener('pointerdown', unlock);
     window.removeEventListener('keydown', unlock);
     window.removeEventListener('touchstart', unlock);

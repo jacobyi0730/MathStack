@@ -125,6 +125,7 @@ related: [MathStack기획서]
 | --- | --- | --- | --- | --- |
 | [T-059](T-059-전투-타격감.md) | 전투 타격감 — 흔들림·히트스톱·파편·피격 표시 | game-engine-dev | perf-check | T-030 |
 | [T-060](T-060-효과음-시스템.md) | 효과음 시스템과 CC0 음원 | game-engine-dev | — | T-059 |
+| [T-061](T-061-일시정지-메뉴-배경음.md) | 일시정지 메뉴와 배경음 | ui-builder | — | T-060 |
 
 ## 병렬 트랙
 
@@ -136,7 +137,7 @@ related: [MathStack기획서]
 | **B. 수학 파이프라인** | T-016 → (T-017 ∥ T-018) → T-019 | `shared/`, `tools/`, `content/` |
 | **C. UI** | T-021·T-023·T-024·T-026·T-027 | `src/ui/`, CSS |
 | **D. 보스 패턴** | T-053 → T-054 → T-055 → T-056 → T-057 → T-058 | `src/entities`, `src/systems`, `src/engine`, `src/data`, `tests/src`, `docs/` |
-| **E. 타격감·사운드** | T-059 → T-060 | `src/engine/effects`, `src/entities/particle·shockwave`, `src/systems/feedback`, `src/audio/`, `public/audio/` |
+| **E. 타격감·사운드** | T-059 → T-060 → T-061 | `src/engine/effects`, `src/entities/particle·shockwave`, `src/systems/feedback`, `src/audio/`, `src/ui/pause-menu`, `public/audio/` |
 
 트랙 A와 B는 **처음부터 끝까지 파일이 겹치지 않는다.** 트랙 C는 A·B의 산출물을 기다리므로 나중에 합류한다.
 합류 지점은 **T-020(출제기)** — 트랙 B의 뱅크와 트랙 A의 레벨업이 여기서 만난다.
@@ -147,5 +148,5 @@ related: [MathStack기획서]
 | --- | --- |
 | 학급 코드 랭킹 (M7) | 정적 배포에 서버가 없다. 기획서 §15.6에서 방안 택일 후 착수 |
 | 골드 상점 메타 프로그레션 | 기획서 §18 #1에서 v1 제외 권장 |
-| BGM | 효과음은 T-060 에서 도입했다. 배경음은 교실 부담과 대역폭을 다시 판단해야 해 v1 제외 |
+| ~~BGM~~ | ~~v1 제외~~ → **T-061 에서 도입.** 볼륨 0 이면 내려받지 않는 방식으로 대역폭 우려를 해소했다 |
 | 잡몹 원거리 탄막 | 세슘의 `rangedShotSeq` 는 아직 소비하는 쪽이 없다. 보스 위험 개체 풀로 붙일 수 있으나 밸런스 영향이 커 별도 태스크 |

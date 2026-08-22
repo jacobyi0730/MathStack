@@ -5,8 +5,13 @@ import {
   SETTINGS_CLASS_NAMES,
   createSettingsView,
   effectiveEffectIntensity,
+  isHitFeedbackOn,
+  normalizeAccessibilitySettings,
   prefersReducedMotion,
   readAccessibilitySettings,
+  resolveBgmVolume,
+  resolveSfxVolume,
+  withHitFeedback,
   writeAccessibilitySettings,
   type AccessibilitySettings,
   type StorageLike,
@@ -101,7 +106,8 @@ describe('accessibility settings', () => {
       effectIntensity: 50,
       textSize: 'large',
       keyboardOnlyHints: false,
-      soundVolume: 100,
+      sfxVolume: 100,
+      bgmVolume: 20,
     };
 
     writeAccessibilitySettings(storage, settings);
@@ -118,6 +124,46 @@ describe('accessibility settings', () => {
     );
 
     expect(readAccessibilitySettings(storage)).toEqual(DEFAULT_ACCESSIBILITY_SETTINGS);
+  });
+
+  it('settings_migrates_the_legacy_three_step_sound_volume', () => {
+    const storage = new MemoryStorage();
+    // BGM 이 들어오기 전 저장본. 소리를 껐던 교실이 갑자기 시끄러워지면 안 된다
+    storage.setItem(
+      ACCESSIBILITY_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ slowMode: false, effectIntensity: 100, soundVolume: 0 }),
+    );
+
+    const restored = readAccessibilitySettings(storage);
+    expect(restored.sfxVolume).toBe(0);
+    expect(restored.bgmVolume).toBe(DEFAULT_ACCESSIBILITY_SETTINGS.bgmVolume);
+  });
+
+  it('settings_clamps_and_snaps_volume_to_the_slider_step', () => {
+    expect(normalizeAccessibilitySettings({ sfxVolume: 999 }).sfxVolume).toBe(100);
+    expect(normalizeAccessibilitySettings({ sfxVolume: -20 }).sfxVolume).toBe(0);
+    expect(normalizeAccessibilitySettings({ bgmVolume: 42 }).bgmVolume).toBe(40);
+    expect(normalizeAccessibilitySettings({ bgmVolume: Number.NaN }).bgmVolume).toBe(
+      DEFAULT_ACCESSIBILITY_SETTINGS.bgmVolume,
+    );
+  });
+
+  it('settings_maps_the_hit_feedback_toggle_onto_effect_intensity', () => {
+    const on = normalizeAccessibilitySettings({ effectIntensity: 50 });
+    expect(isHitFeedbackOn(on)).toBe(true);
+
+    const off = withHitFeedback(on, false);
+    expect(off.effectIntensity).toBe(0);
+    expect(isHitFeedbackOn(off)).toBe(false);
+
+    // 껐다 켜면 100 으로 돌아온다. 50 을 골라 뒀던 사람은 설정 화면에서 다시 고른다
+    expect(withHitFeedback(off, true).effectIntensity).toBe(100);
+  });
+
+  it('settings_converts_volume_to_a_zero_to_one_gain', () => {
+    expect(resolveSfxVolume({ sfxVolume: 0 })).toBe(0);
+    expect(resolveSfxVolume({ sfxVolume: 50 })).toBe(0.5);
+    expect(resolveBgmVolume({ bgmVolume: 35 })).toBeCloseTo(0.35, 6);
   });
 
   it('settings_respects_prefers_reduced_motion_for_effects', () => {
