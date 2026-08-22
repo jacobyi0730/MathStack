@@ -76,12 +76,14 @@
 - [x] **T-043** mds/11 아이템·보상 몬스터·UI·밸런스 보정 — `game-engine-dev` ✅ 2026-08-21
 - [x] **T-044** mds/12 넵투늄 밸런스 재조정 — `balance-tuner` ✅ 2026-08-21
 - [x] **T-045** mds/13 보상 선택지 빌드 맞춤 — `game-engine-dev` ✅ 2026-08-21
+- [x] **T-046** mds/14 8분·보스·이어하기·랭킹 개선 — `game-engine-dev` ✅ 2026-08-21
+- [x] **T-047** mds/15 이름별 랭킹 개선 — `game-engine-dev` ✅ 2026-08-22
 
 ---
 
 ## 현황
 
-**45 / 45 완료** · 진행 중 0 · 착수 가능 0
+**47 / 47 완료** · 진행 중 0 · 착수 가능 0
 
 ## 병렬 배정 이력
 
@@ -121,6 +123,8 @@
 | 08-21 10:25 | **T-036** 퀴즈 보기 가독성 | **오케스트레이터 구현** | `src/ui/quiz-modal.ts`, `docs/05-세션-운영.md`, `docs/06-개선기록.md`, `Tasks/`, `tests/src/quiz-modal.test.ts` | ✅ 게이트 통과 (test 244→251, skip 5→0). 보기 번호를 원형 배지로 분리, 큰 글자 모드에서 보기·입력칸도 확대 |
 | 08-21 10:35 | **T-037** 엔티티 모양 체계와 아이콘 | **오케스트레이터 구현** | `src/engine/renderer.ts`, `src/data/palette.ts`, `src/data/weapons.ts`, `src/entities/*`, `src/systems/weapons.ts`, `docs/05-세션-운영.md`, `docs/30-기술/34-성능예산.md`, `Tasks/`, `tests/src/renderer.test.ts` | ✅ 게이트 통과 (test 251→260). 상자=네모, 아이템·투사체=이모지, 오라·파동=장판. 렌더 JS 구간 avg 0.2158ms |
 | 08-21 11:00 | **T-038** 드롭 산포·램프 단일색·아이콘 가독성 | **오케스트레이터 구현** | `src/data/palette.ts`, `src/data/crates.ts`, `src/data/weapons.ts`, `src/systems/crate.ts`, `src/entities/pickup.ts`, `src/entities/projectile.ts`, `src/engine/renderer.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 260→262). 헤드리스 Chrome + CDP 로 실제 플레이 화면을 캡처해 이모지 하한 26px 확정, 🏹→💧 |
+| 08-21 22:42 | **T-046** mds/14 8분·보스·이어하기·랭킹 개선 | **오케스트레이터 구현** | `src/main.ts`, `src/storage.ts`, `src/ui/title.ts`, `src/engine/renderer.ts`, `src/systems/`, `src/data/`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 262→269). 8분 수련 퀴즈 연결, 보스 단독전, 챕터 배경, 랭킹·이어하기 구현 |
+| 08-22 11:49 | **T-047** mds/15 이름별 랭킹 개선 | **오케스트레이터 구현** | `src/storage.ts`, `src/main.ts`, `src/ui/title.ts`, `src/ui/result.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 270개). 랭킹에 용사 이름을 표시하고 같은 이름은 최고 기록 1개만 유지 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

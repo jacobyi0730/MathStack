@@ -36,7 +36,7 @@ describe('result screen', () => {
       storage: {
         ...DEFAULT_STORAGE_DATA,
         best: { survivalSec: 600, kills: 42, accuracy: 0.75, score: 1234 },
-        rankings: [{ score: 1234, survivalSec: 600, kills: 42, level: 9, grade: 4 }],
+        rankings: [{ heroName: '리나', score: 1234, survivalSec: 600, kills: 42, level: 9, grade: 4 }],
       },
     });
 
@@ -45,6 +45,7 @@ describe('result screen', () => {
     const text = parent.textContent;
     expect(text).toContain('안정화 성공');
     expect(text).toContain('1234');
+    expect(text).toContain('리나');
     expect(text).toContain('랭킹 TOP 5');
     expect(text).toContain('수와 연산: 50%');
     expect(text).toContain('자료와 가능성: 0%');

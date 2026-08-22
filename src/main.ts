@@ -32,23 +32,34 @@ import {
   type LevelRewardChoice,
 } from './systems/level-reward.js';
 import { updateBossTimeline } from './systems/timeline.js';
-import { claimTrialReward, updateTrialState } from './systems/trial.js';
+import {
+  claimTrialReward,
+  recordTrialAnswer,
+  selectTrialQuestion,
+  updateTrialState,
+} from './systems/trial.js';
 import type { TimelineResultKind } from './systems/timeline.js';
 import { equipWeapon, updateWeapons } from './systems/weapons.js';
 import { recalcStats } from './systems/stats.js';
 import { getReadyEvolutionForBaseWeapon, isEvolutionWeaponId } from './systems/evolution.js';
 import { DEFAULT_CHARACTER_ID, getCharacterArchetype, type CharacterId } from './data/characters.js';
+import { getRequiredXpForLevel } from './data/level.js';
 import { loadQuestionBank } from './quiz/loader.js';
 import { gradeAnswer, type QuizGradeResult } from './quiz/grader.js';
 import { selectQuestion, type SelectedQuestion } from './quiz/selector.js';
 import { summarizeQuizStats } from './quiz/stats.js';
-import { recordSessionResult } from './storage.js';
+import {
+  recordSessionResult,
+  writeContinueRun,
+  type StoredContinueRun,
+} from './storage.js';
 import type { Bank, Question } from '../shared/schema.js';
+import type { PassiveId } from './data/passives.js';
 
 type RuntimeState = GameState & RenderScene;
 
 interface ActiveQuiz {
-  kind: 'level' | 'specialReward';
+  kind: 'level' | 'specialReward' | 'trial';
   selection: SelectedQuestion;
   phase: QuizModalState['phase'];
   firstAttemptFailed: boolean;
@@ -81,16 +92,61 @@ function readCharacterFromUrl(): CharacterId {
 interface LaunchSelection {
   readonly selection: TitleSelection;
   readonly bank: Bank;
+  readonly continueRun?: StoredContinueRun;
 }
 
-function createRuntimeState(bank: Bank, characterId: CharacterId = readCharacterFromUrl()): RuntimeState {
+function createRuntimeState(
+  bank: Bank,
+  characterId: CharacterId = readCharacterFromUrl(),
+  continueRun?: StoredContinueRun,
+): RuntimeState {
   const player = createPlayer(characterId);
   const state = createGameState({ player });
   state.quizSession.grade = bank.grade;
-  equipWeapon(state.weapons, CHARACTER_PROFILES[player.characterId].startingWeaponId);
+  if (continueRun === undefined) {
+    equipWeapon(state.weapons, CHARACTER_PROFILES[player.characterId].startingWeaponId);
+  } else {
+    restoreContinueRun(state, continueRun);
+  }
   applyResolvedStats(state);
+  if (continueRun !== undefined) state.player.health = Math.min(continueRun.playerHealth, state.player.maxHealth);
   if (stressModeEnabled(window.location.search)) setupStressMode(state);
   return state;
+}
+
+function restoreContinueRun(state: RuntimeState, saved: StoredContinueRun): void {
+  state.elapsedSec = saved.elapsedSec;
+  state.level.level = saved.level;
+  state.level.xp = saved.xp;
+  state.level.totalXp = saved.totalXp;
+  state.level.xpForNextLevel = getRequiredXpForLevel(saved.level);
+  state.timeline.firedBossMask = saved.firedBossMask;
+  state.trial.phase = saved.trial.phase;
+  state.trial.questionsAsked = saved.trial.questionsAsked;
+  state.trial.correctAnswers = saved.trial.correctAnswers;
+  state.trial.firstTryCorrectAnswers = saved.trial.firstTryCorrectAnswers;
+  state.trial.rewardClaimed = saved.trial.rewardClaimed;
+
+  for (let i = 0; i < state.weapons.slots.length; i += 1) {
+    const savedSlot = saved.weapons[i];
+    const slot = state.weapons.slots[i];
+    slot.id = savedSlot?.id ?? null;
+    slot.level = savedSlot?.id === null || savedSlot === undefined ? 0 : savedSlot.level;
+    slot.cooldownRemainingSec = 0;
+  }
+
+  for (let i = 0; i < state.passives.slots.length; i += 1) {
+    const savedSlot = saved.passives[i];
+    const slot = state.passives.slots[i];
+    slot.id = savedSlot?.id ?? null;
+    slot.level = savedSlot?.id === null || savedSlot === undefined ? 0 : savedSlot.level;
+  }
+
+  for (const savedBoss of saved.activeBosses) {
+    const boss = state.bosses.acquire();
+    spawnBoss(boss, BOSSES[savedBoss.id], savedBoss.x, savedBoss.y);
+    boss.hp = Math.min(savedBoss.hp, boss.maxHp);
+  }
 }
 
 function updateRuntimeState(state: RuntimeState, dt: number): void {
@@ -178,6 +234,8 @@ function updateBossTimelineAndSpawns(state: RuntimeState): void {
 
   const boss = state.bosses.acquire();
   const definition = BOSSES[state.timeline.latestBossId];
+  state.enemies.releaseAll();
+  state.spawn.accumulator = 0;
   spawnBoss(
     boss,
     definition,
@@ -282,7 +340,7 @@ async function bootstrap(): Promise<void> {
   canvas.style.display = 'block';
 
   const bank = launch.bank;
-  const state = createRuntimeState(bank, launch.selection.characterId);
+  const state = createRuntimeState(bank, launch.selection.characterId, launch.continueRun);
   const timer = createTimer();
   const overlay = createDebugOverlay();
   const hud: Hud = createHud();
@@ -352,6 +410,23 @@ async function bootstrap(): Promise<void> {
     return true;
   }
 
+  function openNextTrialQuiz(): boolean {
+    const question = selectTrialQuestion(bank, 2, state.quizSession, state.trial);
+    if (question === undefined) {
+      finishTrialReward();
+      return false;
+    }
+
+    activeQuiz = {
+      kind: 'trial',
+      selection: { question, retry: false },
+      phase: 'first',
+      firstAttemptFailed: false,
+    };
+    quizModal.show(createQuizState(question, activeQuiz.phase, false));
+    return true;
+  }
+
   function handleQuizResult(result: QuizGradeResult): void {
     if (activeQuiz === undefined) return;
 
@@ -376,6 +451,21 @@ async function bootstrap(): Promise<void> {
         quizModal.hide();
         activeQuiz = undefined;
         resumeAfterQuiz();
+      }, 700);
+      return;
+    }
+
+    if (activeQuiz.kind === 'trial') {
+      recordTrialAnswer(state.trial, result.kind === 'correct', !activeQuiz.firstAttemptFailed);
+      window.setTimeout(() => {
+        quizModal.hide();
+        activeQuiz = undefined;
+        if (state.trial.phase === 'completed') {
+          finishTrialReward();
+          resumeAfterQuiz();
+        } else {
+          openNextTrialQuiz();
+        }
       }, 700);
       return;
     }
@@ -425,6 +515,9 @@ async function bootstrap(): Promise<void> {
       if (state.specialRewards.pendingQuizRewards.length > 0 && activeQuiz === undefined) {
         loop.pause();
         openNextSpecialRewardQuiz();
+      } else if (state.trial.phase === 'active' && activeQuiz === undefined) {
+        loop.pause();
+        openNextTrialQuiz();
       } else if (state.level.queuedCount > 0 && activeQuiz === undefined) {
         loop.pause();
         openNextQuiz();
@@ -460,6 +553,7 @@ async function bootstrap(): Promise<void> {
   });
 
   window.addEventListener('beforeunload', () => {
+    saveContinueIfAlive(state, launch.selection, resultShown);
     input.destroy();
     hud.destroy();
     quizModal.destroy();
@@ -473,11 +567,18 @@ async function bootstrap(): Promise<void> {
   function resumeAfterQuiz(): void {
     if (state.specialRewards.pendingQuizRewards.length > 0) {
       openNextSpecialRewardQuiz();
+    } else if (state.trial.phase === 'active') {
+      openNextTrialQuiz();
     } else if (state.level.queuedCount > 0) {
       openNextQuiz();
     } else if (!state.timeline.resultFired) {
       loop.resume();
     }
+  }
+
+  function finishTrialReward(): void {
+    claimTrialReward(state.trial, state.weapons, state.passives, state.player);
+    applyResolvedStats(state);
   }
 }
 
@@ -489,8 +590,42 @@ function waitForLaunchSelection(): Promise<LaunchSelection> {
         flow.destroy();
         resolve({ selection, bank });
       },
+      onContinue(selection, bank, saved) {
+        flow.destroy();
+        resolve({ selection, bank, continueRun: saved });
+      },
     });
     document.body.appendChild(flow.element);
+  });
+}
+
+function saveContinueIfAlive(state: RuntimeState, selection: TitleSelection, resultShown: boolean): void {
+  if (resultShown || state.player.health <= 0 || state.timeline.resultFired) return;
+
+  writeContinueRun(window.localStorage, {
+    version: 1,
+    selection,
+    elapsedSec: state.elapsedSec,
+    playerHealth: state.player.health,
+    level: state.level.level,
+    xp: state.level.xp,
+    totalXp: state.level.totalXp,
+    weapons: state.weapons.slots.map((slot) => ({ id: slot.id, level: slot.level })),
+    passives: state.passives.slots.map((slot) => ({ id: slot.id as PassiveId | null, level: slot.level })),
+    firedBossMask: state.timeline.firedBossMask,
+    trial: {
+      phase: state.trial.phase,
+      questionsAsked: state.trial.questionsAsked,
+      correctAnswers: state.trial.correctAnswers,
+      firstTryCorrectAnswers: state.trial.firstTryCorrectAnswers,
+      rewardClaimed: state.trial.rewardClaimed,
+    },
+    activeBosses: state.bosses.items.slice(0, state.bosses.activeCount).map((boss) => ({
+      id: boss.id,
+      hp: boss.hp,
+      x: boss.x,
+      y: boss.y,
+    })),
   });
 }
 
@@ -506,6 +641,7 @@ function showResultScreen(
     kills: state.combat.defeatedEnemies,
     score: calculateScore(state),
     level: state.level.level,
+    heroName: selection.heroName,
     quiz,
     lastChoice: {
       grade: selection.grade,

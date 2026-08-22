@@ -58,6 +58,25 @@ describe('level reward choices', () => {
     });
   });
 
+  it('does_not_offer_base_weapon_again_after_it_evolved', () => {
+    const weapons = createWeaponRuntime();
+    const passives = createPassiveRuntime();
+    for (let i = 0; i < 5; i += 1) equipWeapon(weapons, 'hydrogen_arrow');
+    equipPassive(passives, 'silicon');
+    applyLevelReward(weapons, passives, {
+      kind: 'evolution',
+      id: 'heavy_hydrogen_storm',
+      name: 'Heavy Hydrogen Storm',
+      detail: 'storm',
+      levelAfter: 1,
+    });
+
+    const choices = createLevelRewardChoices(weapons, passives, 20, 999);
+
+    expect(choices.some((choice) => choice.kind === 'weapon' && choice.id === 'hydrogen_arrow')).toBe(false);
+    expect(choices.some((choice) => choice.kind === 'evolution' && choice.id === 'heavy_hydrogen_storm')).toBe(false);
+  });
+
   it('does_not_offer_new_weapons_or_passives_when_their_slots_are_full', () => {
     const weapons = createWeaponRuntime();
     const passives = createPassiveRuntime();

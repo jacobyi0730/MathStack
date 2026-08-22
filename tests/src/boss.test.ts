@@ -10,9 +10,9 @@ import {
 } from '../../src/entities/boss.js';
 
 const EXPECTED_BOSSES = {
-  technetium: ['Tc', 43, 180, 800, 'clone'],
-  polonium: ['Po', 84, 360, 1800, 'split_barrage'],
-  oganesson: ['Og', 118, 540, 6000, 'three_phase_decay'],
+  technetium: ['Tc', 43, 180, 1200, 'clone'],
+  polonium: ['Po', 84, 360, 2800, 'split_barrage'],
+  oganesson: ['Og', 118, 540, 9000, 'three_phase_decay'],
 } as const satisfies Record<BossId, readonly [string, number, number, number, string]>;
 
 describe('boss entities', () => {
@@ -90,13 +90,13 @@ describe('boss entities', () => {
     const boss = pool.acquire();
     spawnBoss(boss, BOSSES.oganesson, 0, 0);
 
-    expect(applyBossDamage(boss, 2100)).toBe(false);
+    expect(applyBossDamage(boss, 3100)).toBe(false);
     expect(boss.phase).toBe(2);
     expect(boss.phaseChangeSignalSeq).toBe(1);
     updateBoss(boss, 100, 0, 3);
     expect(boss.areaSignalSeq).toBe(1);
 
-    expect(applyBossDamage(boss, 2100)).toBe(false);
+    expect(applyBossDamage(boss, 3100)).toBe(false);
     expect(boss.phase).toBe(3);
     expect(boss.phaseChangeSignalSeq).toBe(2);
     updateBoss(boss, 100, 0, 2.5);

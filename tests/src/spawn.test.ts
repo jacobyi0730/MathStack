@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BOSSES } from '../../src/data/bosses.js';
 import { ENEMIES, MAX_ACTIVE_ENEMIES, type EnemyId } from '../../src/data/enemies.js';
 import {
   HP_GROWTH_PER_MIN,
@@ -7,6 +8,7 @@ import {
   chooseActiveEnemyId,
 } from '../../src/data/waves.js';
 import { createGameState } from '../../src/engine/state.js';
+import { spawnBoss } from '../../src/entities/boss.js';
 import { defeatEnemy, spawnWaveEnemy, updateSpawns } from '../../src/systems/spawn.js';
 
 describe('enemy spawning', () => {
@@ -40,6 +42,17 @@ describe('enemy spawning', () => {
     updateSpawns(late, 0.25);
 
     expect(late.spawn.accumulator).toBeGreaterThan(early.spawn.accumulator);
+  });
+
+  it('does_not_spawn_regular_enemies_while_a_boss_is_active', () => {
+    const state = createGameState();
+    state.spawn.accumulator = 10;
+    spawnBoss(state.bosses.acquire(), BOSSES.technetium, state.player.x + 80, state.player.y);
+
+    updateSpawns(state, 1);
+
+    expect(state.enemies.activeCount).toBe(0);
+    expect(state.spawn.accumulator).toBe(0);
   });
 
   it('releases the farthest enemy at the 300 enemy cap', () => {

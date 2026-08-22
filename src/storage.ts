@@ -1,10 +1,15 @@
 import type { Grade } from '../shared/domain.js';
+import type { BossId } from './data/bosses.js';
 import type { CharacterId } from './data/characters.js';
+import { PASSIVES, type PassiveId } from './data/passives.js';
+import { WEAPONS, type WeaponId } from './data/weapons.js';
 import type { QuizStatsSummary } from './quiz/stats.js';
+import type { TrialPhase } from './systems/trial.js';
 
 export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem?(key: string): void;
 }
 
 export interface StoredBestRecord {
@@ -26,11 +31,54 @@ export interface StoredMisconception {
 }
 
 export interface StoredRankingEntry {
+  heroName: string;
   score: number;
   survivalSec: number;
   kills: number;
   level: number;
   grade: Grade;
+}
+
+export interface StoredContinueSelection {
+  grade: Grade;
+  term: 1 | 2 | 'all';
+  characterId: CharacterId;
+  heroName: string;
+}
+
+export interface StoredContinueSlot<TId extends string> {
+  id: TId | null;
+  level: number;
+}
+
+export interface StoredContinueBoss {
+  id: BossId;
+  hp: number;
+  x: number;
+  y: number;
+}
+
+export interface StoredContinueTrial {
+  phase: TrialPhase;
+  questionsAsked: number;
+  correctAnswers: number;
+  firstTryCorrectAnswers: number;
+  rewardClaimed: boolean;
+}
+
+export interface StoredContinueRun {
+  version: 1;
+  selection: StoredContinueSelection;
+  elapsedSec: number;
+  playerHealth: number;
+  level: number;
+  xp: number;
+  totalXp: number;
+  weapons: Array<StoredContinueSlot<WeaponId>>;
+  passives: Array<StoredContinueSlot<PassiveId>>;
+  firedBossMask: number;
+  trial: StoredContinueTrial;
+  activeBosses: StoredContinueBoss[];
 }
 
 export interface MathStackStorageData {
@@ -47,11 +95,13 @@ export interface SessionRecordInput {
   kills: number;
   score: number;
   level: number;
+  heroName: string;
   quiz: QuizStatsSummary;
   lastChoice?: StoredLastChoice;
 }
 
 export const MATHSTACK_STORAGE_KEY = 'mathstack.save.v1';
+export const MATHSTACK_CONTINUE_KEY = 'mathstack.continue.v1';
 
 export const DEFAULT_STORAGE_DATA: MathStackStorageData = {
   version: 1,
@@ -110,7 +160,31 @@ export function recordSessionResult(
     sessions: current.sessions + 1,
   };
   writeMathStackStorage(storage, next);
+  clearContinueRun(storage);
   return next;
+}
+
+export function readContinueRun(storage: StorageLike | undefined): StoredContinueRun | null {
+  if (!storage) return null;
+  const raw = storage.getItem(MATHSTACK_CONTINUE_KEY);
+  if (!raw) return null;
+
+  try {
+    return normalizeContinueRun(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+export function writeContinueRun(storage: StorageLike | undefined, data: StoredContinueRun): void {
+  if (!storage) return;
+  storage.setItem(MATHSTACK_CONTINUE_KEY, JSON.stringify(normalizeContinueRun(data)));
+}
+
+export function clearContinueRun(storage: StorageLike | undefined): void {
+  if (!storage) return;
+  if (storage.removeItem) storage.removeItem(MATHSTACK_CONTINUE_KEY);
+  else storage.setItem(MATHSTACK_CONTINUE_KEY, '');
 }
 
 function normalizeStorageData(value: unknown): MathStackStorageData {
@@ -123,6 +197,37 @@ function normalizeStorageData(value: unknown): MathStackStorageData {
     misconceptions: normalizeMisconceptions(value.misconceptions),
     rankings: normalizeRankings(value.rankings),
     sessions: safeInteger(value.sessions),
+  };
+}
+
+function normalizeContinueRun(value: unknown): StoredContinueRun | null {
+  if (!isRecord(value) || value.version !== 1 || !isRecord(value.selection)) return null;
+  const grade = Number(value.selection.grade);
+  const term = parseContinueTerm(value.selection.term);
+  const characterId = parseCharacter(value.selection.characterId);
+  if (!isGrade(grade) || term === null || characterId === null) return null;
+
+  return {
+    version: 1,
+    selection: {
+      grade,
+      term,
+      characterId,
+      heroName:
+        typeof value.selection.heroName === 'string' && value.selection.heroName.trim()
+          ? value.selection.heroName.trim()
+          : '원소 용사',
+    },
+    elapsedSec: clampNumber(value.elapsedSec, 0, 599),
+    playerHealth: clampNumber(value.playerHealth, 1, 9999),
+    level: Math.max(1, safeInteger(value.level)),
+    xp: safeInteger(value.xp),
+    totalXp: safeInteger(value.totalXp),
+    weapons: normalizeSlots(value.weapons, isWeaponId),
+    passives: normalizeSlots(value.passives, isPassiveId),
+    firedBossMask: safeInteger(value.firedBossMask),
+    trial: normalizeContinueTrial(value.trial),
+    activeBosses: normalizeContinueBosses(value.activeBosses),
   };
 }
 
@@ -182,7 +287,8 @@ function mergeMisconceptions(
 
 function normalizeRankings(value: unknown): StoredRankingEntry[] {
   if (!Array.isArray(value)) return [];
-  return value
+  const bestByHero = new Map<string, StoredRankingEntry>();
+  for (const entry of value
     .filter(isRecord)
     .map((item) => {
       const rawGrade = Number(item.grade);
@@ -191,15 +297,96 @@ function normalizeRankings(value: unknown): StoredRankingEntry[] {
           ? rawGrade
           : 3;
       return {
+        heroName: normalizeHeroName(item.heroName),
         score: safeInteger(item.score),
         survivalSec: safeInteger(item.survivalSec),
         kills: safeInteger(item.kills),
         level: safeInteger(item.level),
         grade,
       };
-    })
+    })) {
+    const key = rankingHeroKey(entry.heroName);
+    const current = bestByHero.get(key);
+    if (!current || compareRanking(entry, current) < 0) bestByHero.set(key, entry);
+  }
+  return [...bestByHero.values()]
     .sort((left, right) => right.score - left.score)
     .slice(0, 5);
+}
+
+function normalizeSlots<TId extends string>(
+  value: unknown,
+  isId: (id: unknown) => id is TId,
+): Array<StoredContinueSlot<TId>> {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 6).map((item) => {
+    if (!isRecord(item) || !isId(item.id)) return { id: null, level: 0 };
+    return {
+      id: item.id,
+      level: Math.max(1, safeInteger(item.level)),
+    };
+  });
+}
+
+function normalizeContinueTrial(value: unknown): StoredContinueTrial {
+  if (!isRecord(value)) {
+    return {
+      phase: 'pending',
+      questionsAsked: 0,
+      correctAnswers: 0,
+      firstTryCorrectAnswers: 0,
+      rewardClaimed: false,
+    };
+  }
+
+  return {
+    phase: value.phase === 'active' || value.phase === 'completed' ? value.phase : 'pending',
+    questionsAsked: Math.min(3, safeInteger(value.questionsAsked)),
+    correctAnswers: Math.min(3, safeInteger(value.correctAnswers)),
+    firstTryCorrectAnswers: Math.min(3, safeInteger(value.firstTryCorrectAnswers)),
+    rewardClaimed: value.rewardClaimed === true,
+  };
+}
+
+function normalizeContinueBosses(value: unknown): StoredContinueBoss[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).flatMap((item) => {
+    if (!isBossId(item.id)) return [];
+    return [{
+      id: item.id,
+      hp: clampNumber(item.hp, 1, 99999),
+      x: clampNumber(item.x, -10000, 10000),
+      y: clampNumber(item.y, -10000, 10000),
+    }];
+  }).slice(0, 3);
+}
+
+function parseContinueTerm(value: unknown): 1 | 2 | 'all' | null {
+  if (value === 'all') return 'all';
+  if (value === 1 || value === '1') return 1;
+  if (value === 2 || value === '2') return 2;
+  return null;
+}
+
+function isGrade(value: number): value is Grade {
+  return value === 1 || value === 2 || value === 3 || value === 4 || value === 5 || value === 6;
+}
+
+function parseCharacter(value: unknown): CharacterId | null {
+  if (value === 'actinium' || value === 'thorium' || value === 'lanthanum' || value === 'cerium') return value;
+  return null;
+}
+
+function isWeaponId(value: unknown): value is WeaponId {
+  return typeof value === 'string' && value in WEAPONS;
+}
+
+function isPassiveId(value: unknown): value is PassiveId {
+  return typeof value === 'string' && value in PASSIVES;
+}
+
+function isBossId(value: unknown): value is BossId {
+  return value === 'technetium' || value === 'polonium' || value === 'oganesson';
 }
 
 function updateRankings(
@@ -209,6 +396,7 @@ function updateRankings(
   return normalizeRankings([
     ...current,
     {
+      heroName: normalizeHeroName(input.heroName),
       score: Math.floor(input.score),
       survivalSec: Math.floor(input.survivalSec),
       kills: Math.floor(input.kills),
@@ -216,6 +404,21 @@ function updateRankings(
       grade: input.lastChoice?.grade ?? DEFAULT_STORAGE_DATA.lastChoice.grade,
     },
   ]);
+}
+
+function normalizeHeroName(value: unknown): string {
+  return typeof value === 'string' && value.trim() ? value.trim() : '원소 용사';
+}
+
+function rankingHeroKey(heroName: string): string {
+  return heroName.toLocaleLowerCase('ko-KR');
+}
+
+function compareRanking(left: StoredRankingEntry, right: StoredRankingEntry): number {
+  return right.score - left.score ||
+    right.survivalSec - left.survivalSec ||
+    right.kills - left.kills ||
+    right.level - left.level;
 }
 
 function cloneStorage(data: MathStackStorageData): MathStackStorageData {
@@ -242,4 +445,10 @@ function safeRatio(value: unknown): number {
   const number = Number(value);
   if (!Number.isFinite(number)) return 0;
   return Math.max(0, Math.min(1, number));
+}
+
+function clampNumber(value: unknown, min: number, max: number): number {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return min;
+  return Math.max(min, Math.min(max, number));
 }

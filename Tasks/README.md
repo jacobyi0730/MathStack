@@ -96,6 +96,8 @@ related: [MathStack기획서]
 | [T-043](T-043-mds11-아이템-보상몬스터-UI-밸런스.md) | mds/11 아이템·보상 몬스터·UI·밸런스 보정 | game-engine-dev | task-close | T-042 |
 | [T-044](T-044-mds12-넵투늄-밸런스-재조정.md) | mds/12 넵투늄 밸런스 재조정 | balance-tuner | task-close | T-043 |
 | [T-045](T-045-mds13-보상선택지-빌드맞춤.md) | mds/13 보상 선택지 빌드 맞춤 | game-engine-dev | task-close | T-044 |
+| [T-046](T-046-mds14-8분-보스-이어하기-랭킹.md) | mds/14 8분·보스·이어하기·랭킹 개선 | game-engine-dev | task-close | T-045 |
+| [T-047](T-047-mds15-이름별-랭킹.md) | mds/15 이름별 랭킹 개선 | game-engine-dev | task-close | T-046 |
 
 ## 병렬 트랙
 

@@ -14,6 +14,11 @@ import { announcePickup, spawnPickupByKind, spawnXpGem } from './pickup.js';
 const MIN_DISTANCE_SQ = SPAWN_MIN_PLAYER_DISTANCE * SPAWN_MIN_PLAYER_DISTANCE;
 
 export function updateSpawns(state: GameState, dt: number): void {
+  if (state.bosses.activeCount > 0) {
+    state.spawn.accumulator = 0;
+    return;
+  }
+
   const elapsedMin = state.elapsedSec / 60;
   const baseSpawnPerMinute = getActiveSpawnPerMinute(state.elapsedSec);
   const spawnPerSec = (baseSpawnPerMinute * (1 + elapsedMin * DENSITY_GROWTH_PER_MIN)) / 60;

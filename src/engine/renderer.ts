@@ -2,6 +2,7 @@ import {
   ENEMY_PALETTES,
   ENTITY_SHAPES,
   FIELD_COLORS,
+  FIELD_CHAPTER_COLORS,
   ICON_FONT_STACK,
   ITEM_PALETTES,
   PLAYER_PALETTES,
@@ -36,6 +37,7 @@ export interface RenderScene {
   entities: readonly RenderableEntity[];
   damageNumbers: DamageNumberPool;
   world: WorldBounds;
+  elapsedSec: number;
 }
 
 export interface RendererViewport {
@@ -153,8 +155,10 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
     return `rgb(${r} ${g} ${b})`;
   }
 
-  function drawGrid(cameraCenterX: number, cameraCenterY: number): void {
-    ctx.fillStyle = FIELD_COLORS.background;
+  function drawGrid(cameraCenterX: number, cameraCenterY: number, elapsedSec: number): void {
+    const chapter = resolveChapterIndex(elapsedSec);
+    const colors = FIELD_CHAPTER_COLORS[chapter];
+    ctx.fillStyle = colors.background;
     ctx.fillRect(0, 0, width, height);
 
     const left = cameraCenterX - width * 0.5;
@@ -162,7 +166,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
     const startX = -((left % WORLD_CELL_SIZE) + WORLD_CELL_SIZE) % WORLD_CELL_SIZE;
     const startY = -((top % WORLD_CELL_SIZE) + WORLD_CELL_SIZE) % WORLD_CELL_SIZE;
 
-    ctx.strokeStyle = FIELD_COLORS.grid;
+    ctx.strokeStyle = colors.grid;
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let x = startX; x <= width; x += WORLD_CELL_SIZE) {
@@ -174,6 +178,12 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
       ctx.lineTo(width, Math.floor(y) + 0.5);
     }
     ctx.stroke();
+  }
+
+  function resolveChapterIndex(elapsedSec: number): 0 | 1 | 2 {
+    if (elapsedSec >= 360) return 2;
+    if (elapsedSec >= 180) return 1;
+    return 0;
   }
 
   function drawBodies(batches: BatchBucket[], batchCount: number, outline: boolean): void {
@@ -434,7 +444,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
 
     render(scene: RenderScene, alpha: number): void {
       const camera = createCameraState({ width, height }, scene.player, alpha);
-      drawGrid(camera.centerX, camera.centerY);
+      drawGrid(camera.centerX, camera.centerY, scene.elapsedSec);
 
       resetBatches(bodyBatches);
       resetBatches(outlineBatches);

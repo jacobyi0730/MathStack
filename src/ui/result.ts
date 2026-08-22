@@ -134,7 +134,7 @@ function formatRankings(summary: ResultScreenSummary): string[] {
   if (summary.storage.rankings.length === 0) return ['아직 랭킹 없음'];
   return summary.storage.rankings.map(
     (entry, index) =>
-      `${index + 1}. ${entry.score}점 · ${entry.grade}학년 · Lv.${entry.level} · 처치 ${entry.kills} · ${formatTime(entry.survivalSec)}`,
+      `${index + 1}. ${entry.heroName} · ${entry.score}점 · ${entry.grade}학년 · Lv.${entry.level} · 처치 ${entry.kills} · ${formatTime(entry.survivalSec)}`,
   );
 }
 

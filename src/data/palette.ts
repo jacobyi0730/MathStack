@@ -16,6 +16,12 @@ export const FIELD_COLORS = {
   shadow: 'rgba(0, 0, 0, 0.2)',
 } as const;
 
+export const FIELD_CHAPTER_COLORS = [
+  { background: '#1A1A2E', grid: '#252540' },
+  { background: '#10233A', grid: '#1F3B57' },
+  { background: '#251B35', grid: '#3A2C50' },
+] as const;
+
 /**
  * 엔티티가 어떤 모양으로 그려지는지 (05-세션-운영 §14.5).
  *

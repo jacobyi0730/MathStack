@@ -254,6 +254,9 @@ function canOfferWeapon(weapons: WeaponRuntime, id: WeaponId): boolean {
   for (let i = 0; i < weapons.slots.length; i += 1) {
     const slot = weapons.slots[i];
     if (slot.id === id) return slot.level < WEAPON_MAX_LEVEL;
+    if (slot.id !== null && isEvolutionWeaponId(slot.id) && WEAPONS[slot.id].evolutionOf === id) {
+      return false;
+    }
     if (slot.id === null) hasEmpty = true;
   }
   return hasEmpty;
