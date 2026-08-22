@@ -11,6 +11,7 @@ import type { GameState } from '../engine/state.js';
 import { wrapX, wrapY, wrappedDistanceSq } from '../engine/world.js';
 import { applyCrateDamage, spawnCrate, type CrateEntity } from '../entities/crate.js';
 import type { ProjectileEntity } from '../entities/projectile.js';
+import { feedbackCrateBreak } from './feedback.js';
 import { spawnPickupByKind } from './pickup.js';
 
 /**
@@ -57,6 +58,7 @@ export function breakCrates(state: GameState): number {
     if (!isCrateHit(state, crate)) continue;
     if (!applyCrateDamage(crate, crate.hp)) continue;
 
+    feedbackCrateBreak(state, crate);
     dropCrateItems(state, crate);
     pool.release(crate);
     broken += 1;

@@ -11,6 +11,7 @@ import {
   DEFAULT_HERO_NAME,
   type CharacterSelection,
 } from './character-select.js';
+import { createSettingsView } from './settings.js';
 import {
   createGradeSelectView,
   DEFAULT_GRADE_SELECTION,
@@ -139,7 +140,45 @@ export function createTitleFlow(options: TitleFlowOptions = {}): TitleFlow {
     ranking.addEventListener('click', showRankings);
     section.appendChild(ranking);
 
+    const settings = document.createElement('button');
+    settings.type = 'button';
+    settings.textContent = '설정';
+    settings.style.cssText = secondaryButtonStyle(false);
+    settings.addEventListener('click', showSettings);
+    section.appendChild(settings);
+
     mount(section, { destroy: () => section.remove() });
+  }
+
+  /**
+   * 설정 화면.
+   *
+   * 여기 말고는 들어갈 곳이 없다 — 전투 중에는 게임이 멈추면 안 되고, 결과 화면은 늦다.
+   * **소리를 끄는 길이 있어야 교실에서 쓸 수 있다.**
+   */
+  function showSettings(): void {
+    const section = document.createElement('section');
+    section.style.cssText = titleScreenStyle();
+
+    const view = createSettingsView({ storage });
+    section.appendChild(view.element);
+
+    const back = document.createElement('button');
+    back.type = 'button';
+    back.textContent = '돌아가기';
+    back.style.cssText = primaryButtonStyle();
+    back.addEventListener('click', () => {
+      view.save();
+      showTitle();
+    });
+    section.appendChild(back);
+
+    mount(section, {
+      destroy: () => {
+        view.destroy();
+        section.remove();
+      },
+    });
   }
 
   function showRankings(): void {

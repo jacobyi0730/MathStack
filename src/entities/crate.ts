@@ -67,6 +67,7 @@ function createCrate(): CrateEntity {
     paletteGroup: 2,
     shape: ENTITY_SHAPES.box,
     icon: '',
+    flashSec: 0,
     paletteIndex: CRATES.neon.paletteIndex,
     symbol: CRATES.neon.element,
     accessoryKind: CRATES.neon.accessoryKind,

@@ -73,6 +73,7 @@ function createPlayerFromArchetype(archetype: CharacterArchetype, paletteIndex: 
     paletteGroup: 0,
     shape: ENTITY_SHAPES.circle,
     icon: '',
+    flashSec: 0,
     paletteIndex,
     symbol: archetype.element,
     accessoryKind: paletteIndex % 3,

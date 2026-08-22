@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_BOSS_BULLETS, MAX_BOSS_HAZARDS } from '../../src/data/bosses.js';
 import { WEAPON_MAX_LEVEL, WEAPON_SLOT_CAPACITY } from '../../src/data/weapons.js';
 import { createGameState } from '../../src/engine/state.js';
 import {
@@ -31,6 +32,7 @@ describe('stress mode', () => {
       enemies: STRESS_ENEMY_COUNT,
       projectiles: STRESS_PROJECTILE_COUNT,
       bosses: 3,
+      bossHazards: MAX_BOSS_BULLETS + MAX_BOSS_HAZARDS,
       maxedWeaponSlots: WEAPON_SLOT_CAPACITY,
       awakenedWeaponSlots: WEAPON_SLOT_CAPACITY,
       finalBossPhase: 3,
@@ -38,11 +40,19 @@ describe('stress mode', () => {
     expect(state.enemies.activeCount).toBe(STRESS_ENEMY_COUNT);
     expect(state.weapons.projectiles.activeCount).toBe(STRESS_PROJECTILE_COUNT);
     expect(state.bosses.activeCount).toBe(3);
-    expect(state.entityCount).toBe(STRESS_ENEMY_COUNT + STRESS_PROJECTILE_COUNT + 3 + 1);
+    // 보스 위험 개체까지 상한으로 채운 것이 T-058 의 최악값이다
+    expect(state.bossHazards.bullets.activeCount).toBe(MAX_BOSS_BULLETS);
+    expect(state.bossHazards.fields.activeCount).toBe(MAX_BOSS_HAZARDS);
+    expect(state.bossHazards.skipped).toBe(0);
+    expect(state.entityCount).toBe(
+      STRESS_ENEMY_COUNT + STRESS_PROJECTILE_COUNT + 3 + MAX_BOSS_BULLETS + MAX_BOSS_HAZARDS + 1,
+    );
     expect(state.enemies.recycles).toBe(0);
     expect(state.weapons.projectiles.recycles).toBe(0);
     expect(state.pickups.recycles).toBe(0);
     expect(state.bosses.recycles).toBe(0);
+    expect(state.bossHazards.bullets.recycles).toBe(0);
+    expect(state.bossHazards.fields.recycles).toBe(0);
   });
 
   it('marks_six_weapon_slots_as_max_level_and_evolution_ready', () => {

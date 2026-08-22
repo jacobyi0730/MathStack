@@ -21,6 +21,9 @@ import { createBossTimelineState, type BossTimelineState } from '../systems/time
 import { createTrialState, type TrialState } from '../systems/trial.js';
 import { createWeaponRuntime, type WeaponRuntime } from '../systems/weapons.js';
 import { createQuizSession, type QuizSessionState } from '../quiz/session.js';
+import { createSfxQueue, type SfxQueue } from '../audio/queue.js';
+import { createBossHazardRuntime, type BossHazardRuntime } from '../systems/boss-hazard.js';
+import { createEffectsState, type EffectsState } from './effects.js';
 import { createInputState, type InputState } from './input.js';
 import type { RenderableEntity, RenderScene } from './renderer.js';
 
@@ -44,12 +47,18 @@ export interface GameState {
   baseStats: BasePlayerStats;
   stats: ResolvedPlayerStats;
   bosses: BossPool;
+  /** 보스 탄·장판·유성. 무기 투사체와 별도 풀이다 (03-전투확장 §9.3.2) */
+  bossHazards: BossHazardRuntime;
   damageNumbers: DamageNumberPool;
   level: LevelState;
   pickupRuntime: PickupRuntime;
   timeline: BossTimelineState;
   trial: TrialState;
   quizSession: QuizSessionState;
+  /** 화면 흔들림·히트스톱·파편. 수치가 아니라 감각만 바꾼다 */
+  effects: EffectsState;
+  /** 이번 프레임의 효과음 요청. 루프 밖에서 한 번에 비운다 */
+  sfx: SfxQueue;
   viewport: {
     width: number;
     height: number;
@@ -114,12 +123,15 @@ export function createGameState(options?: GameStateOptions): GameState & RenderS
     baseStats,
     stats,
     bosses,
+    bossHazards: createBossHazardRuntime(),
     damageNumbers: createDamageNumberPool(),
     level: createLevelState(),
     pickupRuntime: createPickupRuntime(),
     timeline: createBossTimelineState(),
     trial: createTrialState(),
     quizSession: createQuizSession(3),
+    effects: createEffectsState(),
+    sfx: createSfxQueue(),
     viewport: {
       width: 1280,
       height: 720,

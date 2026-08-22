@@ -1,4 +1,4 @@
-import { BOSSES } from '../data/bosses.js';
+import { BOSSES, BOSS_PATTERNS, MAX_BOSS_BULLETS, MAX_BOSS_HAZARDS } from '../data/bosses.js';
 import { ENEMIES, type EnemyId } from '../data/enemies.js';
 import {
   WEAPON_EVOLUTION_LEVEL,
@@ -6,9 +6,10 @@ import {
   WEAPON_SLOT_CAPACITY,
   type WeaponId,
 } from '../data/weapons.js';
-import { spawnBoss } from '../entities/boss.js';
+import { advanceBossPhase, spawnBoss } from '../entities/boss.js';
 import { spawnEnemy } from '../entities/enemy.js';
 import { spawnProjectile } from '../entities/projectile.js';
+import { spawnBossBullet, spawnBossMeteor, spawnBossZone } from '../systems/boss-hazard.js';
 import { rebuildEnemyHash } from '../systems/collision.js';
 import type { GameState } from './state.js';
 import type { FrameSnapshot } from './timing.js';
@@ -30,6 +31,8 @@ export interface StressSetupResult {
   enemies: number;
   projectiles: number;
   bosses: number;
+  /** 보스 탄 + 장판·유성. 최종보스 3페이즈에서 실제로 깔리는 최악값을 재현한다 */
+  bossHazards: number;
   maxedWeaponSlots: number;
   awakenedWeaponSlots: number;
   finalBossPhase: 1 | 2 | 3;
@@ -41,6 +44,7 @@ export interface StressPoolSnapshot {
   pickups: number;
   crates: number;
   bosses: number;
+  bossHazards: number;
   total: number;
 }
 
@@ -103,10 +107,14 @@ export function setupStressMode(state: GameState): StressSetupResult {
   state.pickups.releaseAll();
   state.crates.releaseAll();
   state.bosses.releaseAll();
+  state.bossHazards.bullets.releaseAll();
+  state.bossHazards.fields.releaseAll();
+  state.bossHazards.skipped = 0;
 
   fillStressEnemies(state);
   fillStressProjectiles(state);
   fillStressBosses(state);
+  fillStressBossHazards(state);
   writeStressWeaponSlots(state);
   resetStressPoolFrameStats(state);
   rebuildEnemyHash(state);
@@ -117,12 +125,15 @@ export function setupStressMode(state: GameState): StressSetupResult {
     state.pickups.activeCount +
     state.crates.activeCount +
     state.bosses.activeCount +
+    state.bossHazards.bullets.activeCount +
+    state.bossHazards.fields.activeCount +
     1;
 
   return {
     enemies: state.enemies.activeCount,
     projectiles: state.weapons.projectiles.activeCount,
     bosses: state.bosses.activeCount,
+    bossHazards: state.bossHazards.bullets.activeCount + state.bossHazards.fields.activeCount,
     maxedWeaponSlots: WEAPON_SLOT_CAPACITY,
     awakenedWeaponSlots: WEAPON_SLOT_CAPACITY,
     finalBossPhase: 3,
@@ -165,6 +176,7 @@ export function createEmptyStressSnapshot(): StressSnapshot {
       pickups: 0,
       crates: 0,
       bosses: 0,
+      bossHazards: 0,
       total: 0,
     },
   };
@@ -176,7 +188,9 @@ export function writeStressPoolSnapshot(out: StressPoolSnapshot, state: GameStat
   out.pickups = state.pickups.recycles;
   out.crates = state.crates.recycles;
   out.bosses = state.bosses.recycles;
-  out.total = out.enemies + out.projectiles + out.pickups + out.crates + out.bosses;
+  out.bossHazards = state.bossHazards.bullets.recycles + state.bossHazards.fields.recycles;
+  out.total =
+    out.enemies + out.projectiles + out.pickups + out.crates + out.bosses + out.bossHazards;
   return out;
 }
 
@@ -186,6 +200,8 @@ export function resetStressPoolFrameStats(state: GameState): void {
   state.pickups.resetFrameStats();
   state.crates.resetFrameStats();
   state.bosses.resetFrameStats();
+  state.bossHazards.bullets.resetFrameStats();
+  state.bossHazards.fields.resetFrameStats();
 }
 
 export function writeStressWeaponSignals(
@@ -254,21 +270,91 @@ function fillStressProjectiles(state: GameState): void {
   }
 }
 
+/**
+ * 세 보스를 **패턴 발동 직전**에 세운다.
+ *
+ * 시계를 주기에 거의 닿게 밀어 두면 첫 몇 프레임 안에 세 보스의 패턴이 한꺼번에
+ * 터진다 — 실제 플레이에서 가장 무거운 순간이 측정 구간 안에 들어온다.
+ */
 function fillStressBosses(state: GameState): void {
   const technetium = state.bosses.acquire();
   spawnBoss(technetium, BOSSES.technetium, -260, -180);
-  technetium.patternTimerSec = 2.99;
+  primeBossTimers(technetium, 0.99);
 
   const polonium = state.bosses.acquire();
   spawnBoss(polonium, BOSSES.polonium, 260, -180);
-  polonium.patternTimerSec = 1.99;
-  polonium.movementTimerSec = 4.99;
+  // 45% 이하 = 2페이즈. 분할 탄막 6방향과 장판이 같이 나온다
+  polonium.hp = Math.floor(BOSSES.polonium.hp * 0.4);
+  advanceBossPhase(polonium);
+  polonium.phaseFreezeSec = 0;
+  primeBossTimers(polonium, 0.99);
 
   const oganesson = state.bosses.acquire();
   spawnBoss(oganesson, BOSSES.oganesson, 0, 260);
-  oganesson.hp = Math.floor(BOSSES.oganesson.hp / 3);
-  oganesson.phase = 3;
-  oganesson.patternTimerSec = 2.49;
+  oganesson.hp = Math.floor(BOSSES.oganesson.hp / 4);
+  advanceBossPhase(oganesson);
+  oganesson.phaseFreezeSec = 0;
+  primeBossTimers(oganesson, 0.99);
+}
+
+/** 모든 주기 시계를 "주기 - `headroom`" 지점에 둔다 */
+function primeBossTimers(boss: { patternTimers: Float32Array; id: keyof typeof BOSS_PATTERNS; phaseIndex: number }, headroom: number): void {
+  const phase = BOSS_PATTERNS[boss.id].phases[boss.phaseIndex];
+  if (phase === undefined) return;
+
+  const periods = [
+    phase.cloneEverySec,
+    phase.ringEverySec,
+    phase.splitEverySec,
+    phase.teleportEverySec,
+    phase.summonEverySec,
+    phase.zoneEverySec,
+    phase.meteorEverySec,
+  ];
+  for (let i = 0; i < boss.patternTimers.length && i < periods.length; i += 1) {
+    const period = periods[i] as number;
+    boss.patternTimers[i] = period > headroom ? period - headroom : 0;
+  }
+}
+
+/**
+ * 위험 개체 풀을 문서 상한까지 채운다 (T-058).
+ *
+ * 실제 플레이에서 96발이 동시에 뜨는 일은 드물지만, **상한에서 프레임이 무너지지 않는지**를
+ * 재는 것이 스트레스 모드의 존재 이유다.
+ */
+function fillStressBossHazards(state: GameState): void {
+  const spec = BOSS_PATTERNS.oganesson;
+  const ring = 24;
+
+  for (let i = 0; i < MAX_BOSS_BULLETS; i += 1) {
+    const angle = (i * 2.399963229728653) % (Math.PI * 2);
+    const distance = 120 + Math.floor(i / ring) * 90;
+    spawnBossBullet(
+      state,
+      Math.cos(angle) * distance,
+      Math.sin(angle) * distance,
+      Math.cos(angle + Math.PI),
+      Math.sin(angle + Math.PI),
+      spec.bulletSpeed,
+      spec.bulletDamage,
+      spec.bulletRadius,
+      spec.bulletLifeSec,
+      0,
+    );
+  }
+
+  const half = Math.floor(MAX_BOSS_HAZARDS / 2);
+  for (let i = 0; i < MAX_BOSS_HAZARDS; i += 1) {
+    const angle = (i / MAX_BOSS_HAZARDS) * Math.PI * 2;
+    const x = Math.cos(angle) * 260;
+    const y = Math.sin(angle) * 260;
+    if (i < half) {
+      spawnBossZone(state, x, y, spec.zoneRadius, spec.zoneDamage, spec.zoneWarnSec, spec.zoneActiveSec, 2);
+    } else {
+      spawnBossMeteor(state, x, y, spec.meteorRadius, spec.meteorDamage, spec.meteorWarnSec, 3);
+    }
+  }
 }
 
 function writeStressWeaponSlots(state: GameState): void {

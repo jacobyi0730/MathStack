@@ -1,5 +1,8 @@
 import './styles.css';
+import { createSfxPlayer } from './audio/sfx.js';
+import { flushSfxQueue, requestSfx } from './audio/queue.js';
 import { createGameState, type GameState, type SpecialRewardQuiz } from './engine/state.js';
+import { resetEffects, updateScreenEffects, updateWorldEffects } from './engine/effects.js';
 import { createLoop } from './engine/loop.js';
 import { setupStressMode, stressModeEnabled } from './engine/stress.js';
 import { createTimer } from './engine/timing.js';
@@ -23,6 +26,14 @@ import { movePlayer } from './systems/movement.js';
 import { updateSpawns } from './systems/spawn.js';
 import { updateCollisions } from './systems/collision.js';
 import { applyEnemyDamage, updatePlayerInvulnerability } from './systems/damage.js';
+import { releaseAllBossHazards, updateBossHazards } from './systems/boss-hazard.js';
+import { updateBossPatterns } from './systems/boss-patterns.js';
+import {
+  feedbackBossSpawn,
+  feedbackLevelUp,
+  feedbackMeteor,
+  feedbackPlayerDown,
+} from './systems/feedback.js';
 import { announcePickup, isEnemyFrozen, spawnPickupByKind, updatePickups } from './systems/pickup.js';
 import { updateCrates } from './systems/crate.js';
 import { shiftLevelEvent } from './systems/level.js';
@@ -54,6 +65,12 @@ import {
   writeContinueRun,
   type StoredContinueRun,
 } from './storage.js';
+import {
+  effectiveEffectIntensity,
+  readAccessibilitySettings,
+  resolveSfxVolume,
+  type AccessibilitySettings,
+} from './ui/settings.js';
 import type { Bank, Question } from '../shared/schema.js';
 import type { PassiveId } from './data/passives.js';
 
@@ -163,9 +180,28 @@ function updateRuntimeState(state: RuntimeState, dt: number): void {
   if (!isEnemyFrozen(state.pickupRuntime)) {
     updateBosses(state.bosses, state.player.x, state.player.y, dt);
   }
+  updateBossPatterns(state, dt);
+  updateBossHazards(state, dt);
   updatePlayerInvulnerability(state.player, dt);
   applyHealthRegen(state, dt);
   updateDamageNumbers(state.damageNumbers, dt);
+  updateWorldEffects(state.effects, dt);
+  decayBossFlashes(state, dt);
+}
+
+/**
+ * 보스 피격 섬광을 잦아들게 한다.
+ *
+ * 잡몹은 `updateEnemies` 가 같은 일을 하지만, 보스는 세슘 시계로 멈춰 있는 동안에도
+ * 갱신돼야 한다 — 멈춘 보스가 하얗게 굳어 있으면 버그로 보인다.
+ */
+function decayBossFlashes(state: RuntimeState, dt: number): void {
+  for (let i = 0; i < state.bosses.activeCount; i += 1) {
+    const boss = state.bosses.items[i];
+    if (boss.flashSec <= 0) continue;
+    boss.flashSec -= dt;
+    if (boss.flashSec < 0) boss.flashSec = 0;
+  }
 }
 
 function updateAfterCollisions(state: RuntimeState, dt: number): void {
@@ -176,7 +212,7 @@ function updateAfterCollisions(state: RuntimeState, dt: number): void {
 
   updateWeapons(state, state.weapons, dt);
   updateCrates(state, dt);
-  updatePickups(state.pickups, state.player, state.level, state.pickupRuntime, dt);
+  updatePickups(state.pickups, state.player, state.level, state.pickupRuntime, dt, state);
   applyPendingMeteorDamage(state);
   state.entityCount =
     state.enemies.activeCount +
@@ -196,6 +232,8 @@ function updateTrialRuntime(state: RuntimeState): void {
     state.weapons.projectiles.releaseAll();
     state.pickups.releaseAll();
     state.crates.releaseAll();
+    releaseAllBossHazards(state.bossHazards);
+    resetEffects(state.effects);
     state.spawn.accumulator = 0;
     state.crateSpawn.accumulator = 0;
   } else if (event === 'completed') {
@@ -237,6 +275,7 @@ function updateBossTimelineAndSpawns(state: RuntimeState): void {
   const boss = state.bosses.acquire();
   const definition = BOSSES[state.timeline.latestBossId];
   state.enemies.releaseAll();
+  releaseAllBossHazards(state.bossHazards);
   state.spawn.accumulator = 0;
   spawnBoss(
     boss,
@@ -244,6 +283,7 @@ function updateBossTimelineAndSpawns(state: RuntimeState): void {
     state.player.x + state.viewport.width * 0.35,
     state.player.y - state.viewport.height * 0.25,
   );
+  feedbackBossSpawn(state, boss);
 }
 
 /** 이리듐 운석은 맵 전체의 적을 친다. 아이템 설명과 플레이어 기대가 "전체 폭탄"에 가깝기 때문이다. */
@@ -251,6 +291,7 @@ function applyPendingMeteorDamage(state: RuntimeState): void {
   const damage = state.pickupRuntime.pendingMeteorDamage;
   if (damage <= 0) return;
   state.pickupRuntime.pendingMeteorDamage = 0;
+  feedbackMeteor(state);
 
   for (let i = state.enemies.activeCount - 1; i >= 0; i -= 1) {
     const enemy = state.enemies.items[i];
@@ -337,12 +378,20 @@ async function bootstrap(): Promise<void> {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2D 컨텍스트를 만들 수 없습니다.');
 
+  const settings = readAccessibilitySettings(window.localStorage);
+  // 타이틀 화면이 떠 있는 동안 음원을 미리 받아 둔다. 전투가 시작된 뒤 받으면
+  // 첫 타격음이 안 난다 — 24개 합쳐 200KB 남짓이라 선택 화면 시간이면 충분하다
+  const sfx = createSfxPlayer(resolveAudioOptions(settings));
+  // 브라우저는 사용자 조작 전에는 소리를 못 내게 막는다. 어떤 입력이든 첫 번째에 푼다
+  unlockAudioOnFirstInput(sfx);
+
   canvas.style.display = 'none';
   const launch = await waitForLaunchSelection();
   canvas.style.display = 'block';
 
   const bank = launch.bank;
   const state = createRuntimeState(bank, launch.selection.characterId, launch.continueRun);
+  state.effects.intensity = effectiveEffectIntensity(settings) / 100;
   const timer = createTimer();
   const overlay = createDebugOverlay();
   const hud: Hud = createHud();
@@ -393,6 +442,8 @@ async function bootstrap(): Promise<void> {
       firstAttemptFailed: false,
     };
     quizModal.show(createQuizState(selection.question, activeQuiz.phase, selection.retry));
+    feedbackLevelUp(state);
+    requestSfx(state.sfx, 'quiz-open');
     return true;
   }
 
@@ -432,6 +483,8 @@ async function bootstrap(): Promise<void> {
   function handleQuizResult(result: QuizGradeResult): void {
     if (activeQuiz === undefined) return;
 
+    // 오답 소리는 부드럽게 내려가는 음이다. 부저를 쓰면 "오답은 처벌이 아니다"가 깨진다
+    requestSfx(state.sfx, result.kind === 'correct' ? 'quiz-correct' : 'quiz-wrong');
     quizModal.showResult(result, activeQuiz.selection.question.explanation);
     if (result.kind === 'try_again') {
       activeQuiz.firstAttemptFailed = true;
@@ -502,10 +555,22 @@ async function bootstrap(): Promise<void> {
 
   const loop = createLoop(state, {
     update(baseState, dt) {
+      // 히트스톱: 시뮬레이션만 멈춘다. 화면 흔들림은 계속 흘러야 "얼어붙었다"로 읽힌다
+      if (state.effects.hitStopSec > 0) {
+        state.effects.hitStopSec -= dt;
+        if (state.effects.hitStopSec < 0) state.effects.hitStopSec = 0;
+        updateScreenEffects(state.effects, dt);
+        return;
+      }
+
       timer.begin('sim');
+      updateScreenEffects(state.effects, dt);
       updateRuntimeState(baseState as RuntimeState, dt);
       if (!resultShown && state.timeline.resultFired && state.timeline.latestResultKind !== 'none') {
         resultShown = true;
+        if (state.timeline.latestResultKind === 'defeat') feedbackPlayerDown(state);
+        else requestSfx(state.sfx, 'victory');
+        flushSfxQueue(state.sfx, sfx);
         showResultScreen(state, state.timeline.latestResultKind, resultScreen, launch.selection);
         loop.pause();
       }
@@ -533,6 +598,8 @@ async function bootstrap(): Promise<void> {
     },
 
     onFrame(steps) {
+      // 소리는 프레임이 끝날 때 한 번만 낸다. 시뮬레이션 안에서는 요청만 쌓였다
+      flushSfxQueue(state.sfx, sfx);
       timer.endFrame(steps, state.entityCount, state.enemies.recycles);
       state.enemies.resetFrameStats();
       hud.update(createHudState(state, state.ticks));
@@ -557,6 +624,7 @@ async function bootstrap(): Promise<void> {
   window.addEventListener('beforeunload', () => {
     saveContinueIfAlive(state, launch.selection, resultShown);
     input.destroy();
+    sfx.destroy();
     hud.destroy();
     quizModal.destroy();
     skillChoice.destroy();
@@ -582,6 +650,30 @@ async function bootstrap(): Promise<void> {
     claimTrialReward(state.trial, state.weapons, state.passives, state.player);
     applyResolvedStats(state);
   }
+}
+
+function resolveAudioOptions(settings: AccessibilitySettings): { volume: number; muted: boolean } {
+  const volume = resolveSfxVolume(settings);
+  return { volume, muted: volume <= 0 };
+}
+
+/**
+ * 첫 사용자 조작에서 오디오를 푼다.
+ *
+ * 브라우저는 자동 재생을 막으므로 `AudioContext` 는 **조작 안에서** 만들어야 한다.
+ * 세 종류를 다 듣는 이유는 입력 방식이 셋이기 때문이다 — 키보드, 마우스, 터치.
+ * 한 번 성공하면 스스로 떨어져 나간다.
+ */
+function unlockAudioOnFirstInput(sfx: { unlock(): void }): void {
+  const unlock = (): void => {
+    sfx.unlock();
+    window.removeEventListener('pointerdown', unlock);
+    window.removeEventListener('keydown', unlock);
+    window.removeEventListener('touchstart', unlock);
+  };
+  window.addEventListener('pointerdown', unlock, { passive: true });
+  window.addEventListener('keydown', unlock);
+  window.addEventListener('touchstart', unlock, { passive: true });
 }
 
 function waitForLaunchSelection(): Promise<LaunchSelection> {

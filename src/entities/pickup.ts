@@ -271,6 +271,7 @@ function createPickup(): PickupEntity {
     paletteGroup: 2,
     shape: ENTITY_SHAPES.circle,
     icon: '',
+    flashSec: 0,
     paletteIndex: 0,
     symbol: 'p',
     accessoryKind: 0,

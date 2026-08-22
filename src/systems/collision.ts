@@ -3,7 +3,7 @@ import { createSpatialHash, type SpatialHash } from '../engine/spatial-hash.js';
 import type { GameState } from '../engine/state.js';
 import { shortestDeltaX, shortestDeltaY, wrappedDistanceSq } from '../engine/world.js';
 import type { EnemyEntity } from '../entities/enemy.js';
-import { applyContactDamage } from './damage.js';
+import { applyPlayerDamage } from './damage.js';
 
 export interface CollisionState {
   enemyHash: SpatialHash<EnemyEntity>;
@@ -66,7 +66,7 @@ export function damagePlayerEnemyContacts(state: GameState, _dt: number): number
   }
 
   state.collision.playerEnemyContacts = contacts;
-  if (strongestContactDamage > 0) applyContactDamage(player, strongestContactDamage);
+  if (strongestContactDamage > 0) applyPlayerDamage(state, strongestContactDamage);
   return contacts;
 }
 

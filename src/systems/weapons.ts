@@ -11,6 +11,12 @@ import {
 } from '../data/weapons.js';
 import { ENTITY_SHAPES } from '../data/palette.js';
 import { applyBossDamage, defeatBoss, type BossEntity } from '../entities/boss.js';
+import {
+  DAMAGE_NUMBER_KIND_NORMAL,
+  DAMAGE_NUMBER_KIND_STRONG,
+  spawnDamageNumber,
+} from '../entities/damage-number.js';
+import { feedbackBossDeath, feedbackBossHit } from './feedback.js';
 import type { EnemyEntity } from '../entities/enemy.js';
 import {
   configureOrbitProjectile,
@@ -527,7 +533,7 @@ function damageAreaHits(state: GameState, x: number, y: number, radius: number, 
     const boss = state.bosses.items[i];
     const hitRadius = radius + boss.radius;
     if (wrappedDistanceSq(x, y, boss.x, boss.y, state.world) > hitRadius * hitRadius) continue;
-    if (applyBossDamage(boss, damage)) defeatBoss(state.bosses, boss);
+    damageBoss(state, boss, damage);
     hits += 1;
   }
 
@@ -536,11 +542,37 @@ function damageAreaHits(state: GameState, x: number, y: number, radius: number, 
 
 function applyCombatTargetDamage(state: GameState, target: CombatTarget, damage: number): void {
   if (target.kind === 'boss') {
-    const boss = target as BossEntity;
-    if (applyBossDamage(boss, damage)) defeatBoss(state.bosses, boss);
+    damageBoss(state, target as BossEntity, damage);
   } else {
     applyEnemyDamage(state, target as EnemyEntity, damage);
   }
+}
+
+/**
+ * 보스 피격의 유일한 경로.
+ *
+ * 보스에게는 **숫자가 특히 중요하다.** 체력이 9,000이라 한 방으로는 눈에 띄는 변화가
+ * 없고, 숫자가 없으면 "지금 딜이 들어가고 있나?"를 알 방법이 없다.
+ */
+function damageBoss(state: GameState, boss: BossEntity, damage: number): void {
+  if (damage <= 0 || boss.hp <= 0) return;
+
+  const strong = damage >= boss.maxHp * 0.04;
+  spawnDamageNumber(
+    state.damageNumbers,
+    boss.x,
+    boss.y,
+    damage,
+    strong ? DAMAGE_NUMBER_KIND_STRONG : DAMAGE_NUMBER_KIND_NORMAL,
+  );
+
+  if (applyBossDamage(boss, damage)) {
+    feedbackBossDeath(state, boss);
+    defeatBoss(state.bosses, boss);
+    return;
+  }
+
+  feedbackBossHit(state, boss, damage);
 }
 
 function rotateX(x: number, y: number, angle: number): number {

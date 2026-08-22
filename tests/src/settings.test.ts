@@ -101,6 +101,7 @@ describe('accessibility settings', () => {
       effectIntensity: 50,
       textSize: 'large',
       keyboardOnlyHints: false,
+      soundVolume: 100,
     };
 
     writeAccessibilitySettings(storage, settings);

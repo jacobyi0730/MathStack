@@ -92,6 +92,23 @@ describe('title flow storage', () => {
 
     flow.destroy();
   });
+
+  it('offers_a_settings_entry_point_from_the_title', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument(),
+    });
+    const storage = new MemoryStorage();
+
+    const flow = createTitleFlow({ storage });
+    const section = (flow.element as unknown as FakeElement).children[0];
+    const labels = section.children.map((child) => child.textContent);
+
+    // 여기 말고는 소리와 효과 강도를 끌 방법이 없다. 교실에서 쓰려면 반드시 열려 있어야 한다
+    expect(labels).toContain('설정');
+
+    flow.destroy();
+  });
 });
 
 class FakeElement {

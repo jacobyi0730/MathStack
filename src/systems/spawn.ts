@@ -12,6 +12,7 @@ import {
 } from '../data/waves.js';
 import { resolveEnemyReward, spawnEnemy, type EnemyEntity } from '../entities/enemy.js';
 import type { GameState } from '../engine/state.js';
+import { feedbackEliteDeath, feedbackEnemyDeath } from './feedback.js';
 import { announcePickup, spawnPickupByKind, spawnXpGem } from './pickup.js';
 
 const MIN_DISTANCE_SQ = SPAWN_MIN_PLAYER_DISTANCE * SPAWN_MIN_PLAYER_DISTANCE;
@@ -65,6 +66,10 @@ export function defeatEnemy(state: GameState, enemy: EnemyEntity): void {
   const xp = enemy.xp;
   const reward = resolveEnemyReward(enemy, nextDropSeed(state));
 
+  // 연출은 풀에 돌려주기 **전에** 뽑는다. 반납된 뒤에는 색도 크기도 0 이다
+  if (reward === 'none') feedbackEnemyDeath(state, enemy);
+  else feedbackEliteDeath(state, enemy);
+
   state.combat.defeatedEnemies += 1;
   state.enemies.release(enemy);
 
@@ -87,16 +92,22 @@ function splitEnemy(state: GameState, enemy: EnemyEntity): void {
   const offset = Math.max(childRadius + 2, enemy.radius * 0.6);
   state.enemies.release(enemy);
 
-  const left = spawnWaveEnemyAt(state, 'uranium', x - offset, y, hp);
+  const left = spawnEnemyAt(state, 'uranium', x - offset, y, hp);
   left.radius = childRadius;
   left.hasSplit = true;
 
-  const right = spawnWaveEnemyAt(state, 'uranium', x + offset, y, hp);
+  const right = spawnEnemyAt(state, 'uranium', x + offset, y, hp);
   right.radius = childRadius;
   right.hasSplit = true;
 }
 
-function spawnWaveEnemyAt(
+/**
+ * 정확한 좌표에 적 하나를 놓는다.
+ *
+ * 웨이브 스폰은 화면 밖 가장자리에서만 나오지만(§9.4), 분열체와 보스 소환수는
+ * **보이는 자리에서** 나와야 한다 — 어디서 왔는지가 보여야 대응할 수 있다.
+ */
+export function spawnEnemyAt(
   state: GameState,
   enemyId: keyof typeof ENEMIES,
   x: number,

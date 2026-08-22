@@ -6,6 +6,8 @@ import {
   type PickupPool,
 } from '../entities/pickup.js';
 import type { Player } from '../entities/player.js';
+import type { GameState } from '../engine/state.js';
+import { feedbackPickup } from './feedback.js';
 import { addExperience, type LevelState } from './level.js';
 
 export const BASE_PICKUP_MAGNET_RADIUS = 96;
@@ -56,12 +58,19 @@ export function resolveHasteCooldownMultiplier(runtime: PickupRuntime): number {
   return runtime.hasteSec > 0 ? HASTE_COOLDOWN_MULTIPLIER : 1;
 }
 
+/**
+ * `state` 는 **효과음에만** 쓴다.
+ *
+ * 픽업 로직 자체는 풀·플레이어·레벨·런타임만 알면 되고, 테스트도 그 네 개만 넘긴다.
+ * 소리를 위해 전체 상태를 필수 인자로 만들면 테스트가 게임 하나를 통째로 세워야 한다.
+ */
 export function updatePickups(
   pool: PickupPool,
   player: Player,
   level: LevelState,
   runtime: PickupRuntime,
   dt: number,
+  state?: GameState,
 ): number {
   tickPickupTimers(runtime, dt);
 
@@ -80,6 +89,7 @@ export function updatePickups(
     const collectRadius = player.radius + pickup.radius + PICKUP_COLLECT_RADIUS;
 
     if (distSq <= collectRadius * collectRadius) {
+      if (state !== undefined) feedbackPickup(state, pickup.pickupKind);
       collectPickup(pool, pickup, player, level, runtime);
       collected += 1;
       continue;

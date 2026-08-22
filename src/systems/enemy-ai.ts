@@ -1,6 +1,7 @@
 import type { EnemyEntity } from '../entities/enemy.js';
 import type { GameState } from '../engine/state.js';
 import { shortestDeltaX, shortestDeltaY, wrapX, wrapY } from '../engine/world.js';
+import { KNOCKBACK_DECAY } from './feedback.js';
 import { isEnemyFrozen } from './pickup.js';
 
 type EnemyAiHandler = (enemy: EnemyEntity, state: GameState, dt: number) => void;
@@ -31,6 +32,32 @@ export function updateEnemies(state: GameState, dt: number): void {
   for (let i = 0; i < pool.activeCount; i += 1) {
     const enemy = pool.items[i] as EnemyEntity;
     AI[enemy.ai](enemy, state, dt);
+    applyKnockback(enemy, state, dt);
+    if (enemy.flashSec > 0) {
+      enemy.flashSec -= dt;
+      if (enemy.flashSec < 0) enemy.flashSec = 0;
+    }
+  }
+}
+
+/**
+ * 피격 밀림을 AI 이동 **뒤에** 얹는다.
+ *
+ * AI 안에 넣으면 여섯 개 핸들러마다 같은 코드를 복사해야 하고, `prevX` 를 덮어써
+ * 보간이 튄다. 여기서는 이미 확정된 위치를 조금 밀기만 한다.
+ */
+function applyKnockback(enemy: EnemyEntity, state: GameState, dt: number): void {
+  if (enemy.knockbackX === 0 && enemy.knockbackY === 0) return;
+
+  enemy.x = wrapX(enemy.x + enemy.knockbackX * dt, state.world);
+  enemy.y = wrapY(enemy.y + enemy.knockbackY * dt, state.world);
+  enemy.knockbackX *= KNOCKBACK_DECAY;
+  enemy.knockbackY *= KNOCKBACK_DECAY;
+
+  // 부동소수점 꼬리를 남기면 매 프레임 이 분기를 타게 된다
+  if (Math.abs(enemy.knockbackX) < 1 && Math.abs(enemy.knockbackY) < 1) {
+    enemy.knockbackX = 0;
+    enemy.knockbackY = 0;
   }
 }
 

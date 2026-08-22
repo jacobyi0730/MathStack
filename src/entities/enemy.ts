@@ -34,6 +34,14 @@ export interface EnemyEntity extends RenderableEntity, Poolable {
   rangedShotSeq: number;
   rangedAimX: number;
   rangedAimY: number;
+  /**
+   * 피격 밀림 속도(px/s). AI 이동 위에 더해지고 매 스텝 급격히 줄어든다.
+   *
+   * 밀림이 없으면 적이 **맞고도 그대로 걸어온다** — 데미지 숫자만 뜨고
+   * 부딪힌 느낌이 전혀 남지 않는다. 아주 짧게, 아주 조금만 민다.
+   */
+  knockbackX: number;
+  knockbackY: number;
 }
 
 export type EnemyPool = Pool<EnemyEntity>;
@@ -71,6 +79,9 @@ export function spawnEnemy(enemy: EnemyEntity, definition: EnemyDefinition, x: n
 }
 
 export function resetEnemyAiState(enemy: EnemyEntity): void {
+  enemy.flashSec = 0;
+  enemy.knockbackX = 0;
+  enemy.knockbackY = 0;
   enemy.aiTimerSec = 0;
   enemy.aiPhase = 0;
   enemy.chargeDirX = 0;
@@ -125,6 +136,7 @@ function createEnemy(): EnemyEntity {
     paletteGroup: 1,
     shape: ENTITY_SHAPES.circle,
     icon: '',
+    flashSec: 0,
     paletteIndex: ENEMIES.radon.paletteIndex,
     symbol: ENEMIES.radon.element,
     accessoryKind: ENEMIES.radon.accessoryKind,
@@ -145,6 +157,8 @@ function createEnemy(): EnemyEntity {
     rangedShotSeq: 0,
     rangedAimX: 0,
     rangedAimY: 0,
+    knockbackX: 0,
+    knockbackY: 0,
     poolIndex: -1,
     poolSeq: 0,
   };

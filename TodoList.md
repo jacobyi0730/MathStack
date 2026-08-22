@@ -87,17 +87,22 @@
 ## Phase 5 — 보스 패턴 확장
 
 - [x] **T-053** 보스 페이즈·패턴 기획 — `balance-tuner` ✅ 2026-08-22
-- [ ] **T-054** 보스 탄막·장판 위험 엔티티 기반 — `game-engine-dev`
-- [-] **T-055** 테크네튬 1페이즈 패턴 구현 — `game-engine-dev` ⛔ T-054
-- [-] **T-056** 폴로늄 2페이즈 패턴 구현 — `game-engine-dev` ⛔ T-054, T-055
-- [-] **T-057** 오가네손 3페이즈 패턴 구현 — `game-engine-dev` ⛔ T-054, T-056
-- [-] **T-058** 보스전 모바일·성능·밸런스 검증 — `game-engine-dev` ⛔ T-055, T-056, T-057
+- [x] **T-054** 보스 탄막·장판 위험 엔티티 기반 — `game-engine-dev` ✅ 2026-08-22
+- [x] **T-055** 테크네튬 1페이즈 패턴 구현 — `game-engine-dev` ✅ 2026-08-22
+- [x] **T-056** 폴로늄 2페이즈 패턴 구현 — `game-engine-dev` ✅ 2026-08-22
+- [x] **T-057** 오가네손 3페이즈 패턴 구현 — `game-engine-dev` ✅ 2026-08-22
+- [x] **T-058** 보스전 모바일·성능·밸런스 검증 — `game-engine-dev` ✅ 2026-08-22 ⚠ 실기기 터치 회피·피해량 체감은 사람 플레이 필요
+
+## Phase 6 — 타격감과 사운드
+
+- [x] **T-059** 전투 타격감 — 화면 흔들림·히트스톱·파편·피격 표시 — `game-engine-dev` ✅ 2026-08-22
+- [x] **T-060** 효과음 시스템과 CC0 음원 — `game-engine-dev` ✅ 2026-08-22 ⚠ BGM 은 v1 제외
 
 ---
 
 ## 현황
 
-**53 / 58 완료** · 진행 중 0 · 착수 가능 1
+**60 / 60 완료** · 진행 중 0 · 착수 가능 0
 
 ## 병렬 배정 이력
 
@@ -145,6 +150,8 @@
 | 08-22 12:26 | **T-051** 퀴즈 출제 랜덤성 보정 | **오케스트레이터 구현** | `src/quiz/session.ts`, `src/main.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 새 플레이마다 런타임 시드 생성 |
 | 08-22 12:32 | **T-052** 모바일 메뉴 잘림 보정 | **오케스트레이터 구현** | `src/ui/title.ts`, `src/ui/grade-select.ts`, `src/ui/character-select.ts`, `src/ui/settings.ts`, `src/ui/result.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 시작 전 메뉴와 결과/설정 화면 자체 스크롤 적용 |
 | 08-22 13:05 | **T-053** 보스 페이즈·패턴 기획 | **오케스트레이터 기획** | `docs/03-전투확장.md`, `docs/06-개선기록.md`, `Tasks/`, `TodoList.md` | ✅ 젤다식 전조·페이즈 문법을 MathStack 이동-only 보스전으로 재기획. T-054~T-058 후속 작업 등록 |
+| 08-22 13:40 | **T-059 · T-060** 타격감·효과음 | **오케스트레이터 구현** | `src/engine/effects.ts`, `src/entities/particle·shockwave·damage-number`, `src/systems/feedback.ts`, `src/audio/`, `public/audio/`, `src/engine/renderer.ts`, `src/ui/settings.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 291→323). Kenney CC0 24종 220KB, 번들 gzip 76.0KB |
+| 08-22 14:05 | **T-054 ~ T-058** 보스 패턴 확장 | **오케스트레이터 구현** | `src/data/bosses.ts`, `src/entities/boss·hazard`, `src/systems/boss-hazard·boss-patterns`, `src/engine/state·renderer·stress`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 헤드리스 900프레임 sim avg 0.0574ms(최대 629 엔티티), 전 풀 recycle 0 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

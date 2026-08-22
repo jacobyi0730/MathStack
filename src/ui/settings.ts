@@ -5,12 +5,21 @@ export interface StorageLike {
 
 export type EffectIntensity = 0 | 50 | 100;
 export type AccessibilityTextSize = 'normal' | 'large';
+/** 효과음 크기(%). 0 은 완전 음소거다 */
+export type SoundVolume = 0 | 50 | 100;
 
 export interface AccessibilitySettings {
   readonly slowMode: boolean;
   readonly effectIntensity: EffectIntensity;
   readonly textSize: AccessibilityTextSize;
   readonly keyboardOnlyHints: boolean;
+  /**
+   * 효과음 크기.
+   *
+   * 기본값을 50 으로 둔 것은 **교실을 염두에 둔 타협**이다 (01-기반 §미결 4).
+   * 0 을 기본으로 하면 소리가 없는 게임으로 보이고, 100 은 여러 대가 같이 켜졌을 때 시끄럽다.
+   */
+  readonly soundVolume: SoundVolume;
 }
 
 export interface SettingsViewOptions {
@@ -32,6 +41,7 @@ interface SettingsElements {
   readonly slowMode: HTMLInputElement;
   readonly effectButtons: readonly HTMLButtonElement[];
   readonly textSizeButtons: readonly HTMLButtonElement[];
+  readonly soundButtons: readonly HTMLButtonElement[];
   readonly keyboardOnlyHints: HTMLInputElement;
   readonly status: HTMLElement;
 }
@@ -43,6 +53,7 @@ export const DEFAULT_ACCESSIBILITY_SETTINGS: AccessibilitySettings = Object.free
   effectIntensity: 100,
   textSize: 'normal',
   keyboardOnlyHints: true,
+  soundVolume: 50,
 });
 
 export const SETTINGS_CLASS_NAMES = {
@@ -55,6 +66,7 @@ export const SETTINGS_CLASS_NAMES = {
 
 const EFFECT_OPTIONS = [0, 50, 100] as const;
 const TEXT_SIZE_OPTIONS = ['normal', 'large'] as const;
+const SOUND_OPTIONS = [0, 50, 100] as const;
 
 export function readAccessibilitySettings(
   storage: StorageLike | undefined,
@@ -96,7 +108,15 @@ export function normalizeAccessibilitySettings(
       typeof settings.keyboardOnlyHints === 'boolean'
         ? settings.keyboardOnlyHints
         : DEFAULT_ACCESSIBILITY_SETTINGS.keyboardOnlyHints,
+    soundVolume: isSoundVolume(settings.soundVolume)
+      ? settings.soundVolume
+      : DEFAULT_ACCESSIBILITY_SETTINGS.soundVolume,
   };
+}
+
+/** 0 ~ 1 의 마스터 볼륨. 재생기는 이 값만 안다 */
+export function resolveSfxVolume(settings: Pick<AccessibilitySettings, 'soundVolume'>): number {
+  return settings.soundVolume / 100;
 }
 
 export function prefersReducedMotion(
@@ -145,6 +165,13 @@ export function createSettingsView(options: SettingsViewOptions = {}): SettingsV
     button.addEventListener('click', () => {
       const value = button.dataset.value;
       if (isTextSize(value)) update({ textSize: value });
+    });
+  }
+
+  for (const button of elements.soundButtons) {
+    button.addEventListener('click', () => {
+      const value = Number(button.dataset.value);
+      if (isSoundVolume(value)) update({ soundVolume: value });
     });
   }
 
@@ -200,6 +227,12 @@ function createElements(): SettingsElements {
     { value: 'large', label: '크게', detail: '문제 본문 32px' },
   ]);
 
+  const soundButtons = appendSegmentedControl(root, '소리 크기', [
+    { value: '0', label: '끄기', detail: '교실에서 조용히' },
+    { value: '50', label: '보통', detail: '기본값' },
+    { value: '100', label: '크게', detail: '이어폰·집' },
+  ]);
+
   const keyboardOnlyHints = appendCheckbox(
     root,
     '키보드 전용 조작 표시',
@@ -216,6 +249,7 @@ function createElements(): SettingsElements {
     slowMode,
     effectButtons,
     textSizeButtons,
+    soundButtons,
     keyboardOnlyHints,
     status,
   };
@@ -287,6 +321,7 @@ function render(elements: SettingsElements, settings: AccessibilitySettings): vo
   elements.keyboardOnlyHints.checked = settings.keyboardOnlyHints;
   renderButtons(elements.effectButtons, `${settings.effectIntensity}`);
   renderButtons(elements.textSizeButtons, settings.textSize);
+  renderButtons(elements.soundButtons, `${settings.soundVolume}`);
   elements.status.textContent = '설정이 적용되었습니다.';
 }
 
@@ -310,6 +345,10 @@ function isEffectIntensity(value: unknown): value is EffectIntensity {
 
 function isTextSize(value: unknown): value is AccessibilityTextSize {
   return TEXT_SIZE_OPTIONS.includes(value as AccessibilityTextSize);
+}
+
+function isSoundVolume(value: unknown): value is SoundVolume {
+  return SOUND_OPTIONS.includes(value as SoundVolume);
 }
 
 function getWindow(): (Window & typeof globalThis) | undefined {

@@ -203,6 +203,7 @@ function createProjectile(): ProjectileEntity {
     paletteGroup: 0,
     shape: ENTITY_SHAPES.icon,
     icon: WEAPONS.hydrogen_arrow.icon,
+    flashSec: 0,
     paletteIndex: 0,
     symbol: '',
     accessoryKind: 1,

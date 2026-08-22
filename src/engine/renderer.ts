@@ -16,7 +16,23 @@ import {
   writeSpriteFrame,
   type DirectionLike,
 } from '../entities/sprite.js';
-import type { DamageNumberPool } from '../entities/damage-number.js';
+import {
+  DAMAGE_NUMBER_KIND_PLAYER,
+  DAMAGE_NUMBER_KIND_STRONG,
+  damageNumberScale,
+  type DamageNumberPool,
+} from '../entities/damage-number.js';
+import {
+  HAZARD_COLORS,
+  HAZARD_METEOR,
+  HAZARD_WARNING_COLOR,
+  hazardWarnProgress,
+  type HazardEntity,
+  type HazardPool,
+} from '../entities/hazard.js';
+import type { Particle } from '../entities/particle.js';
+import { shockwaveProgress, type Shockwave } from '../entities/shockwave.js';
+import { HIT_FLASH_SEC, type EffectsState } from './effects.js';
 import { createCameraState, interpolatePosition, isCircleVisible, worldToScreen, type CameraTarget } from './camera.js';
 import { shortestDeltaX, shortestDeltaY, type WorldBounds } from './world.js';
 
@@ -30,12 +46,23 @@ export interface RenderableEntity extends CameraTarget, DirectionLike {
   shape: EntityShape;
   /** `shape` 가 icon 일 때 몸통 한가운데 얹을 이모지. 그 외에는 빈 문자열 */
   icon: string;
+  /**
+   * 피격 섬광 잔여 시간(초). 0 보다 크면 몸통 위에 흰 막이 덮인다.
+   *
+   * 적 300체가 뒤엉킨 화면에서 **내 공격이 닿았는지**를 알려 주는 유일한 신호다.
+   * 데미지 숫자는 겹치면 읽히지 않지만 흰 섬광은 겹쳐도 읽힌다.
+   */
+  flashSec: number;
 }
 
 export interface RenderScene {
   player: RenderableEntity;
   entities: readonly RenderableEntity[];
   damageNumbers: DamageNumberPool;
+  /** 화면 흔들림·파편·섬광. 없으면 아무것도 그리지 않는다 */
+  effects: EffectsState;
+  /** 보스 탄과 장판. 엔티티 목록에 넣지 않고 전용 패스로 그린다 */
+  bossHazards: { readonly bullets: HazardPool; readonly fields: HazardPool };
   world: WorldBounds;
   elapsedSec: number;
 }
@@ -60,6 +87,15 @@ function hasCircleBody(shape: number): boolean {
 
 const MAX_BATCHES = 64;
 const MAX_VISIBLE = 1024;
+/** 피격 섬광 알파 단계 수. 늘릴수록 부드럽고 드로우콜이 는다 */
+const FLASH_BUCKETS = 4;
+const MAX_FLASH_ALPHA = 0.78;
+
+function quantizeFlash(flashSec: number): number {
+  const t = flashSec / HIT_FLASH_SEC;
+  const bucket = Math.ceil((t > 1 ? 1 : t) * FLASH_BUCKETS);
+  return bucket < 1 ? 1 : bucket;
+}
 
 export interface Renderer {
   resize(viewport: RendererViewport): void;
@@ -102,12 +138,17 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
   const paletteIndexByVisible = new Int8Array(MAX_VISIBLE);
   const bodyRadiusByVisible = new Float32Array(MAX_VISIBLE);
   const outlineRadiusByVisible = new Float32Array(MAX_VISIBLE);
+  const flashByVisible = new Float32Array(MAX_VISIBLE);
 
   let width = viewport.width;
   let height = viewport.height;
   let dpr = viewport.dpr;
   const sprite = createSpriteFrameScratch();
   const emptyDirection: DirectionLike = { dx: 0, dy: 0 };
+  const hazardScratch = { x: 0, y: 0 };
+  let vignette: CanvasGradient | undefined;
+  let vignetteWidth = 0;
+  let vignetteHeight = 0;
 
   function resetBatches(batches: BatchBucket[]): void {
     for (let i = 0; i < MAX_BATCHES; i += 1) {
@@ -204,6 +245,36 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
       }
       ctx.fill();
     }
+  }
+
+  /**
+   * 피격 섬광.
+   *
+   * 알파를 **네 단계로 양자화**해 경로 네 개로 그린다. 개별 알파를 그대로 쓰면
+   * 운석 한 방에 적 300체가 동시에 반짝일 때 `fill()` 이 300번 나간다.
+   */
+  function drawHitFlashes(count: number): void {
+    ctx.fillStyle = '#FFFFFF';
+    for (let bucket = FLASH_BUCKETS; bucket >= 1; bucket -= 1) {
+      const alpha = (bucket / FLASH_BUCKETS) * MAX_FLASH_ALPHA;
+      let opened = false;
+      for (let i = 0; i < count; i += 1) {
+        const flash = flashByVisible[i] as number;
+        if (flash <= 0) continue;
+        if (quantizeFlash(flash) !== bucket) continue;
+        if (!opened) {
+          ctx.beginPath();
+          opened = true;
+        }
+        const radius = bodyRadiusByVisible[i] as number;
+        ctx.moveTo(centersX[i] + radius, centersY[i]);
+        ctx.arc(centersX[i], centersY[i], radius, 0, Math.PI * 2);
+      }
+      if (!opened) continue;
+      ctx.globalAlpha = alpha;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
   function drawShadows(count: number): void {
@@ -410,23 +481,271 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
     }
   }
 
+  /**
+   * 충격파 고리.
+   *
+   * 동시에 24개가 상한이라 배치하지 않는다 — 색과 두께가 제각각이라
+   * 묶어도 얻는 게 없다.
+   */
+  function drawShockwaves(scene: RenderScene, camera: ReturnType<typeof createCameraState>): void {
+    const pool = scene.effects.shockwaves;
+    if (pool.activeCount === 0) return;
+
+    for (let i = 0; i < pool.items.length; i += 1) {
+      const item = pool.items[i] as Shockwave;
+      if (!item.active) continue;
+
+      const t = shockwaveProgress(item);
+      const radius = item.startRadius + (item.endRadius - item.startRadius) * t;
+      const renderX = camera.centerX + shortestDeltaX(camera.centerX, item.x, scene.world);
+      const renderY = camera.centerY + shortestDeltaY(camera.centerY, item.y, scene.world);
+      if (!isCircleVisible(camera, renderX, renderY, radius)) continue;
+
+      const screen = worldToScreen(camera, renderX, renderY);
+      const fade = 1 - t;
+
+      if (item.fillAlpha > 0) {
+        ctx.globalAlpha = item.fillAlpha * fade;
+        ctx.fillStyle = item.color;
+        ctx.beginPath();
+        ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = fade;
+      ctx.strokeStyle = item.color;
+      ctx.lineWidth = Math.max(1, item.width * fade);
+      ctx.beginPath();
+      ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /** 파편은 색이 몇 종류 안 된다. 같은 색끼리 하나의 경로로 묶는다 */
+  function drawParticles(scene: RenderScene, camera: ReturnType<typeof createCameraState>, alpha: number): void {
+    const pool = scene.effects.particles;
+    if (pool.activeCount === 0) return;
+
+    let lastColor = '';
+    let opened = false;
+    for (let i = 0; i < pool.items.length; i += 1) {
+      const item = pool.items[i] as Particle;
+      if (!item.active) continue;
+
+      const world = interpolatePosition(item.prevX, item.prevY, item.x, item.y, alpha);
+      const renderX = camera.centerX + shortestDeltaX(camera.centerX, world.x, scene.world);
+      const renderY = camera.centerY + shortestDeltaY(camera.centerY, world.y, scene.world);
+      if (!isCircleVisible(camera, renderX, renderY, item.radius)) continue;
+
+      const fade = item.maxLifeSec > 0 ? item.lifeSec / item.maxLifeSec : 0;
+      const radius = Math.max(0.6, item.radius * (0.4 + fade * 0.6));
+      const screen = worldToScreen(camera, renderX, renderY);
+
+      if (item.color !== lastColor) {
+        if (opened) ctx.fill();
+        ctx.fillStyle = item.color;
+        ctx.beginPath();
+        lastColor = item.color;
+        opened = true;
+      }
+      ctx.moveTo(screen.x + radius, screen.y);
+      ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
+    }
+    if (opened) ctx.fill();
+  }
+
+  /**
+   * 장판과 유성 — 엔티티 **아래**에 깔린다.
+   *
+   * 전조 중에는 노란 경고색이고, 채워지는 안쪽 원이 남은 시간을 보여 준다.
+   * 발동하면 자기 색으로 바뀐다 — **색이 바뀌는 순간이 곧 아파지는 순간**이다.
+   */
+  function drawHazardFields(scene: RenderScene, camera: ReturnType<typeof createCameraState>): void {
+    const pool = scene.bossHazards.fields;
+    if (pool.activeCount === 0) return;
+
+    for (let i = 0; i < pool.activeCount; i += 1) {
+      const field = pool.items[i] as HazardEntity;
+      const screen = projectHazard(scene, camera, field);
+      if (screen === undefined) continue;
+
+      const warning = field.warnSec > 0;
+      const colors = warning
+        ? HAZARD_WARNING_COLOR
+        : (HAZARD_COLORS[field.colorIndex] ?? HAZARD_COLORS[0]);
+
+      if (warning) {
+        const progress = hazardWarnProgress(field);
+        ctx.globalAlpha = 0.16;
+        ctx.fillStyle = colors.fill;
+        ctx.beginPath();
+        ctx.arc(screen.x, screen.y, field.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 안쪽 원이 바깥과 만나는 순간 터진다. 남은 시간이 눈으로 세어진다
+        ctx.globalAlpha = 0.38;
+        ctx.beginPath();
+        ctx.arc(screen.x, screen.y, field.radius * progress, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        const fade = field.maxLifeSec > 0 ? field.lifeSec / field.maxLifeSec : 1;
+        ctx.globalAlpha = 0.3 * (field.hazardKind === HAZARD_METEOR ? 1 : 0.6 + fade * 0.4);
+        ctx.fillStyle = colors.fill;
+        ctx.beginPath();
+        ctx.arc(screen.x, screen.y, field.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = colors.ring;
+      ctx.lineWidth = warning ? 4 : 3;
+      ctx.beginPath();
+      ctx.arc(screen.x, screen.y, field.radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /** 보스 탄 — 엔티티 **위**다. 적 뒤에 숨은 탄은 피할 수 없다 */
+  function drawHazardBullets(
+    scene: RenderScene,
+    camera: ReturnType<typeof createCameraState>,
+    alpha: number,
+  ): void {
+    const pool = scene.bossHazards.bullets;
+    if (pool.activeCount === 0) return;
+
+    const colors = HAZARD_COLORS[0];
+    ctx.fillStyle = colors.fill;
+    ctx.beginPath();
+    for (let i = 0; i < pool.activeCount; i += 1) {
+      const bullet = pool.items[i] as HazardEntity;
+      const screen = projectHazard(scene, camera, bullet, alpha);
+      if (screen === undefined) continue;
+      ctx.moveTo(screen.x + bullet.radius, screen.y);
+      ctx.arc(screen.x, screen.y, bullet.radius, 0, Math.PI * 2);
+    }
+    ctx.fill();
+
+    ctx.strokeStyle = colors.ring;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < pool.activeCount; i += 1) {
+      const bullet = pool.items[i] as HazardEntity;
+      const screen = projectHazard(scene, camera, bullet, alpha);
+      if (screen === undefined) continue;
+      ctx.moveTo(screen.x + bullet.radius, screen.y);
+      ctx.arc(screen.x, screen.y, bullet.radius, 0, Math.PI * 2);
+    }
+    ctx.stroke();
+  }
+
+  /** 화면 밖이면 `undefined`. 반환 객체는 스크래치라 다음 호출이 덮어쓴다 */
+  function projectHazard(
+    scene: RenderScene,
+    camera: ReturnType<typeof createCameraState>,
+    hazard: HazardEntity,
+    alpha = 1,
+  ): { x: number; y: number } | undefined {
+    const worldX = hazard.prevX + (hazard.x - hazard.prevX) * alpha;
+    const worldY = hazard.prevY + (hazard.y - hazard.prevY) * alpha;
+    const renderX = camera.centerX + shortestDeltaX(camera.centerX, worldX, scene.world);
+    const renderY = camera.centerY + shortestDeltaY(camera.centerY, worldY, scene.world);
+    if (!isCircleVisible(camera, renderX, renderY, hazard.radius)) return undefined;
+
+    const screen = worldToScreen(camera, renderX, renderY);
+    hazardScratch.x = screen.x;
+    hazardScratch.y = screen.y;
+    return hazardScratch;
+  }
+
+  /**
+   * 주인공 피격 비네트와 전체 백색 섬광.
+   *
+   * 흔들림과 달리 **화면 좌표**에 그린다 — 흔들리는 비네트는 멀미를 만든다.
+   */
+  function drawScreenFlashes(effects: EffectsState): void {
+    if (effects.whiteFlash > 0) {
+      ctx.globalAlpha = effects.whiteFlash * 0.65;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, width, height);
+      ctx.globalAlpha = 1;
+    }
+
+    if (effects.damageFlash > 0) {
+      ctx.globalAlpha = Math.min(1, effects.damageFlash);
+      ctx.fillStyle = resolveVignette();
+      ctx.fillRect(0, 0, width, height);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /** 그라디언트 생성은 비싸다. 크기가 바뀔 때만 다시 만든다 */
+  function resolveVignette(): CanvasGradient {
+    if (vignette !== undefined && vignetteWidth === width && vignetteHeight === height) {
+      return vignette;
+    }
+    const radius = Math.max(width, height) * 0.72;
+    const gradient = ctx.createRadialGradient(
+      width * 0.5,
+      height * 0.5,
+      radius * 0.35,
+      width * 0.5,
+      height * 0.5,
+      radius,
+    );
+    gradient.addColorStop(0, 'rgba(220, 38, 38, 0)');
+    gradient.addColorStop(0.65, 'rgba(220, 38, 38, 0.35)');
+    gradient.addColorStop(1, 'rgba(185, 28, 28, 0.85)');
+    vignette = gradient;
+    vignetteWidth = width;
+    vignetteHeight = height;
+    return gradient;
+  }
+
+  /**
+   * 데미지 숫자.
+   *
+   * 종류마다 색과 크기가 다르다 — 노랑은 평범한 타격, 주황은 큰 한 방,
+   * 붉은색은 **내가 맞은 것**이다. 셋이 같은 색이면 화면에서 아무 정보도 나오지 않는다.
+   */
   function drawDamageNumbers(scene: RenderScene, camera: ReturnType<typeof createCameraState>): void {
+    if (scene.damageNumbers.activeCount === 0) return;
+
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '800 18px "Pretendard", "Segoe UI", sans-serif';
     ctx.lineWidth = 3;
+    ctx.strokeStyle = '#111827';
+
+    let lastFontSize = -1;
     for (let i = 0; i < scene.damageNumbers.items.length; i += 1) {
       const item = scene.damageNumbers.items[i];
       if (!item.active) continue;
+
       const renderX = camera.centerX + shortestDeltaX(camera.centerX, item.x, scene.world);
       const renderY = camera.centerY + shortestDeltaY(camera.centerY, item.y, scene.world);
-      if (!isCircleVisible(camera, renderX, renderY, 24)) continue;
+      if (!isCircleVisible(camera, renderX, renderY, 32)) continue;
+
       const screen = worldToScreen(camera, renderX, renderY);
-      const alpha = Math.max(0, Math.min(1, item.lifeSec / 0.65));
-      const text = `${item.value}`;
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = '#111827';
-      ctx.fillStyle = '#ffe082';
+      const life = item.maxLifeSec > 0 ? item.lifeSec / item.maxLifeSec : 0;
+      const base =
+        item.kind === DAMAGE_NUMBER_KIND_PLAYER ? 24 : item.kind === DAMAGE_NUMBER_KIND_STRONG ? 26 : 18;
+      // `font` 대입은 비싸다. 정수로 반올림해 같은 크기끼리 붙여 그린다
+      const size = Math.round(base * damageNumberScale(item));
+      if (size !== lastFontSize) {
+        ctx.font = '800 ' + String(size) + 'px "Pretendard", "Segoe UI", sans-serif';
+        lastFontSize = size;
+      }
+
+      ctx.globalAlpha = life < 0 ? 0 : life > 1 ? 1 : life;
+      ctx.fillStyle =
+        item.kind === DAMAGE_NUMBER_KIND_PLAYER
+          ? '#FF6B6B'
+          : item.kind === DAMAGE_NUMBER_KIND_STRONG
+            ? '#FFA726'
+            : '#FFE082';
+      const text = String(item.value);
       ctx.strokeText(text, screen.x, screen.y);
       ctx.fillText(text, screen.x, screen.y);
     }
@@ -444,6 +763,9 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
 
     render(scene: RenderScene, alpha: number): void {
       const camera = createCameraState({ width, height }, scene.player, alpha);
+      // 흔들림은 카메라 중심을 옮기는 것으로 끝난다. 이 아래 모든 월드 좌표가 함께 흔들린다
+      camera.centerX += scene.effects.shakeX;
+      camera.centerY += scene.effects.shakeY;
       drawGrid(camera.centerX, camera.centerY, scene.elapsedSec);
 
       resetBatches(bodyBatches);
@@ -499,6 +821,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
         paletteIndexByVisible[visibleCount] = entity.paletteIndex;
         bodyRadiusByVisible[visibleCount] = entity.radius;
         outlineRadiusByVisible[visibleCount] = entity.radius + sprite.outlineWidth;
+        flashByVisible[visibleCount] = entity.flashSec;
 
         // 상자와 장판만 배치에서 뺀다. 둘 다 동시에 몇 개 안 뜬다
         if (hasCircleBody(entity.shape)) {
@@ -527,16 +850,26 @@ export function createRenderer(ctx: CanvasRenderingContext2D, viewport: Renderer
       }
 
       visibleCountRef.value = visibleCount;
+      // 고리는 엔티티 **아래**다. 위에 그리면 적이 고리에 가려 조준이 안 된다
+      drawShockwaves(scene, camera);
+      drawHazardFields(scene, camera);
       drawShadows(visibleCount);
       drawFields(visibleCount);
       drawBodies(outlineBatches, outlineBatchCount, true);
       drawBodies(bodyBatches, bodyBatchCount, false);
+      drawHitFlashes(visibleCount);
       drawBoxes(visibleCount);
       drawIcons(visibleCount);
       drawAccessories(visibleCount);
       drawEyes(visibleCount);
       drawSymbols(visibleCount);
+      // 탄과 파편은 위다. 적 뒤에 숨은 탄은 피할 수 없고,
+      // 잔해가 몸통 뒤로 숨으면 터진 게 아니라 사라진 걸로 보인다
+      drawHazardBullets(scene, camera, alpha);
+      drawParticles(scene, camera, alpha);
       drawDamageNumbers(scene, camera);
+      // 화면 효과는 흔들리지 않는 좌표에 마지막으로 얹는다
+      drawScreenFlashes(scene.effects);
 
       // 고해상도 디스플레이에서도 선 두께가 과하게 흐려지지 않게 유지한다.
       void dpr;
