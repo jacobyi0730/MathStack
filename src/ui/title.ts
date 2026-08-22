@@ -159,8 +159,15 @@ export function createTitleFlow(options: TitleFlowOptions = {}): TitleFlow {
   function showSettings(): void {
     const section = document.createElement('section');
     section.style.cssText = titleScreenStyle();
+    // 설정만 항목이 많다. PC 에서 두 줄로 흘릴 수 있게 다른 화면보다 넓게 쓴다
+    section.style.width = 'min(960px,100%)';
+    // 목록만 흐르고 「돌아가기」는 바닥에 남는 구조. 스크롤은 목록이 가져간다
+    section.style.overflow = 'hidden';
+    section.style.gridTemplateRows = 'minmax(0,1fr) auto';
 
-    const view = createSettingsView({ storage });
+    // `embedded` — 스크롤과 카드 테두리는 이 `section` 이 이미 갖고 있다.
+    // 안 넘기면 스크롤 컨테이너가 두 겹이 되어 「돌아가기」가 화면 밖으로 밀린다
+    const view = createSettingsView({ storage, embedded: true });
     section.appendChild(view.element);
 
     const back = document.createElement('button');

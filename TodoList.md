@@ -98,12 +98,13 @@
 - [x] **T-059** 전투 타격감 — 화면 흔들림·히트스톱·파편·피격 표시 — `game-engine-dev` ✅ 2026-08-22
 - [x] **T-060** 효과음 시스템과 CC0 음원 — `game-engine-dev` ✅ 2026-08-22
 - [x] **T-061** 일시정지 메뉴와 배경음 — `ui-builder` ✅ 2026-08-22 ⚠ 배경음 기본 35%가 교실에 맞는지는 사람 확인 필요
+- [x] **T-062** 설정 화면 반응형 겹침 보정 — `ui-builder` ✅ 2026-08-22
 
 ---
 
 ## 현황
 
-**61 / 61 완료** · 진행 중 0 · 착수 가능 0
+**62 / 62 완료** · 진행 중 0 · 착수 가능 0
 
 ## 병렬 배정 이력
 
@@ -154,6 +155,7 @@
 | 08-22 13:40 | **T-059 · T-060** 타격감·효과음 | **오케스트레이터 구현** | `src/engine/effects.ts`, `src/entities/particle·shockwave·damage-number`, `src/systems/feedback.ts`, `src/audio/`, `public/audio/`, `src/engine/renderer.ts`, `src/ui/settings.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 291→323). Kenney CC0 24종 220KB, 번들 gzip 76.0KB |
 | 08-22 14:05 | **T-054 ~ T-058** 보스 패턴 확장 | **오케스트레이터 구현** | `src/data/bosses.ts`, `src/entities/boss·hazard`, `src/systems/boss-hazard·boss-patterns`, `src/engine/state·renderer·stress`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 헤드리스 900프레임 sim avg 0.0574ms(최대 629 엔티티), 전 풀 recycle 0 |
 | 08-22 14:15 | **T-061** 일시정지 메뉴·배경음 | **오케스트레이터 구현** | `src/ui/pause-menu.ts`, `src/audio/bgm.ts`, `src/ui/hud·settings·result`, `src/systems/timeline.ts`, `src/main.ts`, `public/audio/`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 324→342). CC0 칩튠 4트랙 2.1MB, 번들 gzip 78.6KB. T-060 의 "BGM v1 제외" 결정을 뒤집음 |
+| 08-22 14:40 | **T-062** 설정 화면 반응형 겹침 | **오케스트레이터 구현** | `src/ui/settings.ts`, `src/ui/title.ts`, `docs/05-세션-운영.md`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 342→346). 네 해상도 실측으로 이중 스크롤·그리드 행 압축·가로 넘침 세 건 확인 후 수정 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

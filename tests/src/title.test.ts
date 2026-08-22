@@ -93,6 +93,28 @@ describe('title flow storage', () => {
     flow.destroy();
   });
 
+  it('gives_the_settings_screen_a_scrolling_body_and_a_fixed_footer', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument(),
+    });
+    const flow = createTitleFlow({ storage: new MemoryStorage() });
+    const root = flow.element as unknown as FakeElement;
+    const settingsButton = root.children[0].children.find(
+      (child) => child.textContent === '설정',
+    );
+    settingsButton?.click();
+
+    const section = root.children[0];
+    // 목록만 흐르고 「돌아가기」는 바닥에 남는다. 둘 다 흐르면 나갈 길이 화면 밖으로 나간다
+    expect(section.style.overflow).toBe('hidden');
+    expect(section.style.gridTemplateRows).toBe('minmax(0,1fr) auto');
+    // 설정만 항목이 많다. PC 에서 두 줄로 흘릴 수 있게 넓게 쓴다
+    expect(section.style.width).toBe('min(960px,100%)');
+
+    flow.destroy();
+  });
+
   it('offers_a_settings_entry_point_from_the_title', () => {
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
@@ -112,10 +134,12 @@ describe('title flow storage', () => {
 });
 
 class FakeElement {
-  readonly style = { cssText: '', display: '' } as CSSStyleDeclaration;
+  readonly style = { cssText: '', display: '', overflow: '', width: '', gridTemplateRows: '' } as CSSStyleDeclaration;
   readonly children: FakeElement[] = [];
   readonly attributes = new Map<string, string>();
+  readonly dataset: Record<string, string> = {};
   textContent = '';
+  innerHTML = '';
   type = '';
   disabled = false;
   hidden = false;
@@ -143,7 +167,28 @@ class FakeElement {
     this.attributes.set(name, value);
   }
 
-  addEventListener(): void {}
+  getAttribute(name: string): string | null {
+    return this.attributes.get(name) ?? null;
+  }
+
+  /** 설정 뷰가 "선택됨" 배지를 찾을 때 쓴다. 이 테스트는 배지를 보지 않는다 */
+  querySelector(): null {
+    return null;
+  }
+
+  private readonly listeners = new Map<string, (() => void)[]>();
+
+  addEventListener(type: string, handler: () => void): void {
+    const bucket = this.listeners.get(type) ?? [];
+    bucket.push(handler);
+    this.listeners.set(type, bucket);
+  }
+
+  click(): void {
+    for (const handler of this.listeners.get('click') ?? []) handler();
+  }
+
+  focus(): void {}
 
   remove(): void {
     if (!this.parent) return;

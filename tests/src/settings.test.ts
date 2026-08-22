@@ -166,6 +166,48 @@ describe('accessibility settings', () => {
     expect(resolveBgmVolume({ bgmVolume: 35 })).toBeCloseTo(0.35, 6);
   });
 
+  it('settings_never_lets_grid_rows_shrink_below_their_content', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument(),
+    });
+    const view = createSettingsView({ storage: new MemoryStorage() });
+    const css = (view.element as unknown as FakeElement).style.cssText;
+
+    // 높이가 확정된 그리드에서 암시적 auto 행은 남은 공간을 균등 분배받는다.
+    // 내용이 넘치면 분배량이 음수가 되어 카드끼리 겹친다 — 실측으로 확인한 회귀다
+    expect(css).toContain('grid-auto-rows:max-content');
+    expect(css).toContain('align-content:start');
+    // 300px 를 그대로 쓰면 360px 폰에서 칸이 컨테이너를 넘어 가로 스크롤바가 생긴다
+    expect(css).toContain('minmax(min(100%,300px),1fr)');
+
+    view.destroy();
+  });
+
+  it('settings_drops_its_own_card_and_scroll_when_embedded', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument(),
+    });
+    const storage = new MemoryStorage();
+
+    const standalone = createSettingsView({ storage });
+    const embedded = createSettingsView({ storage, embedded: true });
+    const standaloneCss = (standalone.element as unknown as FakeElement).style.cssText;
+    const embeddedCss = (embedded.element as unknown as FakeElement).style.cssText;
+
+    // 바깥이 이미 카드다. 테두리를 겹쳐 그리면 상자 안의 상자가 된다
+    expect(standaloneCss).toContain('border:1px solid');
+    expect(embeddedCss).not.toContain('border:1px solid');
+    // 스크롤은 목록이 가져간다. 바깥에 맡기면 「돌아가기」까지 같이 흘러 나간다
+    expect(embeddedCss).toContain('overflow:auto');
+    expect(embeddedCss).toContain('min-height:0');
+    expect(embeddedCss).not.toContain('max-height:calc(100dvh - 24px)');
+
+    standalone.destroy();
+    embedded.destroy();
+  });
+
   it('settings_respects_prefers_reduced_motion_for_effects', () => {
     const reduce = {
       matchMedia: (query: string) => ({ matches: query.includes('prefers-reduced-motion') }),

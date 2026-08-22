@@ -39,6 +39,14 @@ export interface SettingsViewOptions {
   readonly initialSettings?: Partial<AccessibilitySettings>;
   readonly storage?: StorageLike;
   readonly onChange?: (settings: AccessibilitySettings) => void;
+  /**
+   * 이미 스크롤되는 화면 **안에** 넣는가.
+   *
+   * 켜면 자기 카드 테두리와 높이 제한을 버린다. 안 그러면 스크롤 컨테이너가 두 겹이 되어
+   * 안쪽이 바깥쪽의 여백을 모르는 채 화면 높이만큼 자리를 차지하고,
+   * 바깥에 있는 「돌아가기」가 화면 아래로 밀려난다.
+   */
+  readonly embedded?: boolean;
 }
 
 export interface SettingsView {
@@ -193,6 +201,7 @@ export function createSettingsView(options: SettingsViewOptions = {}): SettingsV
     ...options.initialSettings,
   });
   const elements = createElements();
+  if (options.embedded === true) elements.root.style.cssText = embeddedScreenStyle();
 
   const update = (next: Partial<AccessibilitySettings>): void => {
     current = normalizeAccessibilitySettings({ ...current, ...next });
@@ -261,7 +270,8 @@ function createElements(): SettingsElements {
 
   const title = document.createElement('h1');
   title.textContent = '설정';
-  title.style.cssText = 'margin:0;font-size:28px;color:#ffffff;';
+  // 두 줄 배치에서도 제목과 상태 줄은 한 줄을 통째로 쓴다
+  title.style.cssText = 'margin:0;font-size:28px;color:#ffffff;grid-column:1 / -1;';
   root.appendChild(title);
 
   const slowMode = appendCheckbox(
@@ -292,7 +302,8 @@ function createElements(): SettingsElements {
 
   const status = document.createElement('p');
   status.setAttribute('role', 'status');
-  status.style.cssText = 'min-height:24px;margin:0;color:#f8fafc;font-size:15px;';
+  status.style.cssText =
+    'min-height:24px;margin:0;color:#f8fafc;font-size:15px;grid-column:1 / -1;';
   root.appendChild(status);
 
   return {
@@ -469,8 +480,7 @@ function getWindow(): (Window & typeof globalThis) | undefined {
 
 function screenStyle(): string {
   return [
-    'display:grid',
-    'gap:12px',
+    ...optionGridStyle(),
     'max-width:760px',
     'width:100%',
     'max-height:calc(100dvh - 24px)',
@@ -483,6 +493,53 @@ function screenStyle(): string {
     'border:1px solid #2d334a',
     'border-radius:8px',
   ].join(';');
+}
+
+/**
+ * 바깥 화면이 이미 카드다. 테두리·배경·바깥 여백은 버리고 **스크롤만 가져온다.**
+ *
+ * 스크롤을 바깥에 맡기면 「돌아가기」까지 같이 흘러가 화면 밖으로 나간다.
+ * 목록만 흐르고 버튼은 제자리에 있어야 한다.
+ */
+function embeddedScreenStyle(): string {
+  return [
+    ...optionGridStyle(),
+    'width:100%',
+    'color:#ffffff',
+    'overflow:auto',
+    'overscroll-behavior:contain',
+    // 그리드 칸 안에서 줄어들 수 있어야 한다. 없으면 내용 높이만큼 칸이 커져 버린다
+    'min-height:0',
+    // 스크롤바가 마지막 항목을 덮지 않게 한다
+    'padding-right:4px',
+  ].join(';');
+}
+
+/**
+ * 넓은 화면에서는 항목을 두 줄로 흘린다.
+ *
+ * 한 줄로 세우면 PC 에서 세로로 900px 을 넘어 「돌아가기」가 화면 밖으로 나간다.
+ * 가로 여백은 남아도는데 세로가 모자라는 상황이라, 남는 쪽을 쓴다.
+ * 좁은 화면(약 620px 미만)에서는 자동으로 한 줄로 돌아온다.
+ */
+function optionGridStyle(): readonly string[] {
+  return [
+    'display:grid',
+    'gap:12px',
+    // `min(100%,300px)` 이 핵심이다. 그냥 `300px` 로 두면 컨테이너가 그보다 좁은
+    // 360px 폰에서 칸이 컨테이너를 넘어 **가로 스크롤바**가 생긴다
+    'grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))',
+    /*
+     * 이 두 줄이 없으면 **항목끼리 겹친다.**
+     *
+     * 높이가 확정된(`minmax(0,1fr)` 칸에 들어간) 그리드에서 암시적 `auto` 행은
+     * 남은 높이를 균등 분배받는다. 내용이 넘치면 분배량이 음수가 되어 행이 내용보다
+     * 짧아지고, 카드 글자가 다음 카드에 덮인다 — 실측 결과 여섯 행이 전부 93.8px 로
+     * 눌렸다. `max-content` 로 고정하면 행이 내용 크기를 지키고 컨테이너가 스크롤한다.
+     */
+    'grid-auto-rows:max-content',
+    'align-content:start',
+  ];
 }
 
 function optionStyle(): string {
