@@ -2,7 +2,7 @@
 title: MathStack 작업 보드
 status: stable
 owner: 기획
-updated: 2026-08-21
+updated: 2026-08-22
 related: [MathStack기획서]
 ---
 
@@ -104,6 +104,19 @@ related: [MathStack기획서]
 | [T-051](T-051-퀴즈-출제-랜덤성.md) | 퀴즈 출제 랜덤성 보정 | game-engine-dev | task-close | T-050 |
 | [T-052](T-052-모바일-메뉴-잘림-보정.md) | 모바일 메뉴 잘림 보정 | ui-builder | task-close | T-051 |
 
+## Phase 5 — 보스 패턴 확장 (M7)
+
+> 목표: **보스전이 단일 추격전이 아니라, 읽고 피하는 패턴 전투가 된다.** 첫 보스는 1페이즈, 두 번째 보스는 2페이즈, 최종보스는 3페이즈까지 확장한다.
+
+| ID | 태스크 | 담당 | 스킬 | 선행 |
+| --- | --- | --- | --- | --- |
+| [T-053](T-053-보스-페이즈-패턴-기획.md) | 보스 페이즈·패턴 기획 | balance-tuner | task-close | T-052 |
+| [T-054](T-054-보스-위험엔티티-기반.md) | 보스 탄막·장판 위험 엔티티 기반 | game-engine-dev | perf-check | T-053 |
+| [T-055](T-055-테크네튬-1페이즈-패턴.md) | 테크네튬 1페이즈 패턴 구현 | game-engine-dev | perf-check | T-054 |
+| [T-056](T-056-폴로늄-2페이즈-패턴.md) | 폴로늄 2페이즈 패턴 구현 | game-engine-dev | perf-check | T-054, T-055 |
+| [T-057](T-057-오가네손-3페이즈-패턴.md) | 오가네손 3페이즈 패턴 구현 | game-engine-dev | perf-check | T-054, T-056 |
+| [T-058](T-058-보스전-검증-튜닝.md) | 보스전 모바일·성능·밸런스 검증 | game-engine-dev | perf-check | T-055, T-056, T-057 |
+
 ## 병렬 트랙
 
 의존 그래프상 **세 갈래가 거의 독립적으로 흐른다.** 파일 집합이 겹치지 않아 동시에 진행할 수 있다.
@@ -113,6 +126,7 @@ related: [MathStack기획서]
 | **A. 게임 코어** | T-004 → T-006 → T-007 → T-008 → T-009 → T-010 → T-011~T-015 | `src/engine`, `src/systems`, `src/entities`, `src/data` |
 | **B. 수학 파이프라인** | T-016 → (T-017 ∥ T-018) → T-019 | `shared/`, `tools/`, `content/` |
 | **C. UI** | T-021·T-023·T-024·T-026·T-027 | `src/ui/`, CSS |
+| **D. 보스 패턴** | T-053 → T-054 → T-055 → T-056 → T-057 → T-058 | `src/entities`, `src/systems`, `src/engine`, `src/data`, `tests/src`, `docs/` |
 
 트랙 A와 B는 **처음부터 끝까지 파일이 겹치지 않는다.** 트랙 C는 A·B의 산출물을 기다리므로 나중에 합류한다.
 합류 지점은 **T-020(출제기)** — 트랙 B의 뱅크와 트랙 A의 레벨업이 여기서 만난다.
