@@ -47,6 +47,7 @@ import { getRequiredXpForLevel } from './data/level.js';
 import { loadQuestionBank } from './quiz/loader.js';
 import { gradeAnswer, type QuizGradeResult } from './quiz/grader.js';
 import { selectQuestion, type SelectedQuestion } from './quiz/selector.js';
+import { createRuntimeQuizSeed } from './quiz/session.js';
 import { summarizeQuizStats } from './quiz/stats.js';
 import {
   recordSessionResult,
@@ -104,6 +105,7 @@ function createRuntimeState(
   const state = createGameState({ player });
   state.quizSession.grade = bank.grade;
   if (continueRun === undefined) {
+    state.quizSession.seed = createRuntimeQuizSeed();
     equipWeapon(state.weapons, CHARACTER_PROFILES[player.characterId].startingWeaponId);
   } else {
     restoreContinueRun(state, continueRun);

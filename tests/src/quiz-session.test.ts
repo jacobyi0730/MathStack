@@ -3,6 +3,7 @@ import { Domain } from '../../shared/domain.js';
 import type { Question } from '../../shared/schema.js';
 import {
   createQuizSession,
+  createRuntimeQuizSeed,
   enqueueRetryQuestion,
   nextRandom,
   rememberQuestion,
@@ -60,5 +61,17 @@ describe('quiz session', () => {
     expect(session.reviewQueue.entries).toHaveLength(0);
     expect(session.domainCounts[Domain.Number]).toBe(0);
     expect(session.seed).toBe(456);
+  });
+
+  it('creates_runtime_quiz_seed_from_time_and_browser_entropy', () => {
+    const crypto = {
+      getRandomValues(values: Uint32Array): Uint32Array {
+        values[0] = 0xabcdef12;
+        return values;
+      },
+    } as Crypto;
+
+    expect(createRuntimeQuizSeed(1000, crypto)).toBe((1000 ^ 0xabcdef12) >>> 0);
+    expect(createRuntimeQuizSeed(0, null)).toBe(1);
   });
 });

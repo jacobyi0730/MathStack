@@ -26,7 +26,9 @@ describe('skill choice view', () => {
 
     expect(view.element.hidden).toBe(false);
     expect(view.element.style.display).toBe('grid');
+    expect(view.element.style.cssText).toContain('overflow:auto');
     expect(parent.textContent).toContain('스킬 선택');
+    expect(parent.children[0]?.children[0]?.style.cssText).toContain('max-height:calc(100dvh - 32px)');
     expect(parent.textContent).toContain('수소 화살');
     expect(parent.textContent).toContain('Lv.2');
     findByTag(parent, 'button')[0]?.click();

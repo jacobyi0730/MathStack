@@ -8,6 +8,10 @@ export interface InputState {
   keyboard: DirectionVector;
   pointer: DirectionVector;
   dragging: boolean;
+  activePointerId: number | null;
+  pointerAnchorX: number;
+  pointerAnchorY: number;
+  pointerMode: PointerControlMode;
   upPressed: boolean;
   downPressed: boolean;
   leftPressed: boolean;
@@ -21,6 +25,10 @@ export interface InputController {
 }
 
 const EPSILON = 0.000001;
+const TOUCH_DEAD_ZONE_PX = 12;
+const TOUCH_FULL_SPEED_RADIUS_PX = 64;
+
+type PointerControlMode = 'screenCenter' | 'touchAnchor';
 
 export function createInputState(): InputState {
   return {
@@ -28,6 +36,10 @@ export function createInputState(): InputState {
     keyboard: { x: 0, y: 0 },
     pointer: { x: 0, y: 0 },
     dragging: false,
+    activePointerId: null,
+    pointerAnchorX: 0,
+    pointerAnchorY: 0,
+    pointerMode: 'screenCenter',
     upPressed: false,
     downPressed: false,
     leftPressed: false,
@@ -59,6 +71,30 @@ export function writeDragDirectionFromPoint(
   writeNormalizedDirection(out, clientX - centerX, clientY - centerY);
 }
 
+export function writeTouchDirectionFromAnchor(
+  out: DirectionVector,
+  clientX: number,
+  clientY: number,
+  anchorX: number,
+  anchorY: number,
+  deadZonePx = TOUCH_DEAD_ZONE_PX,
+  fullSpeedRadiusPx = TOUCH_FULL_SPEED_RADIUS_PX,
+): void {
+  const dx = clientX - anchorX;
+  const dy = clientY - anchorY;
+  const distance = Math.hypot(dx, dy);
+  if (distance <= Math.max(EPSILON, deadZonePx)) {
+    out.x = 0;
+    out.y = 0;
+    return;
+  }
+
+  const usableRadius = Math.max(EPSILON, fullSpeedRadiusPx - deadZonePx);
+  const strength = Math.min(1, (distance - deadZonePx) / usableRadius);
+  out.x = (dx / distance) * strength;
+  out.y = (dy / distance) * strength;
+}
+
 export function updateKeyboardDirection(state: InputState): void {
   const x = Number(state.rightPressed) - Number(state.leftPressed);
   const y = Number(state.downPressed) - Number(state.upPressed);
@@ -82,21 +118,31 @@ export function createInputController(canvas: HTMLCanvasElement, state: InputSta
   };
 
   const onPointerDown = (event: PointerEvent): void => {
+    if (state.activePointerId !== null) return;
+    event.preventDefault();
     state.dragging = true;
+    state.activePointerId = event.pointerId;
+    state.pointerMode = isTouchLikePointer(event) ? 'touchAnchor' : 'screenCenter';
+    state.pointerAnchorX = event.clientX;
+    state.pointerAnchorY = event.clientY;
     canvas.setPointerCapture(event.pointerId);
     updatePointerDirection(canvas, state, event.clientX, event.clientY);
   };
 
   const onPointerMove = (event: PointerEvent): void => {
-    if (!state.dragging) return;
+    if (!state.dragging || event.pointerId !== state.activePointerId) return;
+    event.preventDefault();
     updatePointerDirection(canvas, state, event.clientX, event.clientY);
   };
 
-  const onPointerUp = (): void => {
+  const onPointerUp = (event: PointerEvent): void => {
+    if (event.pointerId !== state.activePointerId) return;
+    event.preventDefault();
     stopDragging(state);
   };
 
-  const onPointerCancel = (): void => {
+  const onPointerCancel = (event: PointerEvent): void => {
+    if (event.pointerId !== state.activePointerId) return;
     stopDragging(state);
   };
 
@@ -153,16 +199,42 @@ function writeCombinedMoveDirection(out: DirectionVector, keyboard: DirectionVec
 }
 
 function updatePointerDirection(canvas: HTMLCanvasElement, state: InputState, clientX: number, clientY: number): void {
-  const rect = canvas.getBoundingClientRect();
-  writeDragDirectionFromPoint(state.pointer, clientX, clientY, rect.left, rect.top, rect.width, rect.height);
+  if (state.pointerMode === 'touchAnchor') {
+    writeTouchDirectionFromAnchor(
+      state.pointer,
+      clientX,
+      clientY,
+      state.pointerAnchorX,
+      state.pointerAnchorY,
+    );
+  } else {
+    const rect = canvas.getBoundingClientRect();
+    writeDragDirectionFromPoint(
+      state.pointer,
+      clientX,
+      clientY,
+      rect.left,
+      rect.top,
+      rect.width,
+      rect.height,
+    );
+  }
   writeCombinedMoveDirection(state.move, state.keyboard, state.pointer);
 }
 
 function stopDragging(state: InputState): void {
   state.dragging = false;
+  state.activePointerId = null;
+  state.pointerAnchorX = 0;
+  state.pointerAnchorY = 0;
+  state.pointerMode = 'screenCenter';
   state.pointer.x = 0;
   state.pointer.y = 0;
   writeCombinedMoveDirection(state.move, state.keyboard, state.pointer);
+}
+
+function isTouchLikePointer(event: PointerEvent): boolean {
+  return event.pointerType === 'touch' || event.pointerType === 'pen';
 }
 
 function setKeyState(state: InputState, code: string, pressed: boolean): boolean {

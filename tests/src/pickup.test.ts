@@ -155,5 +155,22 @@ describe('pickup system', () => {
 
     expect(pool.items[0].x).toBeLessThan(BOOSTED_PICKUP_MAGNET_RADIUS - 20);
   });
+
+  it('does_not_pull_instant_items_with_magnet_range', () => {
+    const pool = createPickupPool(4);
+    const player = createPlayer('actinium');
+    const level = createLevelState();
+    const runtime = createPickupRuntime();
+    runtime.magnetBoostSec = 1;
+    const meteor = spawnPickupByKind(pool, 'meteor', 120, 0);
+    const originalX = meteor.x;
+
+    updatePickups(pool, player, level, runtime, 0.1);
+
+    expect(meteor.x).toBe(originalX);
+    expect(meteor.dx).toBe(0);
+    expect(pool.activeCount).toBe(1);
+    expect(runtime.pendingMeteorDamage).toBe(0);
+  });
 });
 

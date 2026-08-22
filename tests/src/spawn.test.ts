@@ -4,8 +4,11 @@ import { ENEMIES, MAX_ACTIVE_ENEMIES, type EnemyId } from '../../src/data/enemie
 import {
   HP_GROWTH_PER_MIN,
   SPAWN_MIN_PLAYER_DISTANCE,
+  SPECIAL_REWARD_ENEMY_SPAWN_PER_MINUTE,
   WAVES,
   chooseActiveEnemyId,
+  getSpecialRewardEnemyLimit,
+  isSpecialRewardEnemyId,
 } from '../../src/data/waves.js';
 import { createGameState } from '../../src/engine/state.js';
 import { spawnBoss } from '../../src/entities/boss.js';
@@ -88,6 +91,25 @@ describe('enemy spawning', () => {
     expect(seen).toEqual(new Set(Object.keys(ENEMIES) as EnemyId[]));
   });
 
+  it('keeps_special_reward_enemy_pressure_low_and_caps_active_count_by_time', () => {
+    expect(SPECIAL_REWARD_ENEMY_SPAWN_PER_MINUTE).toBe(1);
+    expect(getSpecialRewardEnemyLimit(120)).toBe(1);
+    expect(getSpecialRewardEnemyLimit(180)).toBe(2);
+    expect(getSpecialRewardEnemyLimit(300)).toBe(3);
+    expect(getSpecialRewardEnemyLimit(420)).toBe(4);
+    expect(getSpecialRewardEnemyLimit(540)).toBe(5);
+
+    const state = createGameState();
+    state.elapsedSec = 120;
+
+    for (let i = 0; i < 8; i += 1) {
+      spawnWaveEnemy(state, i % 2 === 0 ? 'iridium' : 'iodine', 2);
+    }
+
+    expect(countSpecialRewardEnemies(state)).toBe(1);
+    expect(state.enemies.activeCount).toBe(8);
+  });
+
   it('splits uranium exactly once into two smaller children', () => {
     const state = createGameState();
     const enemy = spawnWaveEnemy(state, 'uranium', 0);
@@ -143,3 +165,11 @@ describe('enemy spawning', () => {
     expect(state.pickups.items[0].pickupKind).toBe('proton-medium');
   });
 });
+
+function countSpecialRewardEnemies(state: ReturnType<typeof createGameState>): number {
+  let count = 0;
+  for (let i = 0; i < state.enemies.activeCount; i += 1) {
+    if (isSpecialRewardEnemyId(state.enemies.items[i].id)) count += 1;
+  }
+  return count;
+}

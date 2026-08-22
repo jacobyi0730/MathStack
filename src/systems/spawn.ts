@@ -5,7 +5,10 @@ import {
   SPAWN_MIN_PLAYER_DISTANCE,
   SPAWN_RING_MARGIN,
   chooseActiveEnemyId,
+  chooseActiveRegularEnemyId,
   getActiveSpawnPerMinute,
+  getSpecialRewardEnemyLimit,
+  isSpecialRewardEnemyId,
 } from '../data/waves.js';
 import { resolveEnemyReward, spawnEnemy, type EnemyEntity } from '../entities/enemy.js';
 import type { GameState } from '../engine/state.js';
@@ -27,7 +30,8 @@ export function updateSpawns(state: GameState, dt: number): void {
 
   while (state.spawn.accumulator >= 1) {
     state.spawn.accumulator -= 1;
-    spawnWaveEnemy(state, chooseActiveEnemyId(state.elapsedSec, nextRandom(state)), elapsedMin);
+    const enemyId = resolveSpawnEnemyId(state, chooseActiveEnemyId(state.elapsedSec, nextRandom(state)));
+    spawnWaveEnemy(state, enemyId, elapsedMin);
   }
 }
 
@@ -36,7 +40,7 @@ export function spawnWaveEnemy(state: GameState, enemyId: keyof typeof ENEMIES, 
     releaseFarthestEnemy(state);
   }
 
-  const definition = ENEMIES[enemyId];
+  const definition = ENEMIES[resolveSpawnEnemyId(state, enemyId)];
   const enemy = state.enemies.acquire();
   const hp = Math.ceil(definition.hp * (1 + elapsedMin * HP_GROWTH_PER_MIN));
   writeSpawnPosition(state);
@@ -129,6 +133,21 @@ function distanceSqToPlayer(enemy: EnemyEntity, state: GameState): number {
   const dx = enemy.x - state.player.x;
   const dy = enemy.y - state.player.y;
   return dx * dx + dy * dy;
+}
+
+function resolveSpawnEnemyId(state: GameState, enemyId: keyof typeof ENEMIES): keyof typeof ENEMIES {
+  if (!isSpecialRewardEnemyId(enemyId)) return enemyId;
+  if (countActiveSpecialRewardEnemies(state) < getSpecialRewardEnemyLimit(state.elapsedSec)) return enemyId;
+  return chooseActiveRegularEnemyId(state.elapsedSec, nextRandom(state));
+}
+
+function countActiveSpecialRewardEnemies(state: GameState): number {
+  let count = 0;
+  for (let i = 0; i < state.enemies.activeCount; i += 1) {
+    const enemy = state.enemies.items[i];
+    if (isSpecialRewardEnemyId(enemy.id)) count += 1;
+  }
+  return count;
 }
 
 function writeSpawnPosition(state: GameState): void {

@@ -59,9 +59,13 @@ describe('quiz modal', () => {
 
     modal.show({ question, phase: 'first', retry: false });
 
+    const panel = modal.root.querySelector<HTMLElement>('.mathstack-quiz__panel');
     const choices = modal.root.querySelector<HTMLElement>('.mathstack-quiz__choices');
     const buttons = modal.root.querySelectorAll<HTMLButtonElement>('button[data-answer]');
 
+    expect(modal.root.style.overflow).toBe('auto');
+    expect(panel?.style.maxHeight).toBe('calc(100dvh - 32px)');
+    expect(panel?.style.overflow).toBe('auto');
     expect(choices?.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))');
     expect(buttons).toHaveLength(4);
     expect(buttons[0].style.minHeight).toBe('56px');

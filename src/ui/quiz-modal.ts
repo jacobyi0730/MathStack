@@ -178,14 +178,20 @@ function createElements(parent: HTMLElement): QuizModalElements {
   root.style.inset = '0';
   root.style.display = 'none';
   root.style.placeItems = 'center';
-  root.style.padding = '24px';
+  root.style.padding = '16px';
+  root.style.boxSizing = 'border-box';
+  root.style.overflow = 'auto';
+  root.style.overscrollBehavior = 'contain';
   root.style.background = 'rgb(0 0 0 / 40%)';
   root.style.zIndex = '20';
 
   const panel = doc.createElement('div');
   panel.className = 'mathstack-quiz__panel';
   panel.style.width = 'min(720px, 100%)';
+  panel.style.maxHeight = 'calc(100dvh - 32px)';
+  panel.style.overflow = 'auto';
   panel.style.padding = '24px';
+  panel.style.boxSizing = 'border-box';
   panel.style.borderRadius = '8px';
   panel.style.background = '#f8fbff';
   panel.style.color = '#14213d';

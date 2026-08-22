@@ -78,12 +78,16 @@
 - [x] **T-045** mds/13 보상 선택지 빌드 맞춤 — `game-engine-dev` ✅ 2026-08-21
 - [x] **T-046** mds/14 8분·보스·이어하기·랭킹 개선 — `game-engine-dev` ✅ 2026-08-21
 - [x] **T-047** mds/15 이름별 랭킹 개선 — `game-engine-dev` ✅ 2026-08-22
+- [x] **T-048** 모바일 터치 이동 최적화 — `game-engine-dev` ✅ 2026-08-22
+- [x] **T-049** 모바일 퀴즈·스킬 선택 잘림 보정 — `ui-builder` ✅ 2026-08-22
+- [x] **T-050** 보상 몬스터·자석 밸런스 — `balance-tuner` ✅ 2026-08-22
+- [x] **T-051** 퀴즈 출제 랜덤성 보정 — `game-engine-dev` ✅ 2026-08-22
 
 ---
 
 ## 현황
 
-**47 / 47 완료** · 진행 중 0 · 착수 가능 0
+**51 / 51 완료** · 진행 중 0 · 착수 가능 0
 
 ## 병렬 배정 이력
 
@@ -125,6 +129,10 @@
 | 08-21 11:00 | **T-038** 드롭 산포·램프 단일색·아이콘 가독성 | **오케스트레이터 구현** | `src/data/palette.ts`, `src/data/crates.ts`, `src/data/weapons.ts`, `src/systems/crate.ts`, `src/entities/pickup.ts`, `src/entities/projectile.ts`, `src/engine/renderer.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 260→262). 헤드리스 Chrome + CDP 로 실제 플레이 화면을 캡처해 이모지 하한 26px 확정, 🏹→💧 |
 | 08-21 22:42 | **T-046** mds/14 8분·보스·이어하기·랭킹 개선 | **오케스트레이터 구현** | `src/main.ts`, `src/storage.ts`, `src/ui/title.ts`, `src/engine/renderer.ts`, `src/systems/`, `src/data/`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 262→269). 8분 수련 퀴즈 연결, 보스 단독전, 챕터 배경, 랭킹·이어하기 구현 |
 | 08-22 11:49 | **T-047** mds/15 이름별 랭킹 개선 | **오케스트레이터 구현** | `src/storage.ts`, `src/main.ts`, `src/ui/title.ts`, `src/ui/result.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과 (test 270개). 랭킹에 용사 이름을 표시하고 같은 이름은 최고 기록 1개만 유지 |
+| 08-22 12:12 | **T-048** 모바일 터치 이동 최적화 | **오케스트레이터 구현** | `src/engine/input.ts`, `tests/src/input.test.ts`, `docs/`, `Tasks/` | ✅ 게이트 통과. 첫 터치 위치 기준 가상 스틱과 데드존 적용 |
+| 08-22 12:31 | **T-049** 모바일 퀴즈·스킬 선택 잘림 보정 | **오케스트레이터 구현** | `src/ui/quiz-modal.ts`, `src/ui/skill-choice.ts`, `tests/src/`, `docs/`, `Tasks/` | ✅ 게이트 통과. 세로 FHD 기준 패널 최대 높이와 내부 스크롤 적용 |
+| 08-22 12:23 | **T-050** 보상 몬스터·자석 밸런스 | **오케스트레이터 구현** | `src/data/waves.ts`, `src/systems/spawn.ts`, `src/systems/pickup.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 보상 몬스터 비중 1/min씩, 동시 상한 1→5, 자석 조각 전용 적용 |
+| 08-22 12:26 | **T-051** 퀴즈 출제 랜덤성 보정 | **오케스트레이터 구현** | `src/quiz/session.ts`, `src/main.ts`, `docs/`, `Tasks/`, `tests/src/` | ✅ 게이트 통과. 새 플레이마다 런타임 시드 생성 |
 
 > 두 집합은 **완전히 분리돼 있었다.** 트랙 A(`src/`)와 트랙 B(`shared/`+`tests/tools/`)는 겹치는 파일이 하나도 없었고, 두 실행자 모두 상대 디렉터리를 침범하지 않았다.
 

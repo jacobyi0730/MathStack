@@ -3,6 +3,7 @@ import {
   normalizeDirection,
   resolveMoveDirection,
   writeDragDirectionFromPoint,
+  writeTouchDirectionFromAnchor,
   type DirectionVector,
 } from '../../src/engine/input.js';
 
@@ -30,5 +31,29 @@ describe('입력 정규화', () => {
 
     expect(out.x).toBeCloseTo(1);
     expect(out.y).toBeCloseTo(0);
+  });
+
+  it('터치 드래그는 처음 터치한 위치를 기준으로 움직인다', () => {
+    const out = { x: 0, y: 0 };
+    writeTouchDirectionFromAnchor(out, 160, 100, 100, 100, 12, 64);
+
+    expect(out.x).toBeCloseTo((60 - 12) / (64 - 12));
+    expect(out.y).toBeCloseTo(0);
+  });
+
+  it('터치 기준점 주변의 작은 흔들림은 이동으로 처리하지 않는다', () => {
+    const out = { x: 0, y: 0 };
+    writeTouchDirectionFromAnchor(out, 108, 106, 100, 100, 12, 64);
+
+    expect(out.x).toBe(0);
+    expect(out.y).toBe(0);
+  });
+
+  it('터치 드래그가 충분히 멀어지면 최대 속도 방향으로 제한된다', () => {
+    const out = { x: 0, y: 0 };
+    writeTouchDirectionFromAnchor(out, 100, 220, 100, 100, 12, 64);
+
+    expect(out.x).toBeCloseTo(0);
+    expect(out.y).toBeCloseTo(1);
   });
 });

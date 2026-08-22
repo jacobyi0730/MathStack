@@ -37,6 +37,19 @@ export function createQuizSession(grade: Grade, seed = 1): QuizSessionState {
   };
 }
 
+export function createRuntimeQuizSeed(
+  timeMs = Date.now(),
+  cryptoObject: Crypto | null = globalThis.crypto,
+): number {
+  let entropy = Math.floor(timeMs) >>> 0;
+  if (cryptoObject !== null) {
+    const values = new Uint32Array(1);
+    cryptoObject.getRandomValues(values);
+    entropy ^= values[0];
+  }
+  return normalizeSeed(entropy);
+}
+
 export function createDomainCounts(): Record<DomainType, number> {
   return {
     [Domain.Number]: 0,

@@ -85,7 +85,7 @@ export function updatePickups(
       continue;
     }
 
-    if (distSq <= magnetRadiusSq && distSq > 0.0001) {
+    if (pickup.xp > 0 && distSq <= magnetRadiusSq && distSq > 0.0001) {
       const dist = Math.sqrt(distSq);
       const step = Math.min(PICKUP_ATTRACT_SPEED * dt, dist);
       pickup.dx = dx / dist;

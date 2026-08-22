@@ -75,6 +75,21 @@ describe('quiz selector', () => {
     }
   });
 
+  it('changes_the_opening_question_order_when_the_session_seed_changes', () => {
+    const bank = makeBank();
+    const firstSession = createQuizSession(3, 11);
+    const secondSession = createQuizSession(3, 987654);
+
+    const firstOrder = Array.from({ length: 8 }, (_, index) =>
+      selectQuestion(bank, 2, index + 1, firstSession).question.id,
+    );
+    const secondOrder = Array.from({ length: 8 }, (_, index) =>
+      selectQuestion(bank, 2, index + 1, secondSession).question.id,
+    );
+
+    expect(secondOrder).not.toEqual(firstOrder);
+  });
+
   it('expands_to_nearby_difficulty_when_the_exact_bucket_is_empty', () => {
     const bank: Bank = {
       version: BANK_VERSION,

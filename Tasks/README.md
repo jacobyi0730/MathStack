@@ -98,6 +98,10 @@ related: [MathStack기획서]
 | [T-045](T-045-mds13-보상선택지-빌드맞춤.md) | mds/13 보상 선택지 빌드 맞춤 | game-engine-dev | task-close | T-044 |
 | [T-046](T-046-mds14-8분-보스-이어하기-랭킹.md) | mds/14 8분·보스·이어하기·랭킹 개선 | game-engine-dev | task-close | T-045 |
 | [T-047](T-047-mds15-이름별-랭킹.md) | mds/15 이름별 랭킹 개선 | game-engine-dev | task-close | T-046 |
+| [T-048](T-048-모바일-터치-이동.md) | 모바일 터치 이동 최적화 | game-engine-dev | task-close | T-047 |
+| [T-049](T-049-모바일-모달-잘림-보정.md) | 모바일 퀴즈·스킬 선택 잘림 보정 | ui-builder | task-close | T-048 |
+| [T-050](T-050-보상몬스터-자석-밸런스.md) | 보상 몬스터·자석 밸런스 | balance-tuner | task-close | T-049 |
+| [T-051](T-051-퀴즈-출제-랜덤성.md) | 퀴즈 출제 랜덤성 보정 | game-engine-dev | task-close | T-050 |
 
 ## 병렬 트랙
 
